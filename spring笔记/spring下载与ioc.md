@@ -1,4 +1,4 @@
-# Spring教程
+# spring下载与ioc
 
 ## 1.Spring的下载
 
@@ -77,12 +77,12 @@ EJB = enterprise java bean = 企业java bean
 - WEB层	：SpringMVC
 
 - Service层：Spring的Bean管理，Spring声明式事务
-  DAO层	：Spring的Jdbc模板，Spring的ORM模块
   
-  ```
+- DAO层	：Spring的Jdbc模板，Spring的ORM模块
+  
+```properties
 orm = object relation model = 对象关系模型 
-  ```
-
+```
 
 **总结：Spring是一个大管家 是java企业项目一站式解决方案**
 
