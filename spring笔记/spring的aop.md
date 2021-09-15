@@ -467,6 +467,8 @@ execution(* com.xyz.code.dao.UserDao.addUser())
 
 ### 11.2. 编写测试类
 
+`SpringRunner`是`SpringJUnit4ClassRunner`的子类，常用`SpringRunner`作为`@RunWith`的`value`属性值
+
 ![](images/QQ图片20200206062135.png)
 
 ## 12.常见异常
