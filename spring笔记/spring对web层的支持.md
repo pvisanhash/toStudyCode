@@ -1,4 +1,4 @@
-# SpringMVC_辉哥
+# SpringMVC
 
 **spring对web层支持 主要是提供了SpringMVC**
 
@@ -33,6 +33,8 @@ Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就�
 ### 3.3. 创建Controller
 
 ```java
+//注意这里导入的是Controller接口
+import org.springframework.web.servlet.mvc.Controller;
 public class MyController implements Controller {
     @Override
     public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
@@ -50,7 +52,25 @@ public class MyController implements Controller {
 
 ### 3.5. 编写配置文件
 
-![](images/QQ图片20200207010129.png)
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--配置处理器映射-->
+    <bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping"></bean>
+    <!--配置处理器适配器-->
+    <bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter"></bean>
+    <!--配置视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"></property>
+        <property name="suffix" value=".jsp"></property>
+    </bean>
+    <!--将实现Controller接口的类放到容器中，并起名字-->
+    <bean name="/hello" class="com.xyz.code.controller.MyController"></bean>
+</beans>
+```
 
 ### 3.6. web.xml配置Servlet
 
@@ -63,7 +83,7 @@ public class MyController implements Controller {
         -->
         <init-param>
             <param-name>contextConfigLocation</param-name>
-            <param-value>classpath:springmvc.xml</param-value>
+            <param-value>classpath:springMvc.xml</param-value>
         </init-param>
     </servlet>
    <servlet-mapping>
@@ -74,7 +94,7 @@ public class MyController implements Controller {
 
 ### 3.7. 启动tomcat测试
 
-![](images/QQ图片20200207010432.png)
+![](./images/Snipaste_2021-09-16_13-22-16.png)
 
 ## 4. SpringMVC的执行流程
 
@@ -86,35 +106,75 @@ public class MyController implements Controller {
 
 **了解 不同的写法 使用不同的处理器映射器  和不同的处理器适配器**
 
-## 6. 第二种写法
+## 6. 第二种写法(重点)
 
 >  我们按照刚才的编码  有很大的问题   我们定义的Controller 只能做一件事  因为就一个实现   并且每次都配置Bean 不是很优雅   
 
 ### 6.1. 编写Controller
 
-![](images/QQ图片20200207020452.png)
+```java
+@Controller  //Component的衍生注解
+public class MyController2 {
+    //只接受请求方式为get
+    @GetMapping(value = "/hello") 
+    public ModelAndView hello() {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.addObject("message", "hello");
+        modelAndView.setViewName("success");
+        return modelAndView;
+    }
+}
+```
 
 ### 6.2. 编写配置文件
 
-![](images/QQ图片20200207020532.png)
+在`springMvc.xml`配置文件中写如下内容：
+
+```xml
+    <!--开启组件扫描-->
+    <context:component-scan base-package="com.xyz.code"/>
+
+    <!--配置处理器映射-->
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"></bean>
+    <!--配置处理器适配器-->
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"></bean>
+    <!--配置视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"></property>
+        <property name="suffix" value=".jsp"></property>
+    </bean>
+```
 
 ### 6.3. 配置优化
 
-![](images/QQ图片20200207020731.png)
+如果不想配置处理器映射，与处理器适配器，可与mvc注解驱动代替：
+
+```xml
+    <!--开启组件扫描-->
+    <context:component-scan base-package="com.xyz.code"/>
+    
+    <!--配置视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"></property>
+        <property name="suffix" value=".jsp"></property>
+    </bean>
+    
+    <!--如果不想配置处理器映射，与处理器适配器，可与mvc注解驱动代替-->
+    <!--注意要选mvc包下的-->
+    <mvc:annotation-driven/>
+```
 
 ### 6.4. 测试 
 
-![](images/QQ图片20200207020933.png)
-
-
+这里可以配置tomcat使url变得更简洁：右上角选择tomcat图标下拉选择`eidt configurations`，可修改`name`,`Application context`,`url` ,`port`等
 
 ## 7. 请求注释相关
 
+- @RequestMapping 
+- @PostMapping
 - @GetMapping 
 - @DeleteMapping
 - @PutMapping
-- @PostMapping
-- @RequestMapping 
 
 ## 8. 参数的封装
 
@@ -135,44 +195,16 @@ public class MyController implements Controller {
 * **新建对象**
 
   ```java
-
+//注意要加lombok的jar包，才能使用如下注解
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Builder
+@Accessors(fluent = false, chain = true)
   public class Huige {
-  	private Integer id;
+      private Integer id;
       private String username;
-      private String sex;
-
-      public Integer getId() {
-          return id;
-      }
-
-      public void setId(Integer id) {
-          this.id = id;
-      }
-
-      public String getUsername() {
-          return username;
-      }
-
-      public void setUsername(String username) {
-          this.username = username;
-      }
-
-      public String getSex() {
-          return sex;
-      }
-
-      public void setSex(String sex) {
-          this.sex = sex;
-      }
-
-      @Override
-      public String toString() {
-          return "Huige{" +
-                  "id=" + id +
-                  ", username='" + username + '\'' +
-                  ", sex='" + sex + '\'' +
-                  '}';
-      }
+    private String sex;
   }
   ```
 
@@ -190,17 +222,21 @@ public class MyController implements Controller {
 
 ![](images/QQ图片20200207031434.png)
 
-### 8.7. JSON格式字符串
-
-**这种方式现在不要求掌握 但是后面必须要掌握  很重要**
+### 8.7. JSON格式字符串（重点）
 
 * **前提 有jackson的支持 导入jackson**
 
-  ![](images/QQ图片20200207033600.png)
+`jackson`是spring默认使用处理json字符串的类库,只需导入不用任何配置
+
+`json` = `JavaScript Object Notation` = `javaScript对象标记法`
+
+![](images/QQ图片20200207033600.png)
 
 ### 8.8. Rest方式接收参数
 
-> 后面说 
+`Rest` = `Representational State Transfer`=`表征状态转移,具象状态转移`
+
+> 见12
 
 ## 9. 乱码问题
 
@@ -212,20 +248,19 @@ public class MyController implements Controller {
 
 * **第一种方式**
 
-  ```java
-   String s = new String(username.getBytes("ISO-8859-1"), "utf-8");
-  ```
-
-  ​
+```java
+//接受username后处理这个数据，即获取字节数组后重新选utf-8编码方式  
+String s = new String(username.getBytes("ISO-8859-1"), "utf-8");
+```
 
 * **第二种方式**
 
   ```java
   /**
-   修改 comcat中的config目录下 server.xml
+   修改 tomcat中的config目录下 server.xml
    添加  URIEncoding="utf-8"
 
-   注意点：如果有 useBodyEncodingForURI="true"  请干掉
+   注意点：如果有 useBodyEncodingForURI="true"  请删除
 
    例如：
        <Connector port="8080" protocol="HTTP/1.1"
@@ -234,13 +269,10 @@ public class MyController implements Controller {
           disableUploadTimeout="true"
           executor="tomcatThreadPool"
           URIEncoding="utf-8"/>
-
-   */
+ */
   ```
-
-  ​
-
-* **第三种方式**（高版本支持）
+  
+* **第三种方式**（高版本直接处理了乱码问题）
 
   ```java
   //和post方式一样  
@@ -250,34 +282,39 @@ public class MyController implements Controller {
 
 * 解决方式
 
-  ```xml
-   <!--解决Post乱码问题的拦截器
+在`web.xml`配置：
+
+```xml
+   <!--解决Post请求乱码问题使用过滤器
   	CharacterEncodingFilter  在高版本的Spring中是可以解决 get请求 和Post请求 、
     低版本  比如说4.X中 只能解决Post请求  不能解决get请求
    -->
-  <filter>
-      <filter-name>Charac</filter-name>
-      <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
-      <init-param>
-          <param-name>encoding</param-name>
-          <param-value>utf-8</param-value>
-      </init-param>
-  </filter>
-  <filter-mapping>
-      <filter-name>Charac</filter-name>
-      <url-pattern>/*</url-pattern>
-  </filter-mapping>
-  ```
-
-  ​
-
-
-
+    <filter>
+        <filter-name>characterEncodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>utf-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceRequestEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceResponseEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>characterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+```
 
 
 ## 10. 获取ServletAPI
 
-> 想要代码中 得到最原始的HttpServletRequest  HttpServletResponse  可以直接在方法里写个形参就行了 
+> 想要代码中 得到最原始的`HttpServletRequest`  `HttpServletResponse`  可以直接在方法里写个形参就行了 
 >
 > 然后就可以直接使用
 
@@ -291,7 +328,7 @@ public class MyController implements Controller {
 
 ### 11.2. 返回字符串 
 
-#### 11.2.1. 字符串之jsp页面
+#### 11.2.1. 字符串之jsp页面（即前端页面）
 
 ![](images/QQ图片20200207052730.png)
 
@@ -299,31 +336,44 @@ public class MyController implements Controller {
 
 ![](images/QQ图片20200207053620.png)
 
-**如果统一设置**
-
-```xml
-
-<mvc:annotation-driven>  
-    <mvc:message-converters>  
-        <bean class="org.springframework.http.converter.StringHttpMessageConverter">  
-            <property name="supportedMediaTypes">  
-                <list>  
-                    <span style="white-space:pre"></span>
-                    <value>text/html;charset=UTF-8</value>  
-                    <value>application/json;charset=UTF-8</value>  
-                    <value>*/*;charset=UTF-8</value>  
-                </list>  
-            </property>  
-        </bean>  
-    </mvc:message-converters>  
-</mvc:annotation-driven>  
+```java
+//可以验证如果返回中文字符串，则会乱码,可在@GetMapping中加入produces属性设置值 
+//同时也注意到字符编码过滤器只能解决部分乱码问题
+@GetMapping(value = "/string",produces = "text/html;charset=utf-8")
+@ResponseBody
+public String string(){
+    return "会乱码吗";
+}
 ```
 
+**如果要统一设置解决乱码**
 
+可在springMvc.xml中配置如下：
 
+更多详情可看https://blog.csdn.net/q283614346/article/details/103314837
 
+```xml
+<mvc:annotation-driven>
+    <mvc:message-converters>
+    	<!-- 解决@ResponseBody返回中文乱码 -->
+        <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+            <property name="supportedMediaTypes">
+                <list>
+                    <value>text/html;charset=UTF-8</value>
+                    <value>application/json;charset=UTF-8</value>
+                    <value>*/*;charset=UTF-8</value>
+                </list>
+            </property>
+            <!-- 用于避免响应头过大 -->  
+			<property name="writeAcceptCharset" value="false" /> 
+        </bean>
+    </mvc:message-converters>
+</mvc:annotation-driven>
+```
 
 #### 11.2.3. 字符串之转发和重定向
+
+转发或重定向到指定的url路径上：
 
 ![](images/QQ图片20200207054106.png)
 
@@ -334,6 +384,8 @@ public class MyController implements Controller {
 ![](images/QQ图片20200207054746.png)
 
 ### 11.4. 返回void(无返回值) 
+
+默认访问自己配置的路径下void.jsp页面
 
 ![](images/QQ图片20200207055412.png)
 
@@ -420,7 +472,7 @@ public class MyController implements Controller {
 
   ![](images/QQ图片20200207073634.png)
 
-  ​
+  
 
 ### 13.5.文件上传之springmvc的方式
 
@@ -442,7 +494,7 @@ public class MyController implements Controller {
 
   ![](images/QQ图片20200207075018.png)
 
-  ​
+  
 
 ## 14. 文件下载 
 
@@ -857,7 +909,7 @@ public class MyController implements Controller {
     }
 
 
-    ​```
+    ```
 
   * 加载convert
 
@@ -905,4 +957,4 @@ public class MyController implements Controller {
 
   **牵扯到新技术 后面再说**
 
-  ​
+  
