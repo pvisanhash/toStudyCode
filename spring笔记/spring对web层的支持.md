@@ -1,4 +1,4 @@
-# SpringMVC
+#  SpringMVC
 
 **spring对web层支持 主要是提供了SpringMVC**
 
@@ -166,7 +166,7 @@ public class MyController2 {
 
 ### 6.4. 测试 
 
-这里可以配置tomcat使url变得更简洁：右上角选择tomcat图标下拉选择`eidt configurations`，可修改`name`,`Application context`,`url` ,`port`等
+这里可以配置tomcat使请求url变得更简洁：右上角选择`tomcat图标`下拉选择`eidt configurations`，可修改`name`,`Application context`,`url` ,`port`等
 
 ## 7. 请求注释相关
 
@@ -226,9 +226,9 @@ public class MyController2 {
 
 * **前提 有jackson的支持 导入jackson**
 
-`jackson`是spring默认使用处理json字符串的类库,只需导入不用任何配置
+  `jackson`是spring默认使用处理json字符串的类库,只需导入不用任何配置
 
-`json` = `JavaScript Object Notation` = `javaScript对象标记法`
+  `json` = `JavaScript Object Notation` = `javaScript对象标记法`
 
 ![](images/QQ图片20200207033600.png)
 
@@ -433,48 +433,117 @@ public String string(){
 
 ### 13.2. 提交表单上传三要素
 
-* post请求
-* 有个input type=file的标签
-* enctype="multipart/form-data"
+* `method = post`请求
+* 有个`input type=file`的标签
+* `enctype="multipart/form-data"` 多部件/表单数据
 
-### 13.3. 文件上传之part的方式
+### 13.3. 单文件上传之part的方式（重点）
 
-> 这种方式 不需要导入任何包  也不要配置任何视图解析器
+> 这种方式 不需要导入任何包  也不要配置任何视图解析器，用`request.getPart("文件名")`
 
 * **编写Controller**
 
-  ![](images/QQ图片20200207072448.png)
+```java
+@Controller
+public class MyController3 {
 
-* **编写前端页面**
+    @PostMapping(value = "/upload")
+    public String fileUpload(HttpServletRequest request) throws IOException, ServletException {
+        Part part = request.getPart("image");      
+        String realPath = request.getServletContext().getRealPath("/WEB-INF");        
+        part.write(realPath + "/" + part.getSubmittedFileName());        
+        return "success";
+    }
+}
+/**
 
-  ![](images/QQ图片20200207072520.png)
+request.getContextPath()是上下文路径，是tomcat图标中配置的路径，比如/spring_test_war_exploded
+request.getServletContext().getRealPath("/WEB-INF"); 获取的从盘符开始的绝对路径
+
+part.getName()是不包含文件后缀名（即文件类型）
+part.getSubmittedFileName()是包含文件后缀名
+
+/
+```
 
 * **添加配置信息**
 
-  ![](images/QQ图片20200207072838.png)
+  在`web.xml`中配置信息，在`servlet标签`中添加`multipart-config标签`
 
 ```xml
-       <!--可以直接复制  单位byte-->
-        <multipart-config>
-            <max-file-size>20848820</max-file-size>
-            <max-request-size>418018841</max-request-size>
-            <file-size-threshold>1048576</file-size-threshold>
-        </multipart-config>
+      <servlet>
+          <servlet-name>dispatcherServlet</servlet-name>
+          <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+          <init-param>
+              <param-name>contextConfigLocation</param-name>
+              <param-value>classpath:springMvc.xml</param-value>
+          </init-param>
+          <!--可以直接复制，单位byte;threshold是起步值可以为0-->
+          <multipart-config>
+              <max-file-size>20848820</max-file-size>
+              <max-request-size>418018841</max-request-size>
+              <file-size-threshold>1048576</file-size-threshold>
+          </multipart-config>
+      </servlet>
+      <servlet-mapping>
+          <servlet-name>dispatcherServlet</servlet-name>
+          <url-pattern>/</url-pattern>
+      </servlet-mapping>  
 ```
 
-### 13.4. 多文件上传之Part的方式
+* **编写前端页面或用postman模拟**
+
+  ![](images/QQ图片20200207072520.png)
+
+  ![](images/Snipaste_2021-09-19_09-05-06.png)
+
+
+### 13.4. 多文件上传之Part的方式（重点）
 
 * 编写Controller
 
-  ![](images/QQ图片20200207073613.png)
+  用`request.getParts()`方法
 
-* 编写页面
+  注意：这里可以直接在`controller层`类上加`@MultipartConfig`配置多部件，无需在`web.xml`的`servelet标签`中配置
+
+  但要需要在`tomcat安装目录conf文件夹`下配置`context.xml`：
+
+```xml
+  <!--允许任意 多部件解析-->
+  <Context allowCasualMultipartParsing="true">  
+  </Context>
+```
+
+代码：
+
+```java
+@Controller
+@MultipartConfig
+public class MyController4 {
+
+    @PostMapping(value = "/upload2")
+    public String upload2(HttpServletRequest request) throws IOException, ServletException {
+        Collection<Part> parts = request.getParts();
+        String realPath = request.getServletContext().getRealPath("/WEB-INF");
+        parts.forEach(part -> {
+            try {
+                part.write(realPath + "/" + part.getSubmittedFileName());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        return "success";
+    }
+}
+```
+
+* 编写前端页面或用postman模拟
 
   ![](images/QQ图片20200207073634.png)
 
   
 
-### 13.5.文件上传之springmvc的方式
+### 13.5.文件上传之springmvc的方式（了解）
 
 > 这种方式 又要导入jar包  又要配置多媒体视图解析器   麻烦  
 
@@ -484,21 +553,38 @@ public String string(){
 
 * 编写Controller
 
-  ![](images/QQ图片20200207074831.png)
+```java
+  @Controller //这里不用加@MultipartConfig,只需向容器中添加 多媒体视图解析器
+  public class MyController5 {
+  
+      @PostMapping("/upload3") //注意：虽然是请求体设置的，但要加@RequestParam注解
+      public String upload3(HttpServletRequest request, @RequestParam(value = "image") MultipartFile file) throws IOException {
+          String realPath = request.getServletContext().getRealPath("/WEB-INF");
+          String fullName = file.getOriginalFilename();
+          file.transferTo(new File(realPath + "/" + fullName));
+          return "success";
+      }
+  }
+```
 
-* 编写前端
+* 生成多媒体视图解析器对象
+
+  在SpringMvc.xml中配置：
+
+```xml
+<!--生成多部件解析器对象-->
+<bean id="multipartResolver" 		class="org.springframework.web.multipart.commons.CommonsMultipartResolver"> 
+</bean>
+```
+
+* 编写前端或用postman模拟
 
   ![](images/QQ图片20200207074922.png)
 
-* 配置多媒体视图解析器
-
-  ![](images/QQ图片20200207075018.png)
-
-  
 
 ## 14. 文件下载 
 
-### 14.1. 文件下载方式一
+### 14.1. 文件下载方式一 (了解) 
 
 > 这种方式 直接给资源的链接就行了 
 
@@ -507,13 +593,57 @@ public String string(){
 
 ![](images/QQ图片20200207183445.png)
 
-### 14.2. 文件下载方式二
+```xml
+    <!--访问静态资源用-->
+    <mvc:default-servlet-handler/>
+```
+
+### 14.2. 文件下载方式二（重点）
 
 * 好处： 任何文件下载都可以通过弹窗保存 并且可以统计下载次数 
 
-![](images/QQ图片20200207192029.png)
+html文档：
 
+```html
+<a href="/download">下载word文档</a> <!--href的值写controller的映射路径-->
+```
 
+代码：
+
+```java
+@Controller
+public class MyController5 {
+
+    @GetMapping("/download")
+    public ResponseEntity<byte[]> download(HttpServletRequest request) throws IOException {
+        //获取文件地址
+        String realPath = request.getServletContext().getRealPath("/WEB-INF/test.png");
+        //文件输入流
+        FileInputStream fileInputStream = new FileInputStream(realPath);
+        //小推车
+        byte[] buffer = new byte[fileInputStream.available()];
+        //读出到小推车中
+        fileInputStream.read(buffer);
+
+        //获取文件名
+        String fileFullName = realPath.substring(realPath.lastIndexOf("\\") + 1);
+
+        /**
+         *  构建响应实体
+         */
+        //构建头信息，固定写法
+        HttpHeaders httpHeaders = new HttpHeaders();
+        //头信息设置内容处置，URLEncode.encode()使文件名不乱码
+        httpHeaders.setContentDispositionFormData("attachment", URLEncoder.encode(fileFullName, "utf-8"));
+        //填充字节数组，http头，http状态
+        ResponseEntity<byte[]> responseEntity = new ResponseEntity<>(buffer, httpHeaders, HttpStatus.OK);
+
+        //返回
+        return responseEntity;
+
+    }
+}
+```
 
 ## 15. SpringMVC的异常处理
 
@@ -523,7 +653,24 @@ public String string(){
 
 ### 15.1. 第一种方式
 
-![](images/QQ图片20200207193950.png)
+在`web.xml`中配置错误页面
+
+```xml
+    <!--web.xml中配置错误页面-->
+    <error-page>
+        <location>/WEB-INF/pages/error.jsp</location>
+    </error-page>
+```
+
+测试代码：
+
+```java
+    @GetMapping("/error")
+    public ModelAndView error() {
+        int i = 10 / 0;
+        return new ModelAndView("success");
+    }
+```
 
 **缺点：页面固定  传值麻烦**
 
@@ -531,47 +678,37 @@ public String string(){
 
 * 第一步：创建一个异常处理类
 
-  * 要求实现 HandlerExceptionResolver 
+  * 要求实现 `HandlerExceptionResolver`,（处理器异常解析器，处理器就是controller类）
   * 要求加入到springioc容器中
 
   ```java
-
-  @Component
+@Component
   public class MyExeptionHander implements HandlerExceptionResolver {
       @Override
       public ModelAndView resolveException(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) {
-
-          ModelAndView mv  = new ModelAndView();
+  
+        ModelAndView mv  = new ModelAndView();
           mv.addObject("msg",e.getMessage());
           mv.setViewName("error");
           return mv;
       }
   }
-
   ```
 
 * 第二步：修改error.jsp
+
+  使用el表达式需要引包，加标签
 
   ![](images/QQ图片20200207194722.png)
 
 * 第三步： 编写Controller 
 
-  ```java
+  用上面的
 
-  @Controller
-  public class ErrorController {
+  
+  
 
-      @GetMapping("error")
-      public String error(){
-          if(true){
-            throw new RuntimeException("辉哥真帅");
-          }
-          return "success";
-      }
-  }
-  ```
-
-  **特点： 虽然可以动态显示错误信息 但是只能返回jsp页面  想要返回html页面 需要依赖模板引擎**
+**特点： 虽然可以动态显示错误信息 但是只能返回jsp页面  想要返回html页面 需要依赖模板引擎**
 
 ### 15.3. 第三种方式（必须掌握）
 
@@ -581,143 +718,106 @@ public String string(){
 
 * **第一步：创建枚举保存状态**
 
-  ```java
-  package com.shangma.cn.demo1;
+```java
+@Getter //3get方法
+public enum StatusEnum {
 
-  public enum  StatusEnum {
+    ERROR("40000", "输入参数错误");
 
-      ERROE(20001,"用户名错误"),
-      ;
-      private int status;
+    //2属性最好加上final
+    private final String code;
+    private final String message;
 
-      private String message;
-
-      StatusEnum(int status, String message) {
-          this.status = status;
-          this.message = message;
-      }
-      public int getStatus() {
-          return status;
-      }
-
-      public void setStatus(int status) {
-          this.status = status;
-      }
-
-      public String getMessage() {
-          return message;
-      }
-
-      public void setMessage(String message) {
-          this.message = message;
-      }
-  }
-
-  ```
+    //1构造器默认私有化
+    StatusEnum(String code, String message) {
+        this.code = code;
+        this.message = message;
+    }
+}
+```
 
 * **第二步：自定义异常**
 
-  ```java
-  package com.shangma.cn.demo1;
-
-  public class HuigeException extends RuntimeException {
-
-      private StatusEnum statusEnum;
-
-      public HuigeException(StatusEnum statusEnum) {
-          this.statusEnum = statusEnum;
-      }
-
-      public StatusEnum getStatusEnum() {
-          return statusEnum;
-      }
-
-      public void setStatusEnum(StatusEnum statusEnum) {
-          this.statusEnum = statusEnum;
-      }
-  }
-
-  ```
+```java
+@Data
+@AllArgsConstructor
+public class MyException extends RuntimeException {
+	//异常类中封装StatusEnum枚举类
+    private StatusEnum statusEnum;
+}
+```
 
 * **第三步：Controller抛出自定义异常**
 
-  ```java
-  @Controller
-  public class ErrorController {
-
-      @GetMapping("error")
-      public String error(){
-          if(true){
-            throw new HuigeException(StatusEnum.ERROE);
-          }
-          return "success";
-      }
-  }
-  ```
+```java
+    @GetMapping("/error2")
+    public String error2() {
+        if (true) {
+            throw new MyException(StatusEnum.ERROR);
+        }
+        return "success";
+    }
+```
 
 * **第四步：异常处理类**
 
-  ```java
-  @RestControllerAdvice
-  public class MyCustmerExceptionHander {
-      @ExceptionHandler(HuigeException.class)
-      public ResponseEntity hander(HuigeException huiException){
-          StatusEnum statusEnum = huiException.getStatusEnum();
-          ExceptionMessageBean bean  = 
-                  new ExceptionMessageBean(statusEnum.getStatus(),statusEnum.getMessage());
-          return  ResponseEntity.ok(bean);
-      }
-  }
-  ```
+```java
+@RestControllerAdvice //1加这个相当于@ResponseBody与@ControllerAdvice
+public class MyExceptionHandler {
+
+    @ExceptionHandler(value = MyException.class) //2加@ExceptionHandler
+    public ResponseEntity handler1(MyException exception) { //3加指定异常
+        StatusEnum statusEnum = exception.getStatusEnum();
+        return ResponseEntity.ok(statusEnum);
+    }
+}
+```
 
 ## 16. SpringMVC拦截器
 
-> 拦截器  ： 只会拦截Controller当中的各种Mapping   SpringMVC  
+> 拦截器 Interceptor： 只会拦截Controller当中的各种Mapping ---------- SpringMVC  
 >
-> 过滤器  Filter  是学习 Servet当中学的   /* 拦截所有请求 包括静态资源    可以在任何web项目当中用 
+> 过滤器Filter :  /* 拦截所有请求 包括静态资源   可以在任何web项目当中用 -----Web - --Servet
 
 **使用步骤**
 
 * **第一步:创建拦截器**
 
-  ```java
-  public class FirstInteceptor implements HandlerInterceptor {
+注意这里有ctrl+i实现的是默认方法
 
-      // Controller方法执行前执行
+```java
+public class MyInterceptor implements HandlerInterceptor {
 
-      //返回false  程序不往下执行
-      // 返回true  程序继续往下执行 类似放行的意思
-      @Override
-      public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-          System.out.println("preHandle执行了");
-          return true;
-      }
-  ```
+    // 在Controller方法执行前执行
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("preHandle执行了");
+        //返回false  程序不往下执行
+        //返回true   程序继续往下执行 类似放行的意思
+        return true;
+    }
 
+    //Controller 方法执行完成后 还没有返回试图时执行
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        System.out.println("postHandle执行了");
+    }
 
-      //Controller 方法执行完成后 还没有返回试图时执行
-      @Override
-      public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) {
-          System.out.println("postHandle执行了");
-      }
-    
-      //请求和相应都完成了执行
-      @Override
-      public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-          System.out.println("afterCompletion执行了");
-      }
-  }
+    //请求和相应都完成了执行
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        System.out.println("afterCompletion执行了");
+    }
+}
+```
 
-  ```
+**在springMvc.xml配置文件中添加配置**
 
-* **在配置文件中添加配置**
 
   ```xml
       <mvc:interceptors>
           <mvc:interceptor>
-              <!--但访问的路径符合如下规则时  则会进入这个拦截器执行
-                或者这个设个拦截器 拦截的路径 是这样的规则
-              -->
+              <!--访问的路径符合如下规则时,则会进入这个拦截器执行-->
 
               <!--配置多个路径-->
               <!--<mvc:mapping path="/interceptor/*" />-->
@@ -726,38 +826,34 @@ public String string(){
 
               <!--排除不拦截的路径-->
               <!--<mvc:exclude-mapping path=""-->
+              <!--可以看到拦截器不加注解，这里通过配置加入到容器中-->
               <bean class="com.shangma.cn.demo1.FirstInteceptor"/>
           </mvc:interceptor>
       </mvc:interceptors>
   ```
 
-**可以配置多个拦截器**
+**也可以配置多个拦截器**
 
 ```xml
- <!-- 配置拦截器  可以配置多个 -->
+    <!-- 配置拦截器  可以配置多个 -->
     <mvc:interceptors>
 
         <!--表示配置一个-->
         <mvc:interceptor>
             <!--拦截的路径 -->
-            <mvc:mapping path="/interceptor/*" />
+            <mvc:mapping path="/interceptor/*"/>
             <!--拦截后要走的拦截器-->
             <bean class="com.shangma.cn.demo1.FirstInteceptor"></bean>
         </mvc:interceptor>
 
-
-
-        <!--表示配置一个-->                                                                                                                       
+        <!--表示配置一个-->
         <mvc:interceptor>
             <!--拦截的路径 -->
-            <mvc:mapping path="/interceptor/*" />
+            <mvc:mapping path="/interceptor/*"/>
             <!--<mvc:exclude-mapping path=""/>-->
-
             <!--拦截后要走的拦截器-->
             <bean class="com.shangma.cn.demo1.FisrtInteceptor"></bean>
         </mvc:interceptor>
-
-
 
     </mvc:interceptors>
 ```
@@ -766,20 +862,35 @@ public String string(){
 
 ### 17.1. 要了解的点
 
+在`web.xml`中注意`Servlet-mapping标签`
+
 ![](images/QQ图片20200207210253.png)
+
+<font color=red>所以</font>:`字符编码过滤器`的`url模式`是`/*`代表拦截所有，即所有的请求都要走那里进行设置字符编码。而`servlet-mapping标签`配置的`url模式`是`/`则拦截除了jsp的所有静态资源，却放行动态资源及jsp。
 
 ### 17.2. 静态资源解决方式一
 
-> 静态资源不进入DispatcherServlet 就行了 统一Controller的访问
+> 静态资源不进入DispatcherServlet 就行了,统一Controller的访问
 
 ![](images/QQ图片20200207210625.png)
 
+这样，静态资源不符合，则不进入DispatcherServlet
+
 **缺点： 不符合Rest风格API**
 
-### 17.3. 静态资源解决方式二
+### 17.3. 静态资源解决方式二（推荐）
 
 ```xml
-<mvc:default-servlet-handler />
+<mvc:default-servlet-handler /> 
+```
+
+一般与mvc注解驱动共同使用，解决动静资源的使用
+
+```xml
+    <!--访问动态资源用-->
+    <mvc:annotation-driven/>
+    <!--访问静态资源用-->
+    <mvc:default-servlet-handler/>
 ```
 
 ### 17.4. 静态资源解决方式三
@@ -790,9 +901,11 @@ public String string(){
 
 ## 18. SpringMVC类型转换问题
 
-###18.1. 日期类型转换之Date类型
+### 18.1. 日期类型转换之Date类型
 
 #### 18.1.1. Date类型传参之key-value的形式
+
+key-value形式就是表单中保存数据格式，也是postman中的x-www-form-urlencoded
 
 * **问题演示**
 
@@ -800,55 +913,70 @@ public String string(){
 
   **错误说明： 表单传递的是个字符串 接收的birthday是个日期类型 不会自动转换**
 
-
-
 * **解决方式一**
 
   ![](images/QQ图片20200207214717.png)
 
+```java
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public class User implements Serializable {
+  
+      private String username;
+      @DateTimeFormat(pattern = "yyyy-MM-dd") //这里加上日期时间格式化注解
+      private Date birthday;
+  }
+```
+
 * **解决方式二**
+* 新建类型转换器
 
-  * 新建类型转换器
-
-    ```java
-    //Converter 第一个泛型 表示from
-                //第二个泛型 表示 to
-    public class MyConvert implements Converter<String,Date> {
-        @Override
-      public Date convert(String s) {
-          SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-          try {
-              Date parse = sdf.parse(s);
-              return parse;
-          } catch (ParseException e) {
-             SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
-              try {
-                  return sdf1.parse(s);
-              } catch (ParseException e1) {
-                  e1.printStackTrace();
-              }
-          }
-          return null;
-      }
-    ```
+```java
+import org.springframework.core.convert.converter.Converter;    
+//Converter 第一个泛型 表示from 
+		  //第二个泛型 表示 to
+public class MyDateConvert implements Converter<String, Date> {
+    @Override
+    public Date convert(String s) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            Date parse = sdf.parse(s);
+            return parse;
+        } catch (ParseException e) {
+            SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
+            try {
+                return sdf1.parse(s);
+            } catch (ParseException e1) {
+                e1.printStackTrace();
+            }
+        }
+        return null;
+    }
+}
+```
 
   * 配置转换器
 
-    ```xml
-      <bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
-              <property name="converters">
-                  <set>
-                      <bean class="com.shangma.cn.MyConvert"/>
-                  </set>
-              </property>
-          </bean>
+在`springMvc.xml`中配置
 
-          <mvc:annotation-driven conversion-service="conversionService"/>
-    ```
+```xml
+<!--只是实现转换器，这里将实现的转换器放到容器中-->
+<bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+    <property name="converters">
+        <set>
+            <bean class="com.xyz.code.convert.MyDateConvert"/>
+        </set>
+    </property>
+</bean>
+
+<!--这里注意要在 注解驱动 加上 转换服务 属性 -->
+<mvc:annotation-driven conversion-service="conversionService"/>
+```
 
 #### 18.1.2. Date类型传参之json的格式
 
-> 如果传递的是个json 那么则key-value的处理方式 则失效   处理json 默认使用了 jackson 我们只需要导入jar包就行了  默认接收的格式 yyyy-MM-dd  其他格式则报错
+> 如果传递的是个json 那么则上述的key-value处理方式则失效   处理json 默认使用了 jackson 我们只需要导入jar包就行了  默认接收的格式 yyyy-MM-dd  其他格式则报错
 
 ![](images/QQ图片20200229230349.png)
 
@@ -858,28 +986,41 @@ public String string(){
 
   ![](images/QQ图片20200229230858.png)
 
+  ```java
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public class User implements Serializable {
+  
+      private String username;
+      @JsonFormat(pattern = "yyyy-MM-dd") //可以在请求实体类，响应实体类的日期属性上加
+      private Date birthday;
+  }
+  ```
+
 * **自定义格式方式二**
 
   > 不管是接收还是返回json都生效
 
-  ```xml
+  在`SpringMvc.xml`中配置，相当于在容器加了两个Bean
 
+  ```xml
       <mvc:annotation-driven>
           <mvc:message-converters>
+              
               <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
-                  <property name="objectMapper" ref="objectMapper"/>
+                <property name="objectMapper" ref="objectMapper"/>
               </bean>
-
           </mvc:message-converters>
-      </mvc:annotation-driven>
-
+    </mvc:annotation-driven>
+  
+  	<!--这里用到p空间依赖注入-->
       <bean id="objectMapper" class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean"
             p:indentOutput="true"
             p:simpleDateFormat="yyyy-MM-dd HH:mm:ss"
         />
   ```
 
-### 18.2. 日期转换类型之LocalDate&LocalDateTime
+### 18.2. 日期转换类型之LocalDateTime类型 
 
 #### 18.2.1. 参数类型传值之Key-value
 
@@ -889,49 +1030,52 @@ public String string(){
 
 * **第二种解决方式**
 
-  * 定义2个Converts
+  1、定义2个Converts
 
-    ```java
+```java
     public class MyConvert1 implements Converter<String,LocalDateTime> {
         @Override
         public LocalDateTime convert(String s) {
            return LocalDateTime.parse(s,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
     }
-    ```
+```
 
 
-    public class MyConvert2 implements Converter<String,LocalDate> {
-        @Override
-        public LocalDate convert(String s) {
-           return LocalDate.parse(s,DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        }
+```java
+public class MyConvert2 implements Converter<String,LocalDate> {
+    @Override
+    public LocalDate convert(String s) {
+       return LocalDate.parse(s,DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
+}
+```
 
+​	2、加载convert
 
-    ```
+​	只是定义了转换器，但要加入容器中
 
-  * 加载convert
-
-    ```xml
-
-        <mvc:annotation-driven conversion-service="conversionService"/>
-        <bean id="conversionService"
-              class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
-            <property name="converters">
-                <set>
-                    <bean class="com.shangma.cn.controller.MyConvert1"/>
-                    <bean class="com.shangma.cn.controller.MyConvert2"/>
-                </set>
-            </property>
-        </bean>
-    ```
+```xml
+	
+    <mvc:annotation-driven conversion-service="conversionService"/>
+    <bean id="conversionService"
+       class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <property name="converters">
+            <set>
+                <bean class="com.xyz.code.convert.MyLocalDateTimeConvert"/>
+                <bean class="com.xyz.code.convert.MyLocalDateConvert"/>
+            </set>
+        </property>
+    </bean>
+```
 
 #### 18.2.2. 参数类型传值之json 
 
 ![](images/QQ图片20200229234415.png)
 
 **注意：如果使用java8中的日期时 此时我们需要一个jackson的支持包**
+
+jsr = java specific request = java 规范请求
 
 ![](images/QQ图片20200229234532.png)
 
@@ -945,7 +1089,7 @@ public String string(){
 
 
 
-* **解决方式一**
+* **解决方式一（推荐）**
 
   ![](images/QQ图片20200229234954.png)
 
@@ -958,3 +1102,17 @@ public String string(){
   **牵扯到新技术 后面再说**
 
   
+
+## 19.SpringMvc常见异常
+
+19.1、关于${username}读取不到参数的问题
+spring加载时，也会把JVM system properties和JVM system env properties都读取到容器中，所以此时读取的是JVM系统环境变量的username，而不是.properties文件中的username，所以导致${username}取不到想要的值。所以请不要使用和JVM properties相同的key。
+
+19.2、关于request.getParts()获取不到上传文件的问题
+a，检查类名上是否添加了@MultipartConfig注解
+b，运行环境问题，可查对应资料。
+c，tomcat的context.xml文件，，增加allowCasualMultipartParsing=“true”。（本人通过此方式解决的）
+
+19.3、web工程目录，在配置webapp/WEB-INF/web.xml的Spring MVC的DispatcherServlet时，在servlet-name上报错：Servlet should have a mapping
+
+解决：File-->Project Structure-->Modules-->Web-->Deployment Descriptors-->复制原有需要的内容后，点击-删除原来的配置，点击+号新增配置，注意路径要在webapp/WEB-INF/路径下
