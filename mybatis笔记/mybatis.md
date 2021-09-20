@@ -1252,7 +1252,9 @@ public class UserExt {
 ![](images/QQ图片20200204044318.png)
 
 ```properties
-这里如果查询条件是null,则查询语句变为select * from user where sex=? and username like '%%'，查询结果为空，显然我们要的是如果传参为null时查询所有，而这里的结果为空不是我们想要的结果。显然我们要拼接sql语句实现上述需求
+这里如果查询条件是null,则查询语句变为select * from user where sex=? and username like '%%'，
+查询结果为空，显然我们要的是如果传参为null时查询所有，而这里的结果为空不是我们想要的结果。
+显然我们要拼接sql语句实现上述需求
 ```
 
 ### 13.2. if的写法
@@ -1470,6 +1472,8 @@ INSERT INTO `mybatis`.`user`(`id`, `username`, `birthday`, `sex`, `address`) VAL
 }
   ```
   
+  
+  
 * 购物车中的每一条
 
   ```java
@@ -1491,6 +1495,8 @@ public class CartItem implements Serializable {
     private Double pmoney; // 小计
   }
   ```
+  
+  
   
 * 商品
 
