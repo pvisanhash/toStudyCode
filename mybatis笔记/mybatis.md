@@ -2188,9 +2188,134 @@ public interface UserMapper {
 
  ![](./images/QQ图片20200204200829.png)
 
-## 19.常见异常
+## 19.提供mybatis常见配置文件
 
-19.1无法找到db.propeties,出现这个问题，只要我们去掉classpath就行
+> mybatis-config.xml主配置文件：
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8"?>
+<!--mybaits全局配置文件的约束-->
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+
+<!--配置信息 -->
+<configuration>
+
+
+    <!--加载属性文件-->
+    <properties resource="db.properties"/>
+
+    <settings>
+        <!--开启懒加载-->
+        <setting name="lazyLoadingEnabled" value="true"/>
+        <!--二级缓存开关-->
+        <setting name="cacheEnabled" value="true"/>
+        <!--驼峰命名-->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+
+    <typeAliases>
+        <package name="com.xyz.code.entity"/>
+    </typeAliases>
+
+
+    <environments default="development">
+        <environment id="development">
+            <!--jdbc的事务管理 交给mybatis管理  -->
+            <transactionManager type="JDBC"/>
+            <!--数据源 -->
+            <dataSource type="POOLED">
+                <property name="driver" value="${jdbc.driverClassName}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <!--<mapper resource="org/mybatis/example/BlogMapper.xml"/>-->
+        <package name="com.xyz.code.mapper"/>
+    </mappers>
+
+</configuration>
+```
+
+> xxxMapper.xml映射文件：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="">
+ 
+</mapper>
+```
+
+> db.properties文件
+
+```properties
+jdbc.driverClassName=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306?charsetEncoding=utf-8
+jdbc.username=root
+jdbc.password=root
+```
+
+> log4j.properties文件
+
+```properties
+# priority  :debug<info<warn<error
+#you cannot specify every priority with different file for log4j
+log4j.rootLogger=debug,stdout,info,debug,warn,error 
+
+#console
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender 
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout 
+log4j.appender.stdout.layout.ConversionPattern= [%d{yyyy-MM-dd HH:mm:ss a}]:%p %l%m%n
+#info log
+log4j.logger.info=info
+log4j.appender.info=org.apache.log4j.DailyRollingFileAppender 
+log4j.appender.info.DatePattern='_'yyyy-MM-dd'.log'
+log4j.appender.info.File=./src/com/hp/log/info.log
+log4j.appender.info.Append=true
+log4j.appender.info.Threshold=INFO
+log4j.appender.info.layout=org.apache.log4j.PatternLayout 
+log4j.appender.info.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss a} [Thread: %t][ Class:%c >> Method: %l ]%n%p:%m%n
+#debug log
+log4j.logger.debug=debug
+log4j.appender.debug=org.apache.log4j.DailyRollingFileAppender 
+log4j.appender.debug.DatePattern='_'yyyy-MM-dd'.log'
+log4j.appender.debug.File=./src/com/hp/log/debug.log
+log4j.appender.debug.Append=true
+log4j.appender.debug.Threshold=DEBUG
+log4j.appender.debug.layout=org.apache.log4j.PatternLayout 
+log4j.appender.debug.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss a} [Thread: %t][ Class:%c >> Method: %l ]%n%p:%m%n
+#warn log
+log4j.logger.warn=warn
+log4j.appender.warn=org.apache.log4j.DailyRollingFileAppender 
+log4j.appender.warn.DatePattern='_'yyyy-MM-dd'.log'
+log4j.appender.warn.File=./src/com/hp/log/warn.log
+log4j.appender.warn.Append=true
+log4j.appender.warn.Threshold=WARN
+log4j.appender.warn.layout=org.apache.log4j.PatternLayout 
+log4j.appender.warn.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss a} [Thread: %t][ Class:%c >> Method: %l ]%n%p:%m%n
+#error
+log4j.logger.error=error
+log4j.appender.error = org.apache.log4j.DailyRollingFileAppender
+log4j.appender.error.DatePattern='_'yyyy-MM-dd'.log'
+log4j.appender.error.File = ./src/com/hp/log/error.log 
+log4j.appender.error.Append = true
+log4j.appender.error.Threshold = ERROR 
+log4j.appender.error.layout = org.apache.log4j.PatternLayout
+log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Thread: %t][ Class:%c >> Method: %l ]%n%p:%m%n
+
+```
+
+## 20.常见异常
+
+20.1无法找到db.propeties,出现这个问题，只要我们去掉classpath就行
 
 ```properties
 org.apache.ibatis.exceptions.PersistenceException: 
