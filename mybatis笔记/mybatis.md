@@ -454,7 +454,6 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
 ##### 6.2.2.1. 修改映射文件
 
 ```xml
-
     <!--
       添加用户
       参数类型 是引用类型
@@ -1002,22 +1001,22 @@ jdbc.password=root
 
 * 方式一：
 
-  ```xml
+```xml
   <typeAliases>
        <typeAlias type="com.xyz.code.entity.User" alias="user"/>
    </typeAliases>
-  ```
+```
 
   
 
 * 方式二：（推荐）
 
-  ```xml
+```xml
    <typeAliases>
         <!--指定包名时  别名就是包中对应类的类名  不区分大小写-->
       <package name="com.xyz.code.entity"/>
    </typeAliases>
-  ```
+```
 
 #### 11.4.2. 使用别名
 
@@ -1135,40 +1134,40 @@ jdbc.password=root
 
 * 创建包装类
 
-  ```java
-  @Data
+```java
+@Data
 @NoArgsConstructor
-  @AllArgsConstructor
+@AllArgsConstructor
 @Builder
-  @Accessors(fluent = false,chain = true)
+@Accessors(fluent = false,chain = true)
 public class UserExt {
   
-      private User user;
+    private User user;
   
     private String like="小";
-  }
-  ```
-  
+}
+```
+
 * 在userMapper接口中添加内容
 
-  ```java
+```java
 // 模糊查询
-  List<User> search(UserExt userExt);
-  ```
-  
+List<User> search(UserExt userExt);
+```
+
 * 编写映射文件 
 
-  ```xml
+```xml
      <select id="search" parameterType="com.xyz.code.entity.UserExt" resultType="com.xyz.code.entity.User">
          <!--多层取值用.-->
           select * from user where sex=#{user.sex} and username like '%${like}%'
       </select>
-  ```
+```
 
 * 测试
 
-  ```java
-  	@Test
+```java
+  	  @Test
       public  void  testMapper() throws IOException {
           
           String path = "mybaits-config.xml";
@@ -1176,7 +1175,8 @@ public class UserExt {
   
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(in);
   
-        SqlSession sqlSession = sqlSessionFactory.openSession(true);//设置为true时 自动提交事务
+        //设置为true时 自动提交事务
+        SqlSession sqlSession = sqlSessionFactory.openSession(true);
   
           //getMapper表示底层使用了动态代理
           UserMapper mapper = sqlSession.getMapper(UserMapper.class);
@@ -1190,7 +1190,7 @@ public class UserExt {
           sqlSession.close();
           in.close();//流不一定需要关，因为不是new的
       }
-  ```
+```
 
 ### 12.2. resultType
 
@@ -1214,7 +1214,7 @@ public class UserExt {
 
   在UserMapper.xml文件中添加resultMap
 
-  ```xml
+```xml
       <!--
       id属性  表示resultmap的唯一标识  不能重复  唯一的  随意写
       type  表示返回值的类型  或者可以理解为 指定的是哪个类，即表对应的类
@@ -1233,17 +1233,17 @@ public class UserExt {
           <result property="sex" column="sex"></result>
           <result property="address" column="address"></result>
       </resultMap>
-  ```
+```
 
 * 第三步 : 使用resultMap 
 
-  ```xml
+```xml
 <!--resultMap属性值就是resultMap标签的id值-->
   <select id="search" parameterType="com.xyz.code.entity.UserExt" resultMap="resultMap1">
       <!--多层取值用.-->
       select * from user  and sex=#{user.sex} and username like '%${like}%'
   </select>
-  ```
+```
 
 ## 13.sql 代码片
 
@@ -1260,7 +1260,6 @@ public class UserExt {
 ### 13.2. if的写法
 
 ```xml
-
     <select id="searchr" parameterType="userExt" resultMap="resultMap1">
         select *  from user where 1=1
         <if test="user!=null">
@@ -1304,7 +1303,7 @@ public class UserExt {
 
   在entity包下建UserExt2类，这里用UserExt2封装的查询条件的 
 
-  ```java
+```java
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
@@ -1313,18 +1312,18 @@ public class UserExt {
   public class UserExt2 {
       private List<Integer> Ids;
   }
-  ```
+```
 
   UserMapper接口中加入代码：
 
-  ```java
+```java
   //根据ids查询
   List<User> selectByIds(UserExt2 userExt);
-  ```
+```
 
 * 编写mapper文件
 
-  ```xml
+```xml
     <!--
       collection 要遍历的集合
       open 表示开始的内容
@@ -1344,11 +1343,11 @@ public class UserExt {
               </if>
           </where>
       </select>
-  ```
+```
 
 * 测试
 
-  ```java
+```java
      @Test
       public void testMapper2() throws IOException {
   
@@ -1376,7 +1375,7 @@ public class UserExt {
           sqlSession.close();
           in.close();
       }
-  ```
+```
 
 ## 14.mybatis中的多表关系
 
@@ -1454,13 +1453,13 @@ INSERT INTO `mybatis`.`user`(`id`, `username`, `birthday`, `sex`, `address`) VAL
 
 * 购物车
 
-  ```java
+```java
 @Data
-  @NoArgsConstructor
+@NoArgsConstructor
 @AllArgsConstructor
-  @Builder
+@Builder
 @Accessors(fluent = false, chain = true)
-  public class Cart implements Serializable {
+public class Cart implements Serializable {
     
       private String cartId;//购物车id
 
@@ -1470,18 +1469,16 @@ INSERT INTO `mybatis`.`user`(`id`, `username`, `birthday`, `sex`, `address`) VAL
   
       private double totalmoney;//总钱数
 }
-  ```
-  
-  
-  
+```
+
 * 购物车中的每一条
 
-  ```java
-  @Data
+```java
+@Data
 @NoArgsConstructor
-  @AllArgsConstructor
+@AllArgsConstructor
 @Builder
-  @Accessors(fluent = false, chain = true)
+@Accessors(fluent = false, chain = true)
 public class CartItem implements Serializable {
   
     private String cartItemId; //购物车项id
@@ -1493,19 +1490,17 @@ public class CartItem implements Serializable {
       private Integer pnum; //商品数量
   
     private Double pmoney; // 小计
-  }
-  ```
-  
-  
-  
+}
+```
+
 * 商品
 
-  ```java
-  @Data
+```java
+@Data
 @NoArgsConstructor
-  @AllArgsConstructor
+@AllArgsConstructor
 @Builder
-  @Accessors(fluent = false, chain = true)
+@Accessors(fluent = false, chain = true)
 public class Goods implements Serializable {
   
     private String pid; //商品id
@@ -1517,8 +1512,8 @@ public class Goods implements Serializable {
       private String pimg; //商品图
   
     private String pdesc;//商品描述
-  }
-  ```
+}
+```
 
 ### 14.2. 一对一的写法
 
@@ -2052,17 +2047,17 @@ public class CacheTest {
 
   在`UserMapper.xml`的`mapper标签`中加入`cache标签`
 
-  ```xml-dtd
+```xml-dtd
       <cache></cache>
       <!--查询所有,返回的虽然是集合，但类型还是用的元素的类开型-->
       <select id="selectAll" resultType="com.xyz.code.entity.User">
        select * from user
       </select>
-  ```
+```
 
 * 测试
 
-  ```java
+```java
       @Test
       public void test2() throws IOException {
   
@@ -2092,7 +2087,7 @@ public class CacheTest {
           sqlSession3.close();
   
       }
-  ```
+```
 
 #### 16.3.2. 局部不使用缓存
 
@@ -2201,6 +2196,8 @@ public interface UserMapper {
 org.apache.ibatis.exceptions.PersistenceException: 
 ### Error building SqlSession.
 ### The error may exist in SQL Mapper Configuration
-### Cause: org.apache.ibatis.builder.BuilderException: Error parsing SQL Mapper Configuration. Cause: java.io.IOException: Could not find resource classpath:db.properties
+### Cause: org.apache.ibatis.builder.BuilderException: Error parsing SQL Mapper 
+Configuration. Cause: java.io.IOException: Could not find resource 
+classpath:db.properties
 ```
 
