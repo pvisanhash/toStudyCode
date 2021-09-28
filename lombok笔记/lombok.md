@@ -1,6 +1,6 @@
 # lombok
 
-## lombok下载使用
+## 1、lombok下载使用
 
 1步、maven repository 下载 
 
@@ -18,7 +18,7 @@
 
 安装后注解无效：将idea设置中的Enable annotation processing（开启注解处理） 勾选上
 
-## lombok使用
+## 2、lombok使用
 
 ### val（很少使用）
 
@@ -71,8 +71,8 @@ java关闭资源方法有两种：一种是try-finally，另一种是try-with-re
 且@Cleanup 的注解属性可以指定对象的用于关闭的方法名
 
 ```java
-        @Cleanup InputStream in = new FileInputStream("in.text");
-        @Cleanup("close") OutputStream out = new FileOutputStream("out.text");
+@Cleanup InputStream in = new FileInputStream("in.text");
+@Cleanup("close") OutputStream out = new FileOutputStream("out.text");
 ```
 
 ### @Getter和@Setter
@@ -89,7 +89,7 @@ public @interface Getter {
     AccessLevel value() default AccessLevel.PUBLIC;
 
     Getter.AnyAnnotation[] onMethod() default {};
-
+	//懒加载
     boolean lazy() default false;
 
     /** @deprecated */
@@ -98,6 +98,38 @@ public @interface Getter {
     @Target({})
     public @interface AnyAnnotation {
     }
+}
+```
+
+@Getter(lazy = true)的说明：
+
+主要就是给字段生成get方法,且使用到字段时才加载（懒加载）
+
+下面看个典型的例子：
+
+```java
+public class GetterTest {
+
+    /**
+     * 给private final 属性赋非常大的值，是件不好的事
+     * ，只有在调用时才给他赋值，才比较好，即懒加载
+     * ，且 @Getter(lazy = true)保证线程安全不会多次赋值
+     */
+    @Getter(lazy = true)
+    private final double[] cached = expensive();
+
+    /**
+     * 这个方法创建了一个100万长度的double型数组
+     * ，并遍历赋值，后返回，显然是个耗时操作
+     */
+    private double[] expensive() {
+        double[] result = new double[1000000];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = Math.asin(i);
+        }
+        return result;
+    }
+
 }
 ```
 
@@ -776,4 +808,107 @@ fluent注解默认值为false，则保留getter和setter方法前面的get和set
 prefix注解属性处理变量名前缀的，只有拥有前缀的变量才会生成getter/setter方法，而且它的匹配原则是——匹配到的变量去掉前缀后第一个字母不能是小写。通俗地说就是，运用驼峰命名规则去匹配。
 /
 ```
+
+### @SneakyThrows（很少使用）
+
+sneankyThrows = 鬼鬼祟祟的抛出
+
+他的作用相当于给你的代码加上try-catch，捕捉异常后抛出相应异常
+
+原来代码：
+
+```java
+public class SneakyThrowsTest {
+
+    public static void main(String[] args) {
+
+    }
+
+    @SneakyThrows(value = NullPointerException.class)
+    public static void test(){
+        String str = null;
+        System.out.println(str.length());
+    }
+}
+```
+
+相当于下面的代码：
+
+```java
+public class SneakyThrowsTest {
+
+    public static void main(String[] args) {
+
+    }
+
+    public static void test() {
+        try {
+            String str = null;
+            System.out.println(str.length());
+        } catch (NullPointerException e) {
+            throw e;
+        }
+    }
+}
+```
+
+@SneakyThrows源码：
+
+```java
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Retention(RetentionPolicy.SOURCE)
+public @interface SneakyThrows {
+    //value属性指定对应的异常类型，可指定多个
+    Class<? extends Throwable>[] value() default {Throwable.class};
+}
+```
+
+### @Synchronized（很少使用）
+
+此注解相当于方法上的synchronized关键字，不同的是synchronized关键字锁对象是this，或类.class
+
+```java
+@Synchronized(value = "myLock")
+public static void test(){    
+    //doMoreThing()
+}
+```
+
+@Synchronized锁对象是Object对象，$lock或$Lock，这个是加上注解后自动生成的
+
+```java
+private final Object $lock = new Object[0];
+private static final Object $LOCK = new Object[0];
+```
+
+@Synchronized源码：
+
+```java
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.SOURCE)
+public @interface Synchronized {
+    //value设置锁对象名字
+    String value() default "";
+}
+```
+
+
+
+## 3、maven中提示lombok(或其他包)
+
+### 3.1、设置maven
+
+![](images/Snipaste_2021-09-25_13-33-53.png)
+
+**阿里云maven仓库地址：**
+
+```properties
+https://maven.aliyun.com/repository/public
+```
+
+### 3.2、快捷键提示
+
+在`pom文件`中的`dependency标签`的`groupId标签`处输入时，可按`ctrl+alt+space`进行提示
+
+![](images/Snipaste_2021-09-25_13-37-11.png)
 
