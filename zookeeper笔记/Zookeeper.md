@@ -64,7 +64,7 @@ mkdir  zkdata
 vim /opt/zooKeeper/apache-zooKeeper-3.5.6-bin/conf/zoo.cfg
 ```
 
-![1577548250377](images\1577548250377.png)
+![1577548250377](./images/1577548250377.png)
 
 修改存储目录：dataDir=/opt/zookeeper/zkdata
 
@@ -76,7 +76,7 @@ cd /opt/zooKeeper/apache-zooKeeper-3.5.6-bin/bin/
 ./zkServer.sh  start
 ```
 
-![1577548052037](images\1577548052037.png)
+![1577548052037](./images/1577548052037.png)
 
 看到上图表示ZooKeeper成功启动
 
@@ -88,11 +88,11 @@ cd /opt/zooKeeper/apache-zooKeeper-3.5.6-bin/bin/
 
 zookeeper启动成功。standalone代表zk没有搭建集群，现在是单节点
 
-![1577548175232](images\1577548175232.png)
+![1577548175232](./images/1577548175232.png)
 
 zookeeper没有启动
 
-![1577548112773](images\1577548112773.png)
+![1577548112773](./images/1577548112773.png)
 
 如果没有启动到logs文件夹下，cat下是否有报错日志
 
@@ -100,7 +100,7 @@ zookeeper没有启动
 
 ### 3.1、Zookeeper的数据模型
 
-![](/images/Snipaste_2021-09-24_01-35-50.png)
+![](./images/Snipaste_2021-09-24_01-35-50.png)
 
 ZooKeeper 是一个树形目录服务,其数据模型和Unix的文件系统目录树很类似，拥有一个层次化结构。
 
