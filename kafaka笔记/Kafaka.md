@@ -127,7 +127,7 @@ socket.receive.buffer.bytes=102400
 socket.request.max.bytes=104857600
 #kafka 运行日志（这里其实是数据）存放的路径
 log.dirs=/opt/module/kafka/logs
-#topic 在当前 broker 上的分区个数
+#topic 在当前 broker 上的分区个数,这个要额外注意不要配错
 num.partitions=1
 #用来恢复和清理 data 下数据的线程数量
 num.recovery.threads.per.data.dir=1
@@ -154,7 +154,7 @@ export PATH=$PATH:$KAFKA_HOME/bin
 
 环境变量生效：
 
-```properties
+```bash
 source /etc/profile
 ```
 
@@ -204,13 +204,13 @@ done
 1）查看当前服务器中的所有 topic
 
 ```bash
-#查看topic要指定zookeepr地址
+#查看topic要指定zookeepr地址（leader的地址）
 bin/kafka-topics.sh  --zookeeper hadoop102:2181 --list
 ```
 
 2）创建 topic
 
-这里创建topic主题first
+这里创建topic主题first，要指定zookeepr地址（leader的地址）
 
 ```bash
 bin/kafka-topics.sh  --zookeeper hadoop102:2181 --create --replication-factor 3 --partitions 1 --topic first
@@ -244,6 +244,8 @@ D）Kafka集群中有4个broker，某个主题中有3个分区，且副本因子
 
 3）删除 topic
 
+要指定zookeepr地址（leader的地址）
+
 ```bash
 bin/kafka-topics.sh  --zookeeper hadoop102:2181 --delete --topic first
 ```
@@ -251,6 +253,8 @@ bin/kafka-topics.sh  --zookeeper hadoop102:2181 --delete --topic first
 需要 server.properties 中设置 delete.topic.enable=true 来开启topic删除开关， 否则只是标记删除。
 
 4）发送消息
+
+--broker-list要指定leader的地址
 
 ```bash
 #开启终端的生产者
@@ -262,12 +266,16 @@ bin/kafka-console-producer.sh --broker-list hadoop102:9092 --topic first
 
 5）消费消息
 
+要指定zookeepr地址（leader的地址）
+
 ```
 #开启终端消费者，这里使用的是zookeepr,也可有bootStrap-server
 bin/kafka-console-consumer.sh  --zookeeper hadoop102:2181 --topic first
 ```
 
-使用zookeeper开启消费者提示已过时，可使用bootstrap-server代替
+使用zookeeper开启消费者提示已过时，可使用bootstrap-server代替，
+
+--bootstrap-server要指定leader的地址
 
 ```bash
 bin/kafka-console-consumer.sh  --bootstrap-server hadoop102:9092 --topic first
@@ -298,7 +306,7 @@ topic 是逻辑上的概念，而 partition 是物理上的概念，每个 parti
 
 ![](images/Snipaste_2021-10-02_11-27-31.png)
 
-由于生产者生产的消息会不断追加到 log 文件末尾，为防止 log 文件过大导致数据定位效率低下，Kafka 采取了` 分片`和 `索引`机制，将每个 partition 分为多个 segment。每个 segment对应两个文件——“.index”文件和“.log”文件。这些文件位于一个文件夹下，该文件夹的命名规则为：topic 名称+分区序号。例如，first 这个 topic 有三个分区，则其对应的文件夹为 first-0,first-1,first-2。
+由于生产者生产的消息会不断追加到 log 文件末尾，为防止 log 文件过大导致数据定位效率低下，Kafka 采取了` 分片`和 `索引`机制，将每个 partition 分为多个 segment。每个 segment对应两个文件——`“.index”文件`和`“.log”文件`。这些文件位于一个文件夹下，该文件夹的命名规则为：topic 名称+分区序号。例如，first 这个 topic 有三个分区，则其对应的文件夹为 first-0,first-1,first-2。
 
 .index文件与.log文件如下所示：
 
@@ -335,13 +343,13 @@ index 和 log 文件以当前 segment 的第一条消息的 offset 命名。下�
 
 （1）指明 partition 的情况下，直接将指明的值直接作为 partiton 值；如上图的前面4个构造法
 （2）没有指明 partition 值但有 key 的情况下，将 key 的 hash 值与 topic 的 partition数量进行取余得到partition 值；如上图倒数第2个构造法
-（3）既没有 partition 值又没有 key 值的情况下，第一次调用时随机生成一个整数（后面每次调用在这个整数上自增），将这个值与 topic 可用的 partition 总数取余得到 partition值，也就是常说的 round-robin 算法。如上图最后的构造法
+（3）既没有 partition 值又没有 key 值的情况下，第一次调用时随机生成一个整数（后面每次调用在这个整数上自增），将这个值与 topic 可用的 partition 总数取余得到 partition值，也就是常说的 round-robin （轮询）算法。如上图最后的构造法
 
 上面的确定分区，就是为了使producer生产的消息找到topic的目的分区，在目的分区进行存储消息。
 
 #### 3.2.2、数据可靠性保证
 
-为保证 producer 发送的数据，能可靠的发送到指定的 topic，topic 的每个 partition 收到producer 发送的数据后，都需要向 producer 发送 ack（acknowledgement 确认收到），如果producer 收到 ack，就会进行下一轮的发送，否则重新发送数据。
+为保证 producer 发送的数据，能可靠的发送到指定的 topic，topic 的每个 partition 收到producer 发送的数据后，都需要向 producer 发送 ack（acknowledgement 确认），如果producer 收到 ack，就会进行下一轮的发送，否则重新发送数据。实际上，为了提高效率，是接连发送消息的，如果收到ack，就不会重发，如果未收到ack,就会重发。
 
 ![](images/Snipaste_2021-10-02_12-24-24.png)
 
@@ -358,12 +366,13 @@ Kafka 选择了第二种方案，原因如下：
 
 2 ）ISR 
 采用第二种方案之后，设想以下情景：leader 收到数据，所有 follower 都开始同步数据，但有一个 follower，因为某种故障，迟迟不能与 leader 进行同步，那 leader 就要一直等下去，直到它完成同步，才能发送 ack。这个问题怎么解决呢？
-Leader 维护了一个动态的 in-sync replica set (ISR)，意为和 leader 保持同步的 follower 集合。当 ISR 中的follower 完成数据的同步之后，leader 就会给producer发送 ack。如果 follower长 时 间 未 向 leader 同 步 数 据 ， 则 该 follower 将 被 踢 出 ISR ， 该 时 间 阈 值 由replica.lag.time.max.ms 参数设定。Leader 发生故障之后，就会从 ISR 中选举新的 leader。 
+Leader 维护了一个动态的 in-sync replica set (ISR)，意为和 leader 保持同步的 follower 集合。当 ISR 中的follower 完成数据的同步之后，leader 就会给producer发送 ack。如果 follower长时间未向 leader 同步数据 ， 则 该 follower 将 被 踢 出 ISR ， 该 时 间 阈 值 由replica.lag.time.max.ms 参数设定。Leader 发生故障之后，就会从 ISR 中选举新的 leader。 
 
 ```properties
 ack = acknowledgement = 确认
 ISR = in sync replica = in sync replication = 同步副本
 lag = 延迟，落后
+replica.lag.time.max.ms=副本延后时间最大毫秒数
 ```
 
 3 ）ack  应答机制
@@ -424,7 +433,7 @@ exponent = 指数的
 idompotence = 幂等性
 ```
 
-要启用幂等性，在Producer生产者配置文件`producer.properties`设置参数 `enable.idompotence` 设置成`true` 即可,这时会自动ack = -1（无需额外设置）。Kafka的幂等性实现其实就是将原来下游需要做的去重放在了数据上游。开启幂等性的 Producer 在初始化的时候会被分配一个 PID，发往同一 Partition 的消息会附带 Sequence Number。而Broker 端会对<PID, Partition, SeqNumber>做缓存，当具有相同主键的消息提交时，Broker 只会持久化一条。
+要启用幂等性，在Producer生产者配置文件`producer.properties`设置参数 `enable.idompotence` 设置成`true` 即可,这时会自动ack = -1（无需额外设置）。Kafka的幂等性实现其实就是将原来下游需要做的去重放在了数据上游。开启幂等性的 Producer 在初始化的时候会被分配一个 PID，发往同一 Partition 的消息会附带 Sequence Number（序号）。而Broker 端会对<PID, Partition, SeqNumber>做缓存，当具有相同主键的消息提交时，Broker 只会持久化一条。
 
 ```
 PID = producer id = 这里指的是一次会话的生产者id
@@ -436,9 +445,9 @@ PID = producer id = 这里指的是一次会话的生产者id
 
 #### 3.3.1、消费方式
 
-consumer 采用 pull（拉）模式从 broker 中读取数据。
+consumer 采用 pull（拉取）模式从 broker 中读取数据。
 
-push （推）模式很难适应消费速率不同的消费者，因为消息发送速率是由 broker 决定的。它的目标是尽可能以最快速度传递消息，但是这样很容易造成 consumer 来不及处理消息，典型的表现就是拒绝服务以及网络拥塞。
+push （推送）模式很难适应消费速率不同的消费者，因为消息发送速率是由 broker 决定的。它的目标是尽可能以最快速度传递消息，但是这样很容易造成 consumer 来不及处理消息，典型的表现就是拒绝服务以及网络拥塞。
 
 而 pull 模式则可以根据 consumer 的消费能力以适当的速率消费消息。pull 模式不足之处是，如果 kafka 没有数据，消费者可能会陷入循环中，一直返回空数据。针对这一点，Kafka 的消费者在消费数据时会传入一个时长参数 timeout，如果当前没有数据可供消费，consumer 会等待一段时间之后再返回，这段时长即为 timeout。
 
@@ -452,7 +461,7 @@ Kafka 有两种分配策略，一是 RoundRobin，一是 Range。
 
 ![](images/Snipaste_2021-10-02_13-37-00.png)
 
-多个topic的分区组合起来，轮询的方式分配给消费者。这样有可能会出现consumer没有订阅该topic但被分配到该topic的某些分区。例如，2个topic,topic0有3个分区，topic1有4个分区，组合起来有7个分区，0%3 =0，分区0给消费者0,1给消费者1,以此类推。。。但cosumer0可能只订阅了topic0，但有可能分配到topic1的分区，所以出错。所以以round robin的方式分配分区，要求conusmer组的consumber都订阅相同的topic。
+多个topic的分区组合起来，轮询的方式分配给消费者。这样有可能会出现consumer没有订阅该topic但被分配到该topic的某些分区。例如，2个topic,topic0有3个分区，topic1有4个分区，组合起来有7个分区，0%3 =0，分区0给消费者0,1给消费者1,以此类推。。。但cosumer0可能只订阅了topic0，但有可能分配到topic1的分区，所以出错。所以round robin的方式分配分区给消费者，要求conusmer组的consumber都订阅相同的topic。
 
 2 ）Range 范围 （默认的方式）
 
@@ -503,7 +512,7 @@ bin/kafka-console-consumer.sh  --topic  __consumer_offsets  --zookeeper  hadoop1
 2）案例实操
 
 （1）在 hadoop102、hadoop103 上修改/opt/module/kafka/config/consumer.properties 配置
-文件中的 group.id 属性为任意组名。
+文件中的 group.id 属性为指定的组名。
 
 ```bash
 #修改consumer配置文件
@@ -525,7 +534,7 @@ bin/kafka-console-consumer.sh  --bootstrap-server hadoop102:9092 --topic first
 --consumer.config config/consumer.properties
 ```
 
-（3）在 hadoop104 上启动生产者
+（3）在 hadoop102 上启动生产者
 
 ```bash
 #启动生产者
@@ -601,3 +610,296 @@ coordinator = 协调器
 上述事务机制主要是从 Producer 方面考虑，对于 Consumer 而言，事务的保证就会相对较弱，尤其时无法保证 Commit 的信息被精确消费。这是由于 Consumer 可以通过 offset 访问任意信息，而且不同的 Segment File 生命周期不同，同一事务的消息可能会出现重启后被删除的情况。
 
 ## 4、Kafka API使用
+
+### 4.1、Producer API
+
+#### 4.1.1、消息发送流程
+
+Kafka 的 Producer 发送消息采用的是 `异步发送` 的方式。在消息发送的过程中，涉及到了两个线程 ——main（主）线程和 Sender（发送者）线程，以及一个线程共享变量 ——RecordAccumulator。main 线程将消息发送给 RecordAccumulator，Sender 线程不断从 RecordAccumulator 中拉取消息发送到 Kafka broker。
+
+![](images/Snipaste_2021-10-11_23-26-18.png)
+
+相关参数：
+batch.size ：只有数据积累到 batch.size 之后，sender 才会发送数据。
+linger.ms ：如果数据迟迟未达到 batch.size，sender 等待 linger.time 之后就会发送数据。
+
+```properties
+accumulator = 累加器
+batch = 批
+linger = 停留
+```
+
+#### 4.1.2、异步发送 API（常用）
+
+1 ）导入依赖
+
+```xml
+    <dependencies>
+        <!--kafka客户端-->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>0.11.0.0</version>
+        </dependency>
+        <!--日志，不加会有错误提示-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.32</version>
+        </dependency>
+        <!--lombok-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.20</version>
+        </dependency>
+    </dependencies>
+```
+
+2 ）编写代码
+
+需要用到的类：
+KafkaProducer：需要创建一个生产者对象，用来发送数据
+ProducerConfig：获取所需的一系列生产者配置参数
+ProducerRecord：每条数据（消息）都要封装成一个 ProducerRecord 对象
+
+1、不带回调函数的 API
+
+```java
+public class MyProducer {
+    public static void main(String[] args) {
+
+        //2、配置
+        Properties properties = new Properties();
+        //设置kafka的启动服务器配置,相当于broker-list
+        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.58.131:9092");
+        //发送消息的ack确认
+        properties.put(ProducerConfig.ACKS_CONFIG, "all");
+        //重试次数
+        properties.put(ProducerConfig.RETRIES_CONFIG, 1);
+        //RecordAccumulator的批次大小
+        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
+        //RecordAccumulator的停留时间
+        properties.put(ProducerConfig.LINGER_MS_CONFIG, 1);
+        //RecordAccumulator记录累加器 缓冲区大小
+        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        //kafka，key的序列化器，key就是用来确定分区的
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG
+                , "org.apache.kafka.common.serialization.StringSerializer");
+        //kafka，value的序列化器
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG
+                , "org.apache.kafka.common.serialization.StringSerializer");
+
+
+        //1、建kafka生产者对象，构造器参数要配置
+        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+
+        //3、发送消息
+        for (int i = 0; i < 10; i++) {
+            producer.send(new ProducerRecord<String, String>("first", "test_" + i));
+        }
+
+        //有时可加flush
+        producer.flush();
+        //4、关闭生产者
+        producer.close();
+    }
+}
+```
+
+2、带回调函数的 API
+
+回调函数会在 producer 收到 ack 时调用，为异步调用，该方法有两个参数，分别是RecordMetadata 和 Exception，如果 Exception 为 null，说明消息发送成功，如果Exception 不为 null，说明消息发送失败。
+
+注意：消息发送失败会自动重试，不需要我们在回调函数中手动重试
+
+```java
+public class MyProducer2 {
+    public static void main(String[] args) {
+
+        //2、配置
+        Properties properties = new Properties();
+        //设置kafka的启动服务器配置,相当于broker-list
+        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.58.131:9092");
+        //发送消息的ack确认
+        properties.put(ProducerConfig.ACKS_CONFIG, "all");
+        //重试次数
+        properties.put(ProducerConfig.RETRIES_CONFIG, 1);
+        //RecordAccumulator的批次大小
+        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
+        //RecordAccumulator的停留时间
+        properties.put(ProducerConfig.LINGER_MS_CONFIG, 1);
+        //RecordAccumulator记录累加器 缓冲区大小
+        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        //kafka，key的序列化器，key就是用来确定分区的
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG
+                , "org.apache.kafka.common.serialization.StringSerializer");
+        //kafka，value的序列化器
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG
+                , "org.apache.kafka.common.serialization.StringSerializer");
+
+
+        //1、建kafka生产者对象，构造器参数要配置
+        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+
+        //3、发送消息
+        for (int i = 0; i < 10; i++) {
+            producer.send(new ProducerRecord<String, String>("first", "test2_" + i), new Callback() {
+                @Override
+                public void onCompletion(RecordMetadata metadata, Exception exception) {
+                    if (exception == null) {
+                        System.out.println("success->" + metadata.offset());
+                    } else {
+                        exception.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        //有时可加flush
+        producer.flush();
+        //4、关闭生产者
+        producer.close();
+    }
+}
+```
+
+#### 4.1.3、同步发送 API（不常用）
+
+同步发送的意思就是，一条消息发送之后，会阻塞当前线程，直至返回 ack。由于 send 方法返回的是一个 Future 对象，根据 Futrue 对象的特点，我们也可以实现同步发送的效果，只需再调用 Future 对象的 get 方发即可。
+
+```java
+public class MyProducer {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+
+        //2、配置
+        Properties properties = new Properties();
+        //设置kafka的启动服务器配置,相当于broker-list
+        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.58.131:9092");
+        //发送消息的ack确认
+        properties.put(ProducerConfig.ACKS_CONFIG, "all");
+        //重试次数
+        properties.put(ProducerConfig.RETRIES_CONFIG, 1);
+        //RecordAccumulator的批次大小
+        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
+        //RecordAccumulator的停留时间
+        properties.put(ProducerConfig.LINGER_MS_CONFIG, 1);
+        //RecordAccumulator记录累加器 缓冲区大小
+        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        //kafka，key的序列化器，key就是用来确定分区的
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG
+                , "org.apache.kafka.common.serialization.StringSerializer");
+        //kafka，value的序列化器
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG
+                , "org.apache.kafka.common.serialization.StringSerializer");
+
+
+        //1、建kafka生产者对象，构造器参数要配置
+        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+
+        //3、发送消息
+        for (int i = 0; i < 10; i++) {
+            //这里如果不加get()方法，则send()方法是异步的，
+            // 加了get()方法就会出现要等send结果返回才能调用get()
+            Future<RecordMetadata> first =
+                    producer.send(new ProducerRecord<String, String>("first", "test_" + i));
+            first.get();
+        }
+
+        //有时可加flush
+        producer.flush();
+        //4、关闭生产者
+        producer.close();
+    }
+}
+```
+
+### 4.2、Consumer API
+
+Consumer 消费数据时的可靠性是很容易保证的，因为数据在 Kafka 中是持久化的，故不用担心数据丢失问题。
+由于 consumer 在消费过程中可能会出现断电宕机等故障，consumer 恢复后，需要从故障前的位置的继续消费，所以 consumer 需要实时记录自己消费到了哪个 offset，以便故障恢复后继续消费。所以 offset 的维护是 Consumer 消费数据是必须考虑的问题。
+
+#### 4.2.1、自动提交 offset
+
+1）导入依赖
+
+略，如`4.1、Producer API`
+
+2）编写代码
+
+需要用到的类：
+KafkaConsumer：需要创建一个kafka消费者对象，用来消费数据
+ConsumerConfig：获取所需的一系列消费者配置参数
+ConsuemrRecord：每条数据都要封装成一个 ConsumerRecord 对象
+
+为了使我们能够专注于自己的业务逻辑，Kafka 提供了自动提交 offset 的功能。自动提交 offset 的相关参数：
+enable.auto.commit ：是否开启自动提交 offset 功能
+auto.commit.interval.ms ：自动提交 offset 的时间间隔
+
+**以下为自动提交 offset 的代码：**
+
+```java
+public class MyConsumer {
+    public static void main(String[] args) {
+        //2、配置属性
+        Properties properties = new Properties();
+        //kafka集群的地址
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.58.131:9092");
+        //消费者组id
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, "myGroup");
+        //开关_自动提交offset
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+        //自动提交间隔
+        properties.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
+        //key的反序列化器
+        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+        //1、新建kafka消费者
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
+        //3、订阅主题
+        consumer.subscribe(Arrays.asList("first"));
+        //4、消费主题
+        while (true) {
+            //poll轮询获取记录
+            ConsumerRecords<String, String> records = consumer.poll(100);
+            //打印记录中的值
+            for (ConsumerRecord<String, String> record : records)
+                System.out.printf("offset = %d, key = %s, value = %s%n"
+                        , record.offset(), record.key(), record.value());
+        }
+    }
+}
+```
+
+#### 4.2.2、手动提交 offset
+
+
+
+
+
+## 5、常见异常
+
+5.1、如果报日志异常SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+
+需要pom.xml中加上如下依赖
+
+```xml
+<!--日志，不加会有错误提示-->
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-simple</artifactId>
+    <version>1.7.32</version>
+</dependency>
+```
+
+5.2、如果java代码发不了消息，需要打开config/server.properties配置文件，更改如下
+
+```properties
+#listeners就是主要用来定义Kafka Broker的Listener的配置项。
+listeners=PLAINTEXT://:9092
+#advertised.listeners参数的作用就是将Broker的Listener信息发布到Zookeeper中
+advertised.listeners=PLAINTEXT://192.168.58.131:9092
+```
+

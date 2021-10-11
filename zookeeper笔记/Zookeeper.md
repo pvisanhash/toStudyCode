@@ -797,9 +797,9 @@ dataDir=/usr/local/zookeeper-cluster/zookeeper-3/data
 （1）在每个zookeeper的 data 目录下创建一个 myid 文件，内容分别是1、2、3 。这个文件就是记录每个服务器的ID
 
 ```shell
-echo 1 >/usr/local/zookeeper-cluster/zookeeper-1/data/myid
-echo 2 >/usr/local/zookeeper-cluster/zookeeper-2/data/myid
-echo 3 >/usr/local/zookeeper-cluster/zookeeper-3/data/myid
+echo "1" >/usr/local/zookeeper-cluster/zookeeper-1/data/myid
+echo "2" >/usr/local/zookeeper-cluster/zookeeper-2/data/myid
+echo "3" >/usr/local/zookeeper-cluster/zookeeper-3/data/myid
 ```
 
 （2）在每一个zookeeper 的 zoo.cfg配置客户端访问端口（clientPort）和集群服务器IP列表。
@@ -814,9 +814,16 @@ vim /usr/local/zookeeper-cluster/zookeeper-3/conf/zoo.cfg
 server.1=192.168.149.135:2881:3881
 server.2=192.168.149.135:2882:3882
 server.3=192.168.149.135:2883:3883
+
+#如果是真集群：
+server.1=192.168.149.135:2888:3888
+server.2=192.168.149.135:2888:3888
+server.3=192.168.149.135:2888:3888
 ```
 
 **解释：server.服务器ID=服务器IP地址：服务器之间通信端口：服务器之间投票选举端口**
+
+**2181是默认客户端访问服务器的端口，2888是默认服务器间通信端口，3888是默认服务器间选举端口**
 
 #### **5.2.4 启动集群**
 
