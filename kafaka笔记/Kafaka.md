@@ -873,13 +873,467 @@ public class MyConsumer {
 }
 ```
 
+```properties
+poll = 投票，轮询
+subscribe = 订阅
+```
+
 #### 4.2.2、手动提交 offset
 
+虽然自动提交 offset 十分简介便利，但由于其是基于时间提交的，开发人员难以把握offset 提交的时机。因此 Kafka 还提供了手动提交 offset 的 API。
+
+手动提交 offset 的方法有两种：分别是 commitSync（同步提交）和 commitAsync（异步提交）。两者的相同点是，都会将次 本次 poll  的一批数据最高的偏移量提交；不同点是，commitSync 阻塞当前线程，一直到提交成功，并且会自动失败重试（由不可控因素导致，也会出现提交失败）；而 commitAsync 则没有失败重试机制，故有可能提交失败。
+
+1 ） 同步提交 offset
+
+由于同步提交 offset 有失败重试机制，故更加可靠，以下为同步提交 offset 的示例。
+
+```java
+public class MyConsumer2 {
+    public static void main(String[] args) {
+
+        //2、配置属性
+        Properties properties = new Properties();
+        //kafka集群的地址
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.58.131:9092");
+        //消费者组id
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, "myGroup");
+        //开关_自动提交offset
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        //key的反序列化器
+        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+
+        //1、新建kafka消费者
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
+
+        //3、订阅主题
+        consumer.subscribe(Arrays.asList("first"));
+
+        //4、消费主题中的消息
+        while (true) {
+            //poll轮询获取记录
+            ConsumerRecords<String, String> records = consumer.poll(100);
+            //打印记录中的值
+            for (ConsumerRecord<String, String> record : records) {
+                System.out.printf("offset = %d, key = %s, value = %s%n"
+                        , record.offset(), record.key(), record.value());
+            }
+
+            //同步提交offset，当前线程会阻塞直到 offset 提交成功
+            consumer.commitSync();
+        }
+    }
+}
+```
+
+2 ）异步提交 offset （推荐）
+
+虽然同步提交 offset 更可靠一些，但是由于其会阻塞当前线程，直到提交成功。因此吞吐量会收到很大的影响。因此更多的情况下，会选用异步提交 offset 的方式。
+
+以下为异步提交 offset 的示例：
+
+```java
+public class MyConsumer3 {
+    public static void main(String[] args) {
+
+        //2、配置属性
+        Properties properties = new Properties();
+        //kafka集群的地址
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.58.131:9092");
+        //消费者组id
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, "myGroup");
+        //开关_自动提交offset
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        //key的反序列化器
+        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+
+        //1、新建kafka消费者
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
+
+        //3、订阅主题
+        consumer.subscribe(Arrays.asList("first"));
+
+        //4、消费主题中的消息
+        while (true) {
+            //poll轮询获取记录
+            ConsumerRecords<String, String> records = consumer.poll(100);
+            //打印记录中的值
+            for (ConsumerRecord<String, String> record : records) {
+                System.out.printf("offset = %d, key = %s, value = %s%n"
+                        , record.offset(), record.key(), record.value());
+            }
+
+            //异步提交offset
+            consumer.commitAsync(new OffsetCommitCallback() {
+                @Override
+                public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception exception) {
+                    if (exception != null) {
+                        System.err.println("Commit  failed  for" + offsets);
+                    }
+                }
+            });
+        }
+    }
+}
+```
+
+3 ）  数据漏消费和重复消费分析
+
+无论是同步提交还是异步提交 offset，都有可能会造成数据的漏消费或者重复消费。先提交 offset 后消费，有可能造成数据的漏消费；而先消费后提交 offset，有可能会造成数据的重复消费。
+
+#### 4.2.3、自定义存储 offset
+
+Kafka 0.9 版本之前，offset 存储在 zookeeper，0.9 版本及之后，默认将 offset 存储在 Kafka的一个内置的 topic 中。除此之外，Kafka 还可以选择自定义存储 offset。offset 的维护是相当繁琐的，因为需要考虑到消费者的 Rebalace（即消费者如何分配分区来消费）。
+
+当有新的消费者加入消费者组、已有的消费者退出消费者组或者所订阅的主题的分区发生变化，就会触发到分区的重新分配，重新分配的过程叫做 Rebalance。
+
+消费者发生 Rebalance 之后，每个消费者消费的分区就会发生变化。因此消费者要首先获取到自己被重新分配到的分区，并且定位到每个分区最近提交的 offset 位置继续消费。要实现自定义存储 offset，需要借助 ConsumerRebalanceListener，以下为示例代码，其中提交和获取 offset 的方法，需要根据所选的 offset 存储系统自行实现。
+
+```java
+#这里将offset存到map中了
+public class MyConsumer4 {
+
+    //map存放的当前的偏移量，key是主题分区，value是偏移量值
+    private static Map<TopicPartition, Long> currentOffset = new HashMap<>();
+
+    public static void main(String[] args) {
+        //2、配置属性
+        Properties properties = new Properties();
+        //kafka集群的地址
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.58.131:9092");
+        //消费者组id
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, "myGroup");
+        //开关_自动提交offset
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        //key的反序列化器
+        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
+
+        //1、新建kafka消费者
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
+
+        //3、订阅主题 并 配置消费者再平衡监听器
+        consumer.subscribe(Arrays.asList("first"), new ConsumerRebalanceListener() {
+            //该方法会在 Rebalance 之前调用，即在原分区撤消的时候调用
+            @Override
+            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+                commitOffset(currentOffset);
+            }
+
+            //该方法会在 Rebalance 之后调用,即在新分区指派的时候调用
+            @Override
+            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                currentOffset.clear();
+                for (TopicPartition partition : partitions) {
+                    //定位到最近提交的 offset 位置继续消费
+                    consumer.seek(partition, getOffset(partition));
+                }
+            }
+        });
+
+        //4、消费主题中的消息
+        while (true) {
+            //poll轮询获取记录
+            ConsumerRecords<String, String> records = consumer.poll(100);
+            //打印记录中的值
+            for (ConsumerRecord<String, String> record : records) {
+                System.out.printf("offset = %d, key = %s, value = %s%n"
+                        , record.offset(), record.key(), record.value());
+                //存放当前的偏移量offset
+                currentOffset.put(new TopicPartition(record.topic(), record.partition()), record.offset());
+            }
+
+            //异步提交offset
+            commitOffset(currentOffset);
+        }
 
 
+    }
+
+    //获取某分区的最新 offset
+    private static Long getOffset(TopicPartition partition) {
+        //需要自己实现
+        return 0L;
+    }
+
+    //提交该消费者所有分区的 offset
+    private static void commitOffset(Map<TopicPartition, Long> currentOffset) {
+        //需要自己实现
+    }
+}
+```
+
+### 4.3、自定义 Interceptor
+
+#### 4.3.1、拦截器原理
+
+Producer 拦截器(interceptor)是在 Kafka 0.10 版本被引入的，主要用于实现 clients 端的定制化控制逻辑。对于 Producer 而言，interceptor 使得用户在`消息发送前`以及 producer `回调逻辑前`有机会对消息做一些定制化需求，比如修改消息等。同时，producer 允许用户指定多个 interceptor按序作用于同一条消息从而形成一个拦截链(interceptor chain)。
+
+**Intercetpor 的实现接口**是`org.apache.kafka.clients.producer.ProducerInterceptor`，其定义的方法包括：
+
+（1）configure(configs)
+
+获取配置信息和初始化数据时调用。
+
+（2）onSend(ProducerRecord)：
+
+该方法封装进 KafkaProducer.send 方法中，即它运行在用户主线程中。Producer 确保在消息被序列化以及计算分区前调用该方法。用户可以在该方法中对消息做任何操作，但最好保证不要修改消息所属的 topic 和分区，否则会影响目标分区的计算。
+
+（3）onAcknowledgement(RecordMetadata, Exception)：
+
+该方法会在消息从 RecordAccumulator 成功发送到 Kafka Broker 之后，或者在发送过程中失败时调用。并且通常都是在 producer 回调逻辑触发之前。onAcknowledgement 运行在producer 的 IO 线程中，因此不要在该方法中放入很重的逻辑，否则会拖慢 producer 的消息发送效率。
+
+（4）close：
+
+关闭 interceptor，主要用于执行一些资源清理工作。如前所述，interceptor 可能被运行在多个线程中，因此在具体实现时用户需要自行确保线程安全。另外倘若指定了多个 interceptor，则 producer 将按照指定顺序调用们，并仅仅是捕获每个 interceptor 可能抛出的异常记录到错误日志中而非在向上传递。这在使用过程中要特别留意。
+
+#### 4.3.2、拦截器案例
+
+1）需求：
+
+实现一个简单的双 interceptor 组成的拦截链。第一个 interceptor 会在消息发送前将时间戳信息加到消息 value 的最前部；第二个 interceptor 会在消息发送后更新成功发送消息数或失败发送消息数。
+
+![](images/Snipaste_2021-10-12_23-56-56.png)
+
+2）案例实操
+（1）增加时间戳拦截器
+
+```java
+public class TimeInterceptor implements ProducerInterceptor<String, String> {
+
+    //发送时
+    @Override
+    public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {
+        // 创建一个新的 record，把时间戳写入消息体的最前部
+        return new ProducerRecord(record.topic(), record.partition(), record.timestamp()
+                , record.key(), System.currentTimeMillis() + "," + record.value().toString());
+    }
+
+    //在确认时调用，（在生产者回调前）
+    @Override
+    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
+
+    }
+
+    //producer关闭
+    @Override
+    public void close() {
+
+    }
+
+    //配置
+    @Override
+    public void configure(Map<String, ?> configs) {
+
+    }
+}
+```
+
+（2）统计发送消息成功和发送失败消息数，并在 producer 关闭时打印这两个计数器
+
+```java
+public class CounterInterceptor implements ProducerInterceptor<String, String> {
+
+    private int errorCounter = 0;
+    private int successCounter = 0;
+
+    @Override
+    public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {
+        return record;
+    }
+
+    @Override
+    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
+        // 统计成功和失败的次数
+        if (exception == null) {
+            successCounter++;
+        } else {
+            errorCounter++;
+        }
+    }
+
+    @Override
+    public void close() {
+        // 保存结果
+        System.out.println("Successful sent: " + successCounter);
+        System.out.println("Failed sent: " + errorCounter);
+    }
+
+    @Override
+    public void configure(Map<String, ?> configs) {
+
+    }
+}
+```
+
+（3）producer 主程序
+
+```java
+public class InterceptorProducer {
+    public static void main(String[] args) {
+        // 2 设置配置信息
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "192.168.58.131:9092");
+        props.put("acks", "all");
+        props.put("retries", 3);
+        props.put("batch.size", 16384);
+        props.put("linger.ms", 1);
+        props.put("buffer.memory", 33554432);
+        props.put("key.serializer",
+                "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer",
+                "org.apache.kafka.common.serialization.StringSerializer");
 
 
-## 5、常见异常
+        // 3 构建拦截链 并 配置上
+        List<String> interceptors = new ArrayList<>();
+        interceptors.add("com.xyz.code.Interceptor.TimeInterceptor");
+        interceptors.add("com.xyz.code.Interceptor.CounterInterceptor");
+        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors);
+
+        // 1 kafka生产者
+        Producer<String, String> producer = new KafkaProducer<>(props);
+
+        // 3 发送消息
+        String topic = "first";
+        for (int i = 0; i < 10; i++) {
+            ProducerRecord<String, String> record = new ProducerRecord<>(topic, "message_" + i);
+            producer.send(record);
+        }
+        // 4 一定要关闭 producer，这样才会调用 interceptor 的 close 方法
+        producer.close();
+
+    }
+}
+```
+
+3）测试
+
+在 kafka 上启动消费者，然后运行客户端 java 程序。
+
+![](images/Snipaste_2021-10-12_23-54-30.png)
+
+![](images/Snipaste_2021-10-12_23-57-33.png)
+
+## 5、Kafka 监控
+
+1.修改 kafka 启动命令
+
+修改 kafka-server-start.sh 命令中
+
+```shell
+if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
+export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
+fi
+```
+
+为
+
+```
+if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
+export KAFKA_HEAP_OPTS="-server -Xms2G -Xmx2G -XX:PermSize=128m
+-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=8 -
+XX:ConcGCThreads=5 -XX:InitiatingHeapOccupancyPercent=70"
+export JMX_PORT="9999"
+#export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
+fi
+```
+
+注意：修改之后在启动 Kafka 之前要分发之其他节点
+
+2.上传压缩包 kafka-eagle-bin-1.3.7.tar.gz 到集群/opt/software 目录
+3.解压到本地
+
+```bash
+tar  -zxvf  kafka-eagle-bin-1.3.7.tar.gz
+```
+
+4.进入刚才解压的目录
+
+```bash
+ll
+
+```
+
+5.将 kafka-eagle-web-1.3.7-bin.tar.gz 解压至/opt/module
+
+```bash
+tar -zxvf kafka-eagle-web-1.3.7-bin.tar.gz -C /opt/module/
+```
+
+6.修改名称
+
+```bash
+mv kafka-eagle-web-1.3.7/ eagle
+```
+
+7.给启动文件执行权限
+
+```bash
+cd bin/
+ll
+chmod 777 ke.sh
+```
+
+8.修改配置文件
+
+```properties
+######################################
+# multi zookeeper&kafka cluster list
+######################################
+kafka.eagle.zk.cluster.alias=cluster1
+cluster1.zk.list=hadoop102:2181,hadoop103:2181,hadoop104:2181
+######################################
+# kafka offset storage
+######################################
+cluster1.kafka.eagle.offset.storage=kafka
+######################################
+# enable kafka metrics
+######################################
+kafka.eagle.metrics.charts=true
+kafka.eagle.sql.fix.error=false
+######################################
+# kafka jdbc driver address
+######################################
+kafka.eagle.driver=com.mysql.jdbc.Driver
+kafka.eagle.url=jdbc:mysql://hadoop102:3306/ke?useUnicode=true&ch
+aracterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+kafka.eagle.username=root
+kafka.eagle.password=000000
+```
+
+9.添加环境变量
+
+```
+export KE_HOME=/opt/module/eagle
+export PATH=$PATH:$KE_HOME/bin
+```
+
+注意：source /etc/profile
+
+10.启动
+
+```bash
+bin/ke.sh start
+```
+
+注意：启动之前需要先启动 ZK 以及 KAFKA
+
+11.登录页面查看监控数据
+
+http://192.168.9.102:8048/ke
+
+![](images/Snipaste_2021-10-13_00-45-17.png)
+
+## 6、常见异常
 
 5.1、如果报日志异常SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
 
