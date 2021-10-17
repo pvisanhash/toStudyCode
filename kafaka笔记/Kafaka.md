@@ -463,6 +463,8 @@ Kafka 有两种分配策略，一是 RoundRobin，一是 Range。
 
 多个topic的分区组合起来，轮询的方式分配给消费者。这样有可能会出现consumer没有订阅该topic但被分配到该topic的某些分区。例如，2个topic,topic0有3个分区，topic1有4个分区，组合起来有7个分区，0%3 =0，分区0给消费者0,1给消费者1,以此类推。。。但cosumer0可能只订阅了topic0，但有可能分配到topic1的分区，所以出错。所以round robin的方式分配分区给消费者，要求conusmer组的consumber都订阅相同的topic。
 
+**修正：如果这个consumer没有订阅topic，那么它是不会被加入到轮询的主题里面的**
+
 2 ）Range 范围 （默认的方式）
 
 ![](images/Snipaste_2021-10-02_13-37-36.png)
@@ -1223,7 +1225,25 @@ public class InterceptorProducer {
 
 ![](images/Snipaste_2021-10-12_23-57-33.png)
 
-## 5、Kafka 监控
+## 5、Kafka 监控Eagle（后需补充）
+
+### 5.1、Kafka eagele简介
+
+- [Kafka Eagle官方主页](https://www.oschina.net/action/GoToLink?url=https%3A%2F%2Fwww.kafka-eagle.org%2F)
+- [Kafka Eagle下载页面](https://www.oschina.net/action/GoToLink?url=http%3A%2F%2Fdownload.kafka-eagle.org%2F)
+- [Kafka Eagle官方文档](https://www.oschina.net/action/GoToLink?url=https%3A%2F%2Fwww.kafka-eagle.org%2Farticles%2Fdocs%2Fdocumentation.html)
+
+```properties
+KE = kafka eagle = kafka 鹰
+```
+
+> Kafka Eagle is open source visualization and management software. It allows you to query, visualize, alert on, and explore your metrics no matter where they are stored. In plain English, it provides you with tools to turn your kafka cluster data into beautiful graphs and visualizations.
+>
+> Kafka Eagle是开源可视化和管理软件。它允许您查询、可视化、提醒和探索您的指标，无论它们存储在哪里。简单地说，它为您提供了将kafka集群数据转换为漂亮的图形和可视化的工具。
+
+KE一个运行在Tomcat的Web应用。
+
+### 5.2、安装与运行
 
 1.修改 kafka 启动命令
 
@@ -1237,7 +1257,7 @@ fi
 
 为
 
-```
+```shell
 if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
 export KAFKA_HEAP_OPTS="-server -Xms2G -Xmx2G -XX:PermSize=128m
 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=8 -
@@ -1260,7 +1280,6 @@ tar  -zxvf  kafka-eagle-bin-1.3.7.tar.gz
 
 ```bash
 ll
-
 ```
 
 5.将 kafka-eagle-web-1.3.7-bin.tar.gz 解压至/opt/module
@@ -1332,6 +1351,10 @@ bin/ke.sh start
 http://192.168.9.102:8048/ke
 
 ![](images/Snipaste_2021-10-13_00-45-17.png)
+
+## 7、Flume 对接 Kafka
+
+暂时略过
 
 ## 6、常见异常
 
