@@ -1247,11 +1247,11 @@ KE一个运行在Tomcat的Web应用。
 
 1.修改 kafka 启动命令
 
-修改 kafka-server-start.sh 命令中
+修改 kafka-server-start.sh 命令中的此部分（就是要开启JMX） JMX = java management extensions
 
 ```shell
 if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
-export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
+   export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
 fi
 ```
 
@@ -1259,11 +1259,11 @@ fi
 
 ```shell
 if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
-export KAFKA_HEAP_OPTS="-server -Xms2G -Xmx2G -XX:PermSize=128m
--XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=8 -
-XX:ConcGCThreads=5 -XX:InitiatingHeapOccupancyPercent=70"
-export JMX_PORT="9999"
-#export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
+	export KAFKA_HEAP_OPTS="-server -Xms2G -Xmx2G -XX:PermSize=128m
+	-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=8 -
+	XX:ConcGCThreads=5 -XX:InitiatingHeapOccupancyPercent=70"
+	export JMX_PORT="9999"
+	#export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
 fi
 ```
 
@@ -1302,34 +1302,136 @@ ll
 chmod 777 ke.sh
 ```
 
-8.修改配置文件
+8.修改配置文件system-config.properties
+
+```bash
+cd config/
+vim system-config.properties
+```
+
+需要配的点：
 
 ```properties
 ######################################
 # multi zookeeper&kafka cluster list
 ######################################
+#1 这里是需要配置的，eagle支持多集群，我们这里只有一个集群
+#kafka.eagle.zk.cluster.alias=cluster1,cluster2
 kafka.eagle.zk.cluster.alias=cluster1
 cluster1.zk.list=hadoop102:2181,hadoop103:2181,hadoop104:2181
 ######################################
 # kafka offset storage
 ######################################
+# 2 kafka偏移量支持存在kakfa中或zookeeper中，高版本存在kafka中
 cluster1.kafka.eagle.offset.storage=kafka
+#cluster2.kafka.eagle.offset.storage=zk/zookeeper
+#
 ######################################
 # enable kafka metrics
 ######################################
+#3 kafka 测量显示图表打开
 kafka.eagle.metrics.charts=true
 kafka.eagle.sql.fix.error=false
 ######################################
 # kafka jdbc driver address
 ######################################
+# 4 kafka打配置jdbc
 kafka.eagle.driver=com.mysql.jdbc.Driver
-kafka.eagle.url=jdbc:mysql://hadoop102:3306/ke?useUnicode=true&ch
-aracterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+kafka.eagle.url=jdbc:mysql://hadoop102:3306/ke?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
 kafka.eagle.username=root
 kafka.eagle.password=000000
 ```
 
+原配置文件：
+
+```properties
+######################################
+# multi zookeeper&kafka cluster list
+######################################
+kafka.eagle.zk.cluster.alias=cluster1,cluster2
+cluster1.zk.list=tdn1:2181,tdn2:2181,tdn3:2181
+cluster2.zk.list=xdn10:2181,xdn11:2181,xdn12:2181
+
+######################################
+# zk client thread limit
+######################################
+kafka.zk.limit.size=25
+
+######################################
+# kafka eagle webui port
+######################################
+kafka.eagle.webui.port=8048
+
+######################################
+# kafka offset storage
+######################################
+cluster1.kafka.eagle.offset.storage=kafka
+cluster2.kafka.eagle.offset.storage=zk
+
+######################################
+# enable kafka metrics
+######################################
+kafka.eagle.metrics.charts=false
+kafka.eagle.sql.fix.error=false
+
+######################################
+# kafka sql topic records max
+######################################
+kafka.eagle.sql.topic.records.max=5000
+
+######################################
+# alarm email configure
+######################################
+kafka.eagle.mail.username=alert_sa@163.com
+kafka.eagle.mail.password=mqslimczkdqabbbh
+kafka.eagle.mail.server.host=smtp.163.com
+kafka.eagle.mail.server.port=25
+# alarm im configure
+######################################
+#kafka.eagle.im.dingding.enable=true
+#kafka.eagle.im.dingding.url=https://oapi.dingtalk.com/robot/send?access_token=
+
+#kafka.eagle.im.wechat.enable=true
+#kafka.eagle.im.wechat.token=https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=xxx&corpsecret=xxx
+#kafka.eagle.im.wechat.url=https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=
+#kafka.eagle.im.wechat.touser=
+######################################
+kafka.eagle.mail.enable=false
+kafka.eagle.mail.sa=alert_sa@163.com
+kafka.eagle.mail.username=alert_sa@163.com
+kafka.eagle.mail.password=mqslimczkdqabbbh
+kafka.eagle.mail.server.host=smtp.163.com
+kafka.eagle.mail.server.port=25
+
+######################################
+# alarm im configure
+######################################
+#kafka.eagle.im.dingding.enable=true
+#kafka.eagle.im.dingding.url=https://oapi.dingtalk.com/robot/send?access_token=
+
+#kafka.eagle.im.wechat.enable=true
+#kafka.eagle.im.wechat.token=https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=xxx&corpsecret=xxx
+#kafka.eagle.im.wechat.url=https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=
+#kafka.eagle.im.wechat.touser=
+#kafka.eagle.im.wechat.toparty=
+#kafka.eagle.im.wechat.totag=
+#kafka.eagle.im.wechat.agentid=
+
+######################################
+# delete kafka topic token
+######################################
+kafka.eagle.topic.token=keadmin
+
+######################################
+# kafka sasl authenticate
+######################################
+cluster1.kafka.eagle.sasl.enable=false
+cluster1.kafka.eagle.sasl.protocol=SASL_PLAINTEXT
+```
+
 9.添加环境变量
+
+在/etc/profile中配置
 
 ```
 export KE_HOME=/opt/module/eagle
@@ -1348,7 +1450,7 @@ bin/ke.sh start
 
 11.登录页面查看监控数据
 
-http://192.168.9.102:8048/ke
+![](images/Snipaste_2021-10-17_12-30-00.png)
 
 ![](images/Snipaste_2021-10-13_00-45-17.png)
 

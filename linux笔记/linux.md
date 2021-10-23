@@ -715,6 +715,17 @@ systemctl restart firewalld.service    # 重启防火墙
 
 注意：这种方式安装 不需要配置环境变量  
 
+但是如果需要配置请在/etc/profile中配置
+
+```shell
+export JAVA_HOME=/usr/java/jdk1.8.0_181-amd64
+export PATH=$PATH:$JAVA_HOME/bin
+```
+
+```bash
+source /etc/profile
+```
+
 ### 11.2. 安装tomcat
 
  第一步：
