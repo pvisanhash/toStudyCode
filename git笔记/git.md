@@ -1107,7 +1107,7 @@ HEAD原来指向master分支，后来指向testing分支:
 
 如果不同的分支有不同的内容:
 
-![](C:\Users\mirancle\AppData\Roaming\Typora\typora-user-images\1634860602359.png)
+![](.\images\1634860602359.png)
 
 ## 18. git 工作流
 

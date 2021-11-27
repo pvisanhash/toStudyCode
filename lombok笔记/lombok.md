@@ -892,7 +892,13 @@ public @interface Synchronized {
 }
 ```
 
+### @UtilityClass （很少使用）
 
+放在类上，作用有两个：
+
+​	私有化构造方法（private），
+
+​	静态化普通方法（static）
 
 ## 3、maven中提示lombok(或其他包)
 
