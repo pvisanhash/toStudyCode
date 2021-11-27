@@ -137,13 +137,13 @@ git config --global user.email abc_global@gmail.com
   ```bash
   # 将index.html添加到暂存区
   git add index.html
-
+  
   # 将css目录下所有的文件添加到暂存区
   git add css
-
+  
   # 将当前目录下所有的java文件添加到暂存区
   git add *.java
-
+  
   # 添加当前目录下所有的文件
   git add .
   git add -A
@@ -190,11 +190,14 @@ git config  --global user.name brook
 git config  --global user.email zhengzhoudaxuevip@163.com
 
 # 对名字 和邮箱重置
-git config -unset --global user.name brook 
-git config -unset --global user.email xxx
+git config --unset --global user.name brook 
+git config --unset --global user.email xxx
 
 # 查看配置信息
 git config --list
+
+#编辑配置文件
+git config --global --edit
 ```
 
 ### 7.5.  git status
@@ -647,7 +650,23 @@ git merge [远程库地址别名/远程分支名]
 
 ### 13.2. 复制公钥中的内容 
 
+直接打开文件复制id_rsa.pub的内容：
+
 ![](images/QQ图片20200211143111.png)
+
+命令行复制id_rsa.pub的内容：
+
+```properties
+输入cd ～指令，进入当前用户目录
+
+输入ls -a指令，查看当前用户目录下所有文件，包括隐藏文件
+
+输入cd .ssh指令，进入.ssh目录
+
+输入ls指令，查看.ssh目录下的文件
+
+输入cat id_rsa.pub指令，查看id_rsa.pub文件中内容，进行复制
+```
 
 ### 13.3. 在github中配置公钥 
 
@@ -1267,5 +1286,11 @@ git config --global https.proxy https://127.0.0.1:7890
 
 ```bash
 git config --global http.sslVerify false
+```
+
+Git默认对大小写不敏感，也就是说，将一个文件名某个字母做了大小写转换的修改Git是忽略这个改动的，导致在同步代码时候会出现错误，所以建议把Git设置成大小写敏感
+
+```bash
+git config core.ignorecase false
 ```
 
