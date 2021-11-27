@@ -516,11 +516,32 @@ excludesfile = C:/Users/Lenovo/Java.gitignore
 
 #### 12.3.1. 上传到github演示
 
+```bash
+#1 初始化，生成.git文件夹
+git init 
+#2 新建文件,如果是clone的项目，要先pull拉取
+#这里略过
+#3 增加到暂存区
+git add .
+#4 提到本地仓库
+git commit -m "message"
+#5 远程库起别名,origin就是别名，后面url是真实地址
+git remote add origin https://github.com/xyz/abc.git
+#6 推送到远程仓mian分支
+git push origin main
+```
+
 ![](images/QQ图片20200211124540.png)
 
 ![](images/QQ图片20200211124638.png)
 
 #### 12.3.2. 从github上下载演示
+
+```bash
+#从远程库clone项目
+#格式：git clone 远程库地址
+git clone https://github.com/xyz/abc.xyz
+```
 
 ![](images/QQ图片20200211134244.png)
 
@@ -561,6 +582,11 @@ excludesfile = C:/Users/Lenovo/Java.gitignore
   ![](images/QQ图片20200211135635.png)
 
 * **新的代码上传到github**
+
+```bash
+#提交代码前先要拉取代码
+git pull
+```
 
   ![](images/QQ图片20200211140000.png)
 
