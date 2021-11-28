@@ -1317,6 +1317,7 @@ git config --global http.sslVerify false
 Git默认对大小写不敏感，也就是说，将一个文件名某个字母做了大小写转换的修改Git是忽略这个改动的，导致在同步代码时候会出现错误，所以建议把Git设置成大小写敏感
 
 ```bash
+#如果需要全局配置，加 --global
 git config core.ignorecase false
 ```
 
