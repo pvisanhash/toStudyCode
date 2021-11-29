@@ -89,7 +89,7 @@ mvn –v
 - conf :  maven配置文件
 - lib: maven需要的jar包 
 
-![](E:/workSpace/git/toStudyCode/maven%E7%AC%94%E8%AE%B0/images/maveninfo.png)
+![](./images/maveninfo.png)
 
 ## 5. Maven的核心概念
 

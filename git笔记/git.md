@@ -1306,6 +1306,9 @@ gitlab-ctl stop
 ```bash
 git config --global http.proxy http://127.0.0.1:7890
 git config --global https.proxy https://127.0.0.1:7890
+
+#如果只是单次在终端使用代理键入以下命令，关闭终端会话则清理代理
+export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:789
 ```
 
 有时候需要关闭ssl验证
