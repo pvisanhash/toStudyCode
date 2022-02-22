@@ -62,7 +62,7 @@
 
 官网：https://maven.apache.org/
 
-![](E:/workSpace/git/toStudyCode/maven%E7%AC%94%E8%AE%B0/images/mavendowm.png)
+![](./images/mavendowm.png)
 
 ​	**注意点：下载下来之后 是个压缩包  解压时 路径不要有中文** 
 
