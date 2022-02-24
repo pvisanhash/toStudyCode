@@ -1200,15 +1200,15 @@ archetype = 原型，骨架
 		<id>jdk1.8</id>
 		<activation>
 			<activeByDefault>true</activeByDefault>
-				<jdk>1.8</jdk>
-			</activation>
+			<jdk>1.8</jdk>
+		</activation>
 		<properties>
 			<maven.compiler.source>1.8</maven.compiler.source>
 			<maven.compiler.target>1.8</maven.compiler.target>
 			<maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
 			<maven.compiler.encoding>utf-8</maven.compiler.encoding>
 		</properties>
-	</profile>
+</profile>
 ```
 
 ## 10. 坐标的作用范围scope
