@@ -338,6 +338,8 @@ git reset --hard  版本号 ： 重置仓库区和暂存区和工作区。（掌
 > 
 >
 > 同一个团队中很难保证大家使用相同的 IDE 工具，而 IDE 工具不同时，相关工 程特定文件就有可能不同。如果这些文件加入版本控制，那么开发时很可能需要为了这些文件解决冲突。
+>
+> 
 
 **忽略文件名.gitignore 并且文件名固定的**
 
@@ -375,9 +377,12 @@ css/*.js
 
 # 忽视css整个文件夹
 css
+
+# 忽视Mac电脑 项目任意目录下的桌面服务储存文件
+*/.DS_Store
 ```
 
-**当然你也可以创建一个自定名称的忽略文件，然后在.gitconfig引用它：**
+**当然你也可以创建一个自定名称(一般是.gitignore_global)的忽略文件，然后在.gitconfig引用它：**
 
 ```bash
 # Compiled class file
@@ -403,13 +408,20 @@ css
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
 ```
 
 然后在家目录~/.gitconfig 文件中引入上述文件 ,注意：要使用正斜线，而不是反斜线
 
 ```properties
 [core]
-excludesfile = C:/Users/Lenovo/Java.gitignore 
+excludesfile = /Users/aitx/AitxPersonalWorkSpace/Git/toStudyCode/.gitignore_global 
+```
+
+显然，在项目根目录下的.gitignore是项目级别的，如果在其他位置创.gitignore_global并在~/.gitconfig 文件中引入就是全局配置，当然我们也可以在通过命令实现
+
+```bash
+git config --global core.excludesfile /Users/aitx/AitxPersonalWorkSpace/Git/toStudyCode/.gitignore_global 
 ```
 
 ## 11. git 分支
