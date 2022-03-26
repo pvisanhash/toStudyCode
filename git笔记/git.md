@@ -913,11 +913,11 @@ git merge [远程库地址别名/远程分支名]
 
 第二种方式：
 
-1）创建忽略规则文件 xxxx.ignore（前缀名随便起，建议是 git.ignore） 
+1）创建忽略规则文件 xxxx.ignore（前缀名随便起，建议是 .gitignore_global） 
 
 这个文件的存放位置原则上在哪里都可以，为了便于让~/.gitconfig 文件引用，建议也放在用户家目录下 
 
-git.ignore 文件模版内容如下： 
+.gitignore_global文件模版内容如下： 
 
 ```properties
 # Compiled class file
@@ -952,7 +952,7 @@ hs_err_pid*
 name = Layne
 email = Layne@atguigu.com
 [core]
-excludesfile = C:/Users/asus/git.ignore
+excludesfile = /Users/aitx/AitxPersonalWorkSpace/Git/toStudyCode/.gitignore_global 
 ```
 
 **注意：这里要使用“正斜线（/）”，不要使用“反斜线（\）**
