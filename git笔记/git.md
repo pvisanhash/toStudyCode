@@ -380,6 +380,7 @@ css
 
 # 忽视Mac电脑 项目任意目录下的桌面服务储存文件
 */.DS_Store
+.DS_Store
 ```
 
 **当然你也可以创建一个自定名称(一般是.gitignore_global)的忽略文件，然后在.gitconfig引用它：**
