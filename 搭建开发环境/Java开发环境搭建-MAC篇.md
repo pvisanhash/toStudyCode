@@ -24,7 +24,7 @@ vim ~/.bash_profile
 
 ```bash
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home
-export PATH=$JAVA_HOME/bin:$PATH
+export PATH=$PATH:$JAVA_HOME/bin
 ```
 
 刷新配置文件
@@ -51,13 +51,13 @@ source ~/.bash_profile
 
 如果遇到网络原因安装失败可以通过如下的方法解决
 
-1 只是单次在终端使用代理键入以下命令，关闭终端会话则清理代理
+1 )只是单次在终端使用代理键入以下命令，关闭终端会话则清理代理
 
 ```bash
 export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890
 ```
 
-2 修改hosts文件指定域名的ip
+2 )修改hosts文件指定域名的ip
 
  查找 ip -> 修改 host -> 再去执行安装脚本 （有可能还是失败）
 
@@ -78,7 +78,7 @@ sudo vim /etc/hosts
 添加如下内容：
 199.232.28.133  raw.githubusercontent.com
 
-3 使用国内gitee源的命令进行安装
+3 ) 使用国内gitee源的命令进行安装
 
 ## 3 安装Git
 
@@ -86,5 +86,55 @@ sudo vim /etc/hosts
 
 ```bash
 brew install git
+```
+
+## 4 安装maven
+
+maven 官网下载 ：https://maven.apache.org/
+
+将下载的zip包解压抽取后，放到/usr/local/目录下
+
+vim ~/.bash_profile配置环境变量
+
+```bash
+export M2_HOME=/usr/local/apache-maven-3.8.5
+
+export PATH=$PATH:$M2_HOME/bin
+```
+
+刷新配置文件
+
+```bash
+source ~/.bash_profile
+```
+
+后面配置文件，主要修改本地仓库、镜像、profile，详情见maven笔记
+
+## 5 安装 IDEA
+
+安装IDEA 并 激活后 ，进行全局配置：文件encoding , annotation processing , git , maven
+
+## 6 安装mysql
+
+打开官网，下载社区版https://www.mysql.com/cn/
+
+选择对应的版本，比如mac arm版本，根据提示安装
+
+![](./images/Snipaste_2022-03-27_17-07-25.png)
+
+打开偏好设置，查看mysql
+
+![](./images/Snipaste_2022-03-27_20-02-37.png)
+
+配置环境变量 vim ~/.bash_profile
+
+```bash
+export PATH=$PATH:/usr/local/mysql/bin
+```
+
+刷新配置环境变量
+
+```bash
+source ~.bash_profile
 ```
 
