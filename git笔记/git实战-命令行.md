@@ -19,6 +19,8 @@ git分支：是指 指向提交记录的 引用
 ```bash
 git branch 分支名 ：新建分支，并指向当前提交
 
+git branch 分支名 引用：新建分支，并指向该引用
+
 git checkout 分支名：检出（切换）到该分支，即HEAD指针指向当前分支
 
 git checout -b 分支名：新建分支，并检出到该新建分支上
@@ -50,6 +52,7 @@ Rebase 的优势就是可以创造更线性的提交历史。
 
 ```bash
 git rebase 重新定基的分支 ：将当前分支上的提交复制到新的分支上，并且当前分支指向这个复制的最新提交
+git rebase 重新定基的分支 被称动的分支 ：如git rebase main dev 就是将dev分支的提交搬到main分支上
 ```
 
 比如：`git checkout bugFix`;  `git rebase main`则会形成c2'分支，bugFix分支指向这个c2'。此时如果想要将main分支变成最新，可使用如下命令：`git checkout main`; `git rebase bugFix` 就会让main分支指向c2'。注意rebase操作后原c2提交还存在（图中灰暗部分）
@@ -91,6 +94,10 @@ HEAD 通常情况下是指向分支名的（如 bugFix）。在你提交时，�
 
 `main^^` 是 `main` 的第二个父节点。你也可以将 `HEAD` 作为相对引用的参照。
 
+操作符 `^` 与 `~` 符一样，后面也可以跟一个数字。
+
+但是该操作符后面的数字与 `~` 后面的不同，并不是用来指定向上返回几代，而是指定合并提交记录的某个父提交。
+
 <img src="./images/Snipaste_2022-04-05_02-34-49.png" style="zoom: 33%;" />
 
 比如HEAD原来指向main（main上有*），`git checkout bugFix^` 就会使HEAD指向c3,当然也可以直接`git checkout c3` 或者 `git checkout bugFix~1`;
@@ -130,7 +137,7 @@ git branch -f main HEAD~3
 ## 9.git cherry-pick
 
 ```bash
-git cherry-pick hash值1 hash值2 ...     : 会抽取提交记录到HEAD指针下，并使分支指向最前的提交。
+git cherry-pick hash值1 hash值2 ...     : 会复制提交记录到HEAD指针下，并使当前分支指向最新的提交。
 ```
 
  `git cherry-pick`, 命令形式为:
@@ -166,3 +173,103 @@ git cherry-pick hash值1 hash值2 ...     : 会抽取提交记录到HEAD指针�
 Git 严格按照你在对话框中指定的方式进行了复制。 注意这个是rebase不包含c1的，即左闭右开，[c5,c1)。还有rebase的基是c1,main指向最新的提交c5'。
 
 <img src="./images/Snipaste_2022-04-05_03-12-37.png" style="zoom:33%;" />
+
+## 11.本地栈式提交
+
+栈式提交要求是的是将各功能分类提交，互不影响，最后只取其中的部分提交。常见的是不要调试代码。
+
+常用的两种处理方法：
+
+```bash
+git rebase -i 引用
+
+git cherry-pick 引用1 引用2 等
+```
+
+<img src="./images/Snipaste_2022-04-06_01-49-29.png" style="zoom:33%;" />
+
+如上图所示，只要c4提交，要将c4提交移到c1后，可以如下操作：
+
+```bash
+# 方法一：
+git rebase -i main 后只选c4 ; git checkout main ; git rebase bugFix
+# 方法二：
+git checkout main; git cherry-pick c4; git branch -f bugFix main
+```
+
+<img src="./images/Snipaste_2022-04-06_01-55-25.png" style="zoom: 33%;" />
+
+## 12.修改提交
+
+接下来这种情况也是很常见的：你之前在 `newImage` 分支上进行了一次提交，然后又基于它创建了 `caption` 分支，然后又提交了一次。
+
+此时你想对某个以前的提交记录进行一些小小的调整。比如设计师想修改一下 `newImage` 中图片的分辨率，尽管那个提交记录并不是最新的了。
+
+我们可以通过下面的方法来克服困难：
+
+- 先用 `git rebase -i` 将提交重新排序，然后把我们想要修改的提交记录挪到最前
+- 然后用 `git commit --amend` 来进行一些小修改
+- 接着再用 `git rebase -i` 来将他们调回原来的顺序
+- 最后我们把 main 移到修改的最前端（用你自己喜欢的方法如merge，rebase或者强制修改分支位置），就大功告成啦！
+
+<img src="./images/Snipaste_2022-04-06_02-03-23.png" style="zoom:33%;" />
+
+<img src="./images/Snipaste_2022-04-06_02-06-23.png" style="zoom:33%;" />
+
+正如你所见到的，我们可以使用 `rebase -i` 对提交记录进行重新排序。只要把我们想要的提交记录挪到最前端，我们就可以很轻松的用 `--amend` 修改它，然后把它们重新排成我们想要的顺序。
+
+但这样做就唯一的问题就是要进行两次排序，而这有可能造成由 rebase 而导致的冲突。下面还是看看 `git cherry-pick` 是怎么做的吧
+
+要在心里牢记 cherry-pick 可以将提交树上任何地方的提交记录取过来追加到 HEAD 上（只要不是 HEAD 上游的提交就没问题）。
+
+```bash
+git checkout main; git cherry-pick c2; git commit --amend; git cherry-pick c3;
+```
+
+<img src="./images/Snipaste_2022-04-06_02-11-32.png" style="zoom:33%;" />
+
+可以看到，`git commit --amend`会在右边形成一个新的提交，老的提交置灰
+
+## 13.git tag
+
+tag 永远指向某个提交记录的标识
+
+tag 永久地将某个特定的提交命名为里程碑，然后就可以像分支一样引用了。
+
+更难得的是，它们并不会随着新的提交而移动。你也不能切换到某个标签上面进行修改提交，它就像是提交树上的一个锚点，标识了某个特定的位置。
+
+```bash
+git tag 标签名 引用：如果不指定引用，就是HEAD指针指向的提交
+```
+
+## 14.git describe
+
+由于标签在代码库中起着“锚点”的作用，Git 还为此专门设计了一个命令用来**描述**离你最近的锚点（也就是标签），它就是 `git describe`！
+
+Git Describe 能帮你在提交历史中移动了多次以后找到方向；当你用 `git bisect`（一个查找产生 Bug 的提交记录的指令）找到某个提交记录时，可能会用到这个命令。
+
+```properties
+bisect = 二等分
+```
+
+`git describe` 的语法是：
+
+```
+git describe <ref>
+```
+
+`<ref>` 可以是任何能被 Git 识别成提交记录的引用，如果你没有指定的话，Git 会以你目前所检出的位置（`HEAD`）。
+
+它输出的结果是这样的：
+
+```
+<tag>_<numCommits>_g<hash>
+```
+
+`tag` 表示的是离 `ref` 最近的标签， `numCommits` 是表示这个 `ref` 与 `tag` 相差有多少个提交记录， `hash` 表示的是你所给定的 `ref` 所表示的提交记录哈希值的前几位。
+
+当 `ref` 提交记录上有某个标签时，则只输出标签名称
+
+<img src="./images/Snipaste_2022-04-06_02-26-13.png" style="zoom:33%;" />
+
+15.
