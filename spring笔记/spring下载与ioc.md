@@ -81,7 +81,7 @@ EJB = enterprise java bean = 企业java bean
 - DAO层	：Spring的Jdbc模板，Spring的ORM模块
   
 ```properties
-orm = object relation model = 对象关系模型 
+orm = object relation model = 对象关系模型
 ```
 
 **总结：Spring是一个大管家 是java企业项目一站式解决方案**
@@ -115,6 +115,10 @@ transaction = 事务
 > 控制反转简称IOC , 表示之前我们创建一个对象 往往是通过new的方式创建 ,主动权控制权在我们手中,使用spring 就是让创建对象这个事 ,控制在spring手中,让我们控制权反转给了spring    
 >
 > ioc = inversion  of control = 控制反转
+>
+> Bean管理 = Spring创建对象 + Spring属性(依赖)注入
+>
+> Bean管理有两种操作方式：XML配置方式 + 注解方式
 
 ### 3.2. 控制反转的演示
 
@@ -140,12 +144,12 @@ jcl= java common log = java 共公日志。一般导包的时候也要导公共�
 #### 3.2.3. 编写代码 
 
 ```java
-//在service包下写建立UserService接口
+// 在service包下写建立UserService接口
 public interface UserService {
     void addUser();
 }
 
-//在service.impl包下建立UserServiceImpl类
+// 在service.impl包下建立UserServiceImpl类
 public class UserServiceImpl implements UserService {
     @Override
     public void addUser() {
@@ -206,6 +210,26 @@ public class IOCTest {
 
 - 耦合：表示代码中(程序中)的依赖关系 
 
+### 3.3 IOC的底层原理与接口实现
+
+#### 3.3.1. 底层原理
+
+IOC实现主要是：xml 解析、工厂模式、反射
+
+IOC思想是基于IOC容器完成，IOC容器底层就是对象工厂
+
+![](./images/Snipaste_2022-05-23_06-53-02.png)
+
+#### 3.3.2 相关接口实现
+
+Spring提供IOC容器实现的两种方式（两个接口）：
+
+1.BeanFactory：IOC容器基本实现，是Spring内部的使用接口 ，不提供给开发人员使用。加载配置文件时候不会创建对象，在获取对象（使用）才会创建对象。
+
+2.ApplicatonContext：BeanFactory接口的子接口，提供更多更强大的功能，一般由开发人员过行使用。加载配置文件时就会把配置文件中的对象进行创建。
+
+![](./images/Snipaste_2022-05-23_07-07-20.png)
+
 ## 4.Spring的依赖注入
 
 > 依赖注入简称DI  说白了就是通过set方法 给成员变量赋值 自动的赋值
@@ -240,6 +264,7 @@ public class User {
     
 public class Wife {
     private String username;
+  	private Integer age;
 }
 
 ```
@@ -300,6 +325,27 @@ com.xyz.code.entity.User@f6c48ac
     </bean>
 ```
 
+上面的ref属性可以写ref标签
+
+```xml
+<bean id="user" class="com.aitx.study.domain.User">
+    <property name="wife">
+        <ref bean="wife"></ref>
+    </property>
+</bean>
+<bean id="wife" class="com.aitx.study.domain.Wife"></bean>
+```
+
+也可以使用内部bean的方式给引用类型赋值
+
+```xml
+<bean id="user" class="com.aitx.study.domain.User">
+    <property name="wife">
+        <bean class="com.aitx.study.domain.Wife"></bean>
+    </property>
+</bean>
+```
+
 #### 4.2.3. 测试
 
 ```java
@@ -316,6 +362,47 @@ public class UserTest {
 ```
 //输出
 xiaoming	18	com.xyz.code.entity.Wife@2b2948e2
+```
+
+### 4.2.4. 如何给引用类型级联赋值
+
+就是既给外部引用类型赋值，也给内部引用类型赋值
+
+第一种方式，外部bean+set方法注入
+
+```xml
+    <bean id="user" class="com.aitx.study.domain.User">
+        <property name="wife" ref="wife"></property>
+    </bean>
+    <bean id="wife" class="com.aitx.study.domain.Wife">
+        <property name="username" value="xiaohong"></property>
+        <property name="age" value="18"></property>
+    </bean>
+```
+
+第二种方式，内部bean+set方法注入
+
+```xml
+<bean id="user" class="com.aitx.study.domain.User">
+    <property name="wife">
+        <bean class="com.aitx.study.domain.Wife">
+            <property name="username" value="xiaohong"></property>
+            <property name="age" value="18"></property>
+        </bean>
+    </property>
+</bean>
+```
+
+第三种方式，外部bean+get/set方法注入
+
+```xml
+<bean id="user" class="com.aitx.study.domain.User">
+    <property name="wife" ref="wife"></property>
+    <!--这种级联赋值的方式要求User类有getWife()方法-->
+    <property name="wife.username" value="xiaohong"></property>
+    <property name="wife.age" value="18"></property>
+</bean>
+<bean id="wife" class="com.aitx.study.domain.Wife"></bean>
 ```
 
 ### 4.3. 使用Constructor给属性赋值
@@ -375,6 +462,8 @@ xiaoming	18	xiaohong
 
 只要在bean标签中使用p:就会有提示在beans标签中插入p名称空间，所以不用先加约束
 
+`p = property = 属性，名称空间相当于一个文件夹`
+
 ```xml
 xmlns:p="http://www.springframework.org/schema/p"
 ```
@@ -422,25 +511,6 @@ hello	20	xiaohong
            <ref bean="wife"/>
         </property>
      </bean>
-```
-
-也可以这样：
-
-```xml
-    <bean id="user" class="com.xyz.code.entity.User">
-        <!--设置属性的名与值，注意实体类要有setXxx()方法-->
-        <property name="username">
-            <value>xiaoming</value>
-        </property>
-        <property name="age">
-            <value>18</value>
-        </property>
-        <!--原来 引用类型使用ref来注入-->
-        <property name="wife">
-            <!--这里用ref标签-->
-            <ref bean="wife"/>
-        </property>
-    </bean>
 ```
 
 ### 4.6. 给数组赋值
@@ -520,6 +590,7 @@ hello	20	xiaohong
 ```xml
     <bean id="user" class="com.xyz.code.entity.User">
         <property name="properties">
+          	<!--注意这里是props-->
             <props>
                 <prop key="pro1">aaa</prop>
                 <prop key="pro2">bbb</prop>
@@ -529,9 +600,58 @@ hello	20	xiaohong
     </bean>
 ```
 
+### 4.11. 将集合提取出来
+
+这里使用util名称空间（spring会自动导入相关的约束）来将公共的集合提取出来。
+
+比如下面将List集合提取出来。
+
+```xml
+<bean id="user" class="com.aitx.study.domain.User">
+    <property name="list" ref="myCommonList"></property>
+</bean>
+<util:list id="myCommonList">
+    <value>a</value>
+    <value>b</value>
+    <value>c</value>
+</util:list>
+```
+
+### 4.12.注入字面量(null与特殊符号)
+
+字面量：比如 `String username = "xiaoming";` 右边的就是字面量
+
+**-1. null值**
+
+```xml
+<property name="username">
+    <null/>
+</property>
+```
+
+**-2. 属性值包含特殊符号**
+
+有两种方式处理：
+
+1 把特殊符号进行转义，如`<` 转义成`&lt;`,`>`转义成`&gt;`
+
+2 把特殊符号内容写到CDATA
+
+```xml
+<property name="username">
+    <value><![CDATA[<<南京>>]]></value>
+</property>
+```
+
 ## 5.Spring创建对象的方式
 
 > 使用spring之后  创建对象的事情 交给了Spring  那么Spring创建对象有哪几种方式
+>
+> spring有两种类型bean,一种普通bean,另外一种工厂bean
+>
+> 普通bean: 在配置文件中定义bean类型就是返回类型
+>
+> 工厂bean: 在配置文件中定义bean类型与返回类型不一样
 
 ### 5.1. 无参构造方法(默认情况下) 
 
@@ -544,7 +664,7 @@ hello	20	xiaohong
 
 ### 5.2. 静态工厂的方式
 
-> 顾名思义：一个工程类 带有 静态方法 
+> 顾名思义：一个工厂类 带有 静态方法 
 
 #### 5.2.1. 创建一个工厂类带静态方法
 
@@ -573,7 +693,7 @@ public class UserStaticFactory {
 #### 5.3.1. 实例工厂与方法
 
 ```java
-//相对于静态工厂，只是少了个static修饰符
+// 相对于静态工厂，只是少了个static修饰符
 public class UserInstanceFactory {
     public User getUser(){
         return new User();
@@ -584,7 +704,7 @@ public class UserInstanceFactory {
 #### 5.3.2. 编写配置文件
 
 ```xml
-    <!--要想获取生成的对象，必须先有工厂实例对象，通过实例对象创建对象。提供所有的方法都是“非静态”的。-->
+    <!--要想获取生成的对象，必须先有工厂实例对象，通过实例工厂对象创建所需对象。提供所有的方法都是“非静态”的。-->
     <bean id="userInstanceFactory" 
           class="com.xyz.code.entity.UserInstanceFactory"></bean>
     <bean id="getUser" 
@@ -593,7 +713,55 @@ public class UserInstanceFactory {
 
 一个bean产生一个对象
 
-## 6. Bean的生命周期
+### 5.4. 实现FactoryBean接口的方式
+
+第一步：创建工厂类实现FactoryBean接口并实现方法
+
+```java
+public class UserFactory implements FactoryBean<User> {
+
+    /**
+     * 这个方法就是工厂类生成对象的方法
+     *
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public User getObject() throws Exception {
+        // 这里可以以单例模式创建对象与isSingleton()对应
+        return new User();
+    }
+
+    /**
+     * 返回对象类型的方法
+     *
+     * @return
+     */
+    @Override
+    public Class<?> getObjectType() {
+        return null;
+    }
+
+    /**
+     * 是否单例的方法
+     *
+     * @return
+     */
+    @Override
+    public boolean isSingleton() {
+        return FactoryBean.super.isSingleton();
+    }
+}
+```
+
+第二步：修改配置文件
+
+```xml
+<!--这里定义类型为UserFactory类型，但生成对象是User类型->
+<bean id="user" class="com.aitx.study.domain.UserFactory"></bean>
+```
+
+## 6. Bean的生命周期(lifecycle)
 
 > 首先要了解：Spring默认启动的时候就创建Bean，并且是个单实例的Bean
 >
@@ -607,26 +775,30 @@ public class UserInstanceFactory {
 
 ```java
 public class Car {
-    
+
     private String carName;
-    private Double carPrice;
-    
+
     public Car() {
         System.out.println("调用构造器了");
     }
-    
-    public void init(){
+
+    public void setCarName(String carName) {
+        this.carName = carName;
+        System.out.println("调用setCarName()方法");
+    }
+
+    public void init() {
         System.out.println("调用初始化方法了");
     }
-    
-    public void destroy(){
+
+    public void destroy() {
         System.out.println("调用销毁方法了");
     }
 }
 ```
 
 ```xml
-<bean id="car" class="com.xyz.code.entity.Car"></bean>
+<bean id="car" class="com.aitx.study.domain.Car"></bean>
 ```
 
 测试代码：
@@ -654,7 +826,7 @@ public class UserTest {
 > 默认情况下 spring一启动对象则会被实例化。我们配置懒加载 ，让对象使用（获取）的时候再实例化
 
 ```xml
-<bean id="car" class="com.xyz.code.entity.Car" lazy-init="true"></bean>
+<bean id="car" class="com.aitx.study.domain.Car" lazy-init="true"></bean>
 ```
 
 开如懒加载，则容器启动时不会实例化对象，只有在使用的时候才会实例化对象
@@ -662,8 +834,9 @@ public class UserTest {
 ### 6.3. 生命周期属性
 
 ```xml
-<bean id="car" 
-class="com.xyz.code.entity.Car" init-method="init" destroy-method="destroy"></bean>
+    <bean id="car" class="com.aitx.study.domain.Car" init-method="init" destroy-method="destroy">
+        <property name="carName" value="littleAnt"></property>
+    </bean>
 ```
 
 测试代码：
@@ -672,24 +845,118 @@ class="com.xyz.code.entity.Car" init-method="init" destroy-method="destroy"></be
     public static void main(String[] args) {
         ApplicationContext ioc =
                 new ClassPathXmlApplicationContext("applicationContext.xml");
-        Car car = ioc.getBean("car", Car.class);
     }
 ```
 
 ```java
 //输出：
 调用构造器了
+调用setCarName()方法
 调用初始化方法了
 ```
 
-可以看到先调用构造器再调用初始化方法，只有当容器关闭时才会调用销毁方法
+可以看到先调用构造器再调用set()方法后调用初始化方法，只有当容器关闭时才会调用销毁方法
+
+```java
+@Test
+public void testLifeCycle() {
+    ClassPathXmlApplicationContext ioc = new ClassPathXmlApplicationContext("applicationContext.xml");
+  	// 注意close()方法并不在ApplicationContext接口中定义
+    // 关闭容器时才会调用销毁方法
+    ioc.close();
+}
+```
+
+```java
+// 输出：
+调用构造器了
+调用setCarName()方法
+调用初始化方法了
+调用销毁方法了  
+```
+
+### 6.4. Bean后置处理器接口
+
+Bean后置处理器BeanPostProcessor注册到容器中对于所有的Bean都生效，postProcessBeforeInitialization()在初始化方法之前执行，postProcessAfterInitialization()在初始化方法之后执行。
+
+后置处理器注册到容器中对所有对象都生效(包括自身)。
+
+创建BeanPostProcessor接口实现类
+
+```java
+public class MyBeanPost implements BeanPostProcessor {
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("在初始化之前执行的后置处理");
+        return BeanPostProcessor.super.postProcessBeforeInitialization(bean, beanName);
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("在初始化之后执行的后置处理");
+        return BeanPostProcessor.super.postProcessAfterInitialization(bean, beanName);
+    }
+}
+```
+
+将接口实现类对象交给Spring管理
+
+```xml
+<bean id="myBeanPost" class="com.aitx.study.domain.MyBeanPost"></bean>
+```
+
+进行测试：
+
+```java
+public class IocTest {
+
+    @Test
+    public void test2() {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("applicationContext.xml");
+        applicationContext.close();
+    }
+    
+}
+```
+
+```java
+// 输出：
+在初始化之前执行的后置处理
+在初始化之后执行的后置处理
+调用构造器了
+调用setCarName()方法
+在初始化之前执行的后置处理
+调用初始化方法了
+在初始化之后执行的后置处理
+调用销毁方法了
+```
+
+第1，2行显示的是MyBeanPost对象的生命周期
+
+从中可以知道Spring中Bean的生命周期分为以下7步：
+
+```properties
+1.无参构造器
+
+2.set()方法进行依赖注入
+
+3.把bean实例传递给bean后置处理器的postProcessBeforeInitialization()方法
+
+4.初始化方法(需要进行配置)
+
+5.把bean实例传递给bean后置处理器的postProcessAfterInitialization()方法
+
+6.可以从IOC容器获取
+
+7.当容器关闭时，调用bean的销毁方法(需要配置)
+```
 
 ## 7. Bean的作用域 scope
 
 - 单例模式（默认值）
 
  ```xml
-//加不加scope="singleton"一样
+// 加不加scope="singleton"一样
 <bean id="user" class="com.xyz.code.entity.User"></bean>
 <bean id="user" class="com.xyz.code.entity.User" scope="singleton"></bean>
  ```
@@ -706,24 +973,126 @@ class="com.xyz.code.entity.Car" init-method="init" destroy-method="destroy"></be
 
 懒加载就是容器启动时未生成对象并注册到容器中
 
-## 8. 控制反转包扫描的方式
+## 8. Bean管理XML自动装配
 
-> 我们创建对象的任务交给spring，只需在配置文件中配置bean标签就可以了，但是如果实际开发中配置的bean比较多，比较麻烦，我们可以通过包扫描+注解的方式实现统一配置  
+> 什么是自动装配
+>
+> 根据指定装配规则（属性名称或者属性类型），Spring 自动将匹配的属性值进行注入
 
-### 8.1. 添加aop.jar
+```java
+public class Employee {
+
+    private Dept dept;
+
+    public Dept getDept() {
+        return dept;
+    }
+
+    public void setDept(Dept dept) {
+        this.dept = dept;
+    }
+    
+}
+
+public class Dept {
+    
+}
+```
+
+解释不同方式的自动装配 ：
+
+有五种自动装配的方式。
+
+no：默认的方式是不进行自动装配，通过显式设置ref 属性来进行装配。
+
+```xml
+<bean id="employee" class="com.aitx.study.domain.Employee">
+    <property name="dept" ref="dept"></property>
+</bean>
+<bean id="dept" class="com.aitx.study.domain.Dept"></bean>
+```
+
+byName：通过参数名自动装配，Spring容器在配置文件中发现bean的autowire属性被设置成byname，之后容器试图匹配、装配和该bean的属性具有相同名字的bean。
+
+```xml
+<bean id="employee" class="com.aitx.study.domain.Employee" autowire="byName"></bean>
+<bean id="dept" class="com.aitx.study.domain.Dept"></bean>
+```
+
+byType:：通过参数类型自动装配，Spring容器在配置文件中发现bean的autowire属性被设置成byType，之后容器试图匹配、装配和该bean的属性具有相同类型的bean。如果有多个bean符合条件，则抛出错误。
+
+```xml
+<bean id="employee" class="com.aitx.study.domain.Employee" autowire="byType"></bean>
+<bean id="dept" class="com.aitx.study.domain.Dept"></bean>
+```
+
+constructor：这个方式类似于byType。测试只有无参构造器则不会自动注入，不抛异常。如下图提供有参构造器，则成功注入，并且没有无参构造器XML也不会报错。
+
+```java
+public class Employee {
+
+    private Dept dept;
+
+    public Employee() {
+    }
+
+    public Employee(Dept dept) {
+        this.dept = dept;
+    }
+
+    public Dept getDept() {
+        return dept;
+    }
+
+    public void setDept(Dept dept) {
+        this.dept = dept;
+    }
+
+}
+```
+
+```xml
+<bean id="employee" class="com.aitx.study.domain.Employee" autowire="constructor"></bean>
+<bean id="dept" class="com.aitx.study.domain.Dept"></bean>
+```
+
+ no：不自动注入。
+
+```xml
+<bean id="employee" class="com.aitx.study.domain.Employee" autowire="no"></bean>
+<bean id="dept" class="com.aitx.study.domain.Dept"></bean>
+```
+
+## 9. 控制反转包扫描的方式(注解方式)
+
+> 我们创建对象的任务交给spring，只需在配置文件中配置bean标签就可以了，但是如果实际开发中配置的bean比较多，比较麻烦，我们可以通过包(组件)扫描+注解的方式实现统一配置  
+
+### 9.1. 添加aop.jar
 
 ![](images/QQ图片20200205180252.png)
 
-### 8.2. 配置包扫描
+### 9.2. 配置包扫描
 
 ![](images/QQ图片20200205175024.png)
 
 ```xml
+<!--context名称空间会自动导入的-->
 <!--包扫描会自动扫描指定的包及其子包，后面加上注解就能生成对象并注册--> 
+<!--配置多个包，每个包之间以逗号间隔-->
 <context:component-scan base-package="com.xyz.code"/>
+
+<!--可以配置过滤器-->
+<!--如下代表：不使用默认过滤器，指定过滤为：带有@Controller注解的进行扫描-->
+<context:component-scan base-package="com.aitx.study" use-default-filters="false">
+	<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
+<!--如下代表：排除带有@Controller注解的-->
+<context:component-scan base-package="com.aitx.study" >
+	<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
 ```
 
-### 8.3. 在类上添加注解
+### 9.3. 在类上添加注解
 
 ```java
 @Component //可以指定id,默认是类名首字母小写
@@ -735,13 +1104,101 @@ public class Student {
 @Service
 @Repository都能生成对象并注册
 /
+/**
+@Component注解 ，一个类加了注解表示这个类成为了Spring的一个组件，就是加入到IOC容器中
+@Component注解，代表组件，并且针对java的三层架构，有延伸注解 @Controller @Service @Respository
+组件就是具有功能的类
+/
 ```
 
-### 8.4. 说明点
+### 8.4. 基于注解方式实现属性注入
 
-- @Component注解 ，一个类加了注解表示这个类成为了Spring的一个组件，就是加入到IOC容器中   
-- @Component注解  针对java的三层架构 有延伸注解 @Controller @Service @Respository
-- 组件就是具有功能的类
+-1 @Autowire：根据属性类型进行自动装配 ,不需要set()方法
+
+```java
+public class UserServiceImpl implements UserService {
+    
+    @Autowired
+    private UserDao userDao;
+    
+    @Override
+    public void addUser() {
+        System.out.println("add user success");
+    }
+}
+```
+
+-2 @Qualifier：根据名称过行注入，要和@Autowire一起使用，使@Autowire可以根据名称进行注行,不需要set()方法
+
+```java
+public class UserServiceImpl implements UserService {
+
+    @Qualifier(value = "userDaoImpl")
+    @Autowired
+    private UserDao userDao;
+
+    @Override
+    public void addUser() {
+        System.out.println("add user success");
+    }
+}
+```
+
+-3 Resource: 可以根据类型注入，也可以根据名称进行注入。
+
+```java
+public class UserServiceImpl implements UserService {
+
+
+//    @Resource // 根据类型注入
+    @Resource(name = "userDaoImpl") // 根据名称注入
+    private UserDao userDao;
+
+    @Override
+    public void addUser() {
+        System.out.println("add user success");
+    }
+}
+```
+
+-4 @Value: 注入普通类型属性
+
+```java
+@Component
+public class Dog {
+
+    @Value("小狗")
+    private String name;
+}
+```
+
+## 10.完全注解方式开发初入门
+
+-1 创建配置类，替代XML配置文件
+
+注解方式还保存有配置文件，使用配置类将完全以注解方式进行开发 。
+
+```java
+@Configuration // 代表配置类，替代XML配置文件
+@ComponentScan(basePackages = {"com.aitx.study"})
+public class MyConfig {
+}
+```
+
+-2 编写测试类
+
+```java
+public class IocTest {
+
+    @Test
+    public void test2() {
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MyConfig.class);
+        Dog dog = applicationContext.getBean("dog", Dog.class);
+        System.out.println(dog);
+    }
+
+}
+```
 
 ## 9.加载外部配置文件和取值
 
@@ -749,7 +1206,7 @@ public class Student {
 
 #### 9.1.1 定义properties文件
 
-在resources或类路径下创建test.properties文件，内容是：
+在resources或类路径src下创建test.properties文件，内容是：
 
 ```properties
 //注意：编码格式一定要utf-8,一般习惯加前缀
@@ -771,7 +1228,7 @@ xyz.age=18
 </bean>
 ```
 
-### 9.2. 包扫描的方式
+### 9.2. 包扫描的方式(注解方式)
 
 #### 9.2.1配置包扫描
 
@@ -786,15 +1243,15 @@ xyz.age=18
 
 ```java
 @Component
-//指定属性源在哪，这晨指定是类路径下
-@PropertySource(value = "classPath:test.properties")
+// 指定属性源在哪，这指定是类路径下
+@PropertySource(value = "classpath:test.properties")
 public class Employee {
-    //通过Value注解取值，${}方式
+    // 通过Value注解取值，${}方式
     @Value(value = "${xyz.username}")
     private String employeeName;
     @Value(value = "${xyz.age}")
     private Integer employeeAge;
-    //自行提供getter与setter
+    // 自行提供getter与setter
 }
 ```
 
@@ -807,7 +1264,7 @@ public class Employee {
 10.1就是用了注解但没有引入aop包
 
 ```properties
-//无此类定义发现 错误
+// 无此类定义发现 错误
 
 nested exception is java.lang.NoClassDefFoundError: org/springframework/aop/TargetSource
 ```
@@ -815,7 +1272,7 @@ nested exception is java.lang.NoClassDefFoundError: org/springframework/aop/Targ
 10.2类路径英文名是classpath，全小写，如果写错会出现以下错误
 
 ```properties
-//文件找不到 异常
+// 文件找不到 异常
 
 nested exception is java.io.FileNotFoundException: class path resource [classPath:test.properties] cannot be opened because it does not exist
 ```
