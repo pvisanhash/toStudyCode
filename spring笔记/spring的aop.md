@@ -4,7 +4,7 @@
 
 ![](images/QQ图片20200206020305.png)
 
-**AOP：面向切面编程，是一种在程序运行期间通过动态代理实现在不修改源代码的情况下给程序动态统一的添加新功能的一种技术**
+**AOP：面向切面(方面)编程，是一种在程序运行期间通过动态代理实现在不修改源代码的情况下给程序动态统一的添加新功能的一种技术**
 
 ## 2. AOP的作用
 
@@ -18,7 +18,7 @@
 
 * 降低模块的耦合度
 * 使系统容易扩展
-* 更好的代码复用性,
+* 更好的代码复用性
 
 ## 4. AOP的实现原理
 
@@ -36,9 +36,9 @@
 ```java
 
 public interface UserDao {
-    //添加用户的方法
+    // 添加用户的方法
     void addUser();
-   //修改用户的方法
+   // 修改用户的方法
     void updateUser();
 }
 ```
@@ -95,12 +95,12 @@ public class Demo1Test {
 ```java
 public class MyAspect {
 
-    //方法执行之前执行的方法
+    // 方法执行之前执行的方法
     public  void before(){
         System.out.println("before方法执行了");
     }
 
-    //方法执行之后 要执行的方法
+    // 方法执行之后 要执行的方法
     public  void after(){
         System.out.println("after方法执行了");
     }
@@ -115,10 +115,10 @@ public class MyAspect {
  */
 public class UserDaoFactory {
 
-    public static UserDao getUserDao() {
-        //创建目标类的对象，需要在此类对象的方法前后添加新功能
+    public static UserDao getUserDaoProxy() {
+        // 创建目标类的对象，需要在此类对象的方法前后添加新功能
         UserDao userDao = new UserDaoImpl();
-        //创建含有新功能类的对象，即切面类对象
+        // 创建含有新功能类的对象，即切面类对象
         MyAspect myAspect = new MyAspect();
 
         /**第一个参数：类加载器
@@ -138,16 +138,16 @@ public class UserDaoFactory {
                     @Override
                     public Object invoke(Object proxy, 
                                          Method method, Object[] args) throws Throwable {
-                        //插入前置方法
+                        // 插入前置方法
                         myAspect.before();
-                        //执行目标对象的方法，返回的对象就是外层invoke()方法的对象
+                        // 执行目标对象的方法，返回的对象就是外层invoke()方法的对象
                         Object invoke = method.invoke(userDao, args);
-                        //插入后置方法
+                        // 插入后置方法
                         myAspect.after();
                         return invoke;
                     }
                 });
-        //返回UserDao接口的代理类对象
+        // 返回UserDao接口的代理类对象
         return userDaoProxy;
     }
 }
@@ -158,13 +158,15 @@ public class UserDaoFactory {
 ```java
 public class UserDaoTest {
     public static void main(String[] args) {
-        UserDaoFactory.getUserDao().addUser();
-        UserDaoFactory.getUserDao().updateUser();
+        UserDaoFactory.getUserDaoProxy().addUser();
+        UserDaoFactory.getUserDaoProxy().updateUser();
     }
 }
 ```
 
 ![](images/QQ图片20200206024708.png)
+
+上面相当于将需要添加的功能放到一个切面类中，然后用JDK的动态代理生成指定接口的代理类，当调用代理类的方法时，会先执行切面中定义的方法，后执行被代理类的方法。
 
 ## 7.AOP的专业术语
 
@@ -173,6 +175,8 @@ public class UserDaoTest {
 **理解**
 
 ![](images/QQ图片20200206042335.png)
+
+**切面：有时指的是切面类，有时指的是切面的动作**
 
 ## 8. AOP框架AspectJ的使用 
 
@@ -183,6 +187,10 @@ public class UserDaoTest {
 ### 8.1. 导入jar包
 
 ![](images/QQ图片20200206035128.png)
+
+有时会多导入有关aspectJ的包来完成
+
+<img src="./images/Snipaste_2022-05-25_01-20-10.png" style="zoom:33%;" />
 
 ### 8.2. 使用的类 
 
@@ -240,6 +248,8 @@ public class MyAspect2 implements MethodInterceptor {
         <aop:advisor advice-ref="myAspect2" pointcut-ref="myPointcut" />
     </aop:config>
 ```
+
+这种aop配置相当于配置通知器，指定通知引用那个对象，切入点是哪个或引用那个切入点。
 
 ### 8.4. 测试
 
@@ -316,6 +326,7 @@ public class MyAspect3 {
     <aop:config>
         <!--配置切面-->
         <aop:aspect ref="myAspect3">
+          	<!--aop:pointcut标签可以写到aop:aspect标签外-->
             <aop:pointcut id="myPointcut" 
                           expression="execution(* com.xyz.code.dao.*.*(..))"/>
             <aop:before method="before" pointcut-ref="myPointcut"/>
@@ -326,6 +337,8 @@ public class MyAspect3 {
         </aop:aspect>
     </aop:config>
 ```
+
+`<aop:aspect>` 与 `<aop:advisor>`相比可以这样理解，aspect相当于可以指定那个方法是前置，哪个方法是后置，advisor相当于这个前置后置是代码指定的
 
 ### 9.2. 配置通知之注解的方式（重点）
 
@@ -354,8 +367,9 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.springframework.stereotype.Component;
 
-@Aspect //代替aop:aspect标签
-@Component 
+@Aspect //代替aop:aspect标签与标签中的ref引用
+@Component
+@Order(value = 1) // 当存在多个切面类对方法进行通知时，可配置顺序，数值截越小优先级越大
 public class MyAspect4 {
     @Before(value = "myPoint()") //代替aop:before标签,以此类推
     public void before(JoinPoint joinPoint) {
@@ -395,7 +409,7 @@ public class MyAspect4 {
      */
     @Pointcut(value = "execution(* com.xyz.code.dao.*.*(..))")
     public void myPoint() {
-
+			// 方法体内无需写内容
     }
 }
 ```
@@ -405,8 +419,44 @@ public class MyAspect4 {
 ```xml
     <!--开启组件扫描，有注解的类加入容器中-->
     <context:component-scan base-package="com.xyz.code"/>
-    <!--开启aspectj自动代理，用开织入-->
+    <!--开启aspectj自动代理，自动织入-->
     <aop:aspectj-autoproxy/>
+```
+
+### 9.3. 配置通知之完全注解方式
+
+9.3.1. 编写配置类
+
+```java
+@Configuration
+@ComponentScan(basePackages = {"com.aitx.study.aspect","com.aitx.study.dao"}) // 这里的组件扫描没有配置 配置类 的包也可以运行
+@EnableAspectJAutoProxy(proxyTargetClass = true) // 代替aop:aspectj-autoproxy标签，属性proxyTargetClass默认false
+public class MyConfig {
+}
+```
+
+其中，@EnableAspectJAutoProxy注解中的proxyTargetClass有以下解释，所有一般保持默认false就行
+
+| proxyTargetClass | 目标对象特征                 | 代理效果                                  |
+| ---------------- | ---------------------------- | ----------------------------------------- |
+| true             | 目标对象实现了接口           | 使用CGLIB代理机制                         |
+| true             | 目标对象没有接口(只有实现类) | 使用CGLIB代理机制                         |
+| false            | 目标对象实现了接口           | 使用JDK动态代理机制(代理所有实现了的接口) |
+| false            | 目标对象没有接口(只有实现类) | 使用CGLIB代理机制                         |
+
+9.3.2. 进行测试
+
+```java
+public class MyTest1 {
+
+    @Test
+    public void test1() {
+        // 注意这里要使用AnnotationConfigApplicationContext
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MyConfig.class);
+        UserDao userDao = applicationContext.getBean("userDao", UserDao.class);
+        userDao.updateUser();
+    }
+}
 ```
 
 ## 10.切入点表达式介绍
@@ -426,27 +476,27 @@ execution(* com.xyz.code.dao.UserDao.addUser())
        修饰符：一般省略 
       	 public   公共方法
       	 *       表示任意修饰符都行
-
+  
        返回值：不能省略 
        	 Void     表示没有返回值
-           String    表示字符串类型返回值
-      	  *        表示任意 有没有返回值都行  有返回值什么类型都行 
-
+         String    表示字符串类型返回值
+      	 *        表示任意 有没有返回值都行  有返回值什么类型都行 
+  
        包   可以省略（支持通配符）
       	 com.shangma.cn   表示固定包名 
-      	 com.shangma.cn.*  表示com.shangma.cn包下的任意子包
-       	 com.shangma.cn..   表示com.shangma.cn包下的任意子包  包含自己 
-
+      	 com.shangma.cn.*  表示com.shangma.cn包下的任意单级子包
+       	 com.shangma.cn..   表示com.shangma.cn包下的任意多级子包  包含自己 
+  
        类   可以省略(支持通配符)
        	UserDao  表示固定的类 
       	User*       看清楚这个*前面没有. 不是User.*  是User* 表示以User开头 
-       	  *        表示任意类 
-
+       	*        表示任意类 
+  
        方法名 不能省略 支持通配符
       	 AddUser  表示固定的方法
       	 Add*       add开头的方法
       	 *        表示任意方法
-
+  
        参数
       	 ()   表示无参数
       	 (int)  表示一个参数 
@@ -455,9 +505,9 @@ execution(* com.xyz.code.dao.UserDao.addUser())
        */
   ```
 
-  **常用写法 ： execution(* com.xyz.code.*.*(..))  表示 com.xyz.code 包下所有的类所有的方法都被增强**
+  **常用写法 ： `execution(* com.xyz.code.*.*(..))`  表示 com.xyz.code 包下所有的类所有的方法都被增强**
 
-## 11 . Spring集成junitu单元测试
+## 11 . Spring集成junitu单元测试初入门
 
 ### 11.1. 导入jar包 
 
@@ -468,6 +518,10 @@ execution(* com.xyz.code.dao.UserDao.addUser())
 ### 11.2. 编写测试类
 
 `SpringRunner`是`SpringJUnit4ClassRunner`的子类，常用`SpringRunner`作为`@RunWith`的`value`属性值
+
+![](./images/Snipaste_2022-05-25_01-51-54.png)
+
+`@ContextConfiguration`注解指定你的`配置文件`或`配置类`
 
 ![](images/QQ图片20200206062135.png)
 
