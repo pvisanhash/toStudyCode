@@ -425,7 +425,7 @@ public class MyAspect4 {
 
 ### 9.3. 配置通知之完全注解方式
 
-9.3.1. 编写配置类
+#### 9.3.1. 编写配置类
 
 ```java
 @Configuration
@@ -444,7 +444,7 @@ public class MyConfig {
 | false            | 目标对象实现了接口           | 使用JDK动态代理机制(代理所有实现了的接口) |
 | false            | 目标对象没有接口(只有实现类) | 使用CGLIB代理机制                         |
 
-9.3.2. 进行测试
+#### 9.3.2. 进行测试
 
 ```java
 public class MyTest1 {
