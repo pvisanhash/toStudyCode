@@ -156,7 +156,7 @@ junit 4的依赖：
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
-            <scope>compile</scope>
+            <scope>test</scope>
         </dependency>
 ```
 
@@ -231,6 +231,8 @@ jdbc.password=root
 
 #### 1.6.3. 编写Spring的测试类
 
+这里，可以看到我们使用注解来配置测试类，并没有配置包扫描，所以包扫描的作用是发现需要添加到容器的类，并将其对象生成添加到容器中。
+
 ```java
 @RunWith(value = SpringRunner.class)
 @ContextConfiguration(locations = "classpath:application.xml")
@@ -252,6 +254,10 @@ public class SprintDemo {
 }
 ```
 
+**注意：**如果将测试类放置在test目录下（非main目录下）,虽然编译后的文件分别在classes,test-classes中，但也能读取到配置文件。
+
+![](./images/Snipaste_2022-05-26_23-47-37.png)
+
 #### 1.6.4. 关于数据源的说明
 
 ![](images/QQ图片20200206183324.png)
@@ -259,6 +265,8 @@ public class SprintDemo {
 ### 1.7.dao层的编写  
 
 > jdbcTemplate只是一个模板工具   当然这个模板工具可以在dao中直接引入进行编写代码 但是我们开发有规范 我们应该统一管理  所以 使用jdbcDaoSupport这个类来编写dao层 
+>
+> 即可以直接用JdbcTemplate来操作，但更优的是用JdbcDaoSupport来操作
 
 #### 1.7.1. 编写dao
 
@@ -274,13 +282,13 @@ public interface EmployeeDao {
     //改
     int updateEmployee(Employee employee);
 
-    //查询一个具体的字段
+    // 查询一个具体的字段,这里是查名字，当然一般还都会有个查总数的接口
     String selectNameById(Integer id);
 
-    //查询一个记录
+    // 查询一个记录
     Employee selectEmployeeById(Integer id);
 
-    //查询所有
+    // 查询所有
     List<Employee> selectAll();
     
 }
@@ -316,6 +324,7 @@ public class EmployeeDaoImpl extends JdbcDaoSupport implements EmployeeDao {
     }
 
     /**
+     * 查询方法是queryForObject()
      * 查询一个字段时用的时返回值类型.class
      */
     @Override
@@ -326,7 +335,7 @@ public class EmployeeDaoImpl extends JdbcDaoSupport implements EmployeeDao {
     }
 
     /**
-     * 当查询一个时 我们使用BeanPropertyRowMapper
+     * 当查询一个时 我们使用BeanPropertyRowMapper,查询方法是queryForObject()
      * 使用BeanPropertyRowMapper 要求实体类的属性和列名一致
      */
     @Override
@@ -337,8 +346,9 @@ public class EmployeeDaoImpl extends JdbcDaoSupport implements EmployeeDao {
     }
 
     /**
-     * 当查询多个时 我们也要使用BeanPropertyRowMapper
+     * 当查询多个时 我们也要使用BeanPropertyRowMapper,并且查询方法是query()
      * 使用BeanPropertyRowMapper 要求实体类的属性和列名一致
+     * 
      */
     @Override
     public List<Employee> selectAll() {
@@ -382,7 +392,7 @@ public class EmployeeDaoImpl extends JdbcDaoSupport implements EmployeeDao {
 public class EmployeeDaoTest {
 
     @Autowired
-    EmployeeDao employeeDao;
+    private EmployeeDao employeeDao;
 
     @Test
     public void test1(){
@@ -392,31 +402,35 @@ public class EmployeeDaoTest {
 } 
 ```
 
+**注意：**如果想要批量新增、删除、修改，可以调用JdbcTemplate.batchUpdate()方法。
+
 ## 2.Spring对事务的支持
 
 ### 2.1. 事务的回顾
 
 #### 2.1.1. 什么是事务transaction
 
-> 多个操作当做一个整体 这个整体要嘛同时成功 同时失败  
+> 事务是数据库操作最基本单元，数据库的多个操作可以当做一个整体，这个整体要么同时成功，要么同时失败
+>
+> 事务分为 编程式事务管理 和 声明式事务管理，spring经常使用的是声明式事务管理，即xml配置或注解完成事务管理
 
 #### 2.1.2. 事务的特性
 
 * 原子性：事务不能再分割 atomicity
-* 一致性：转账前后 总金额不变 consistence
-* 隔离性： 各个事务之间 相互隔离互不影响 isolation
+* 一致性：从某个一致性状态变成另一个一致性状态，比如转账前后 总金额不变 consistence
+* 隔离性： 各个事务之间 相互隔离 互不影响 isolation
 * 持久性： 一旦事务提交成功 数据将持久化硬盘上  duration
 
 #### 2.1.3. 安全性问题
 
-* 脏读：表示事务读到了另外一个事务没有提交的数据 
-* 不可重复读： 表示一个事务读取到了另外一个事务中提交的数据(update)
-* 幻读：  表示一个事务读取到了另外一个事务中提交的数据(insert,delete)
+* 脏读：表示一个未提交的事务读到了另外一个未提交的事务中的数据 
+* 不可重复读： 表示一个未提交事务读取到了另外一个提交事务中修改的数据(update)
+* 幻读：  表示一个未提交事务读取到了另外一个提交事务中新增或删除的数据(insert,delete)
 
 #### 2.1.4.  数据库隔离级别
 
-* read UnCommit ： 脏读  不可重复读  幻读 都可能发生
-* read Commit : 脏读不会发生  不可重复读  幻读 有可能发生
+* read UnCommitted ： 脏读  不可重复读  幻读 都可能发生
+* read Committed : 脏读不会发生  不可重复读  幻读 有可能发生
 * Repeatable Read：脏读 不可重复读 不会发生  幻读 有可能发生 
 * SERIALIZABLE:    解决所有问题
 
@@ -438,13 +452,13 @@ public class EmployeeDaoTest {
 
 * **TransactionStatus**
 
-  > 这个类表示事务的状态 例如：是否有保存点，事务是否完成等等
+  > 这个接口表示事务的状态 例如：是否有保存点，事务是否完成等等
 
   ![](images/QQ图片20200206201106.png)
 
 * **TransactionDefinition**
 
-  > 表示事务详情 事务详情（事务定义、事务属性），spring用于确定事务具体详情，
+  > 这个接口表示事务详情 事务详情定义（事务定义、事务属性），spring用于确定事务具体详情，
   >
   > 例如：隔离级别、是否只读、超时时间 等
   >
@@ -456,14 +470,19 @@ public class EmployeeDaoTest {
 
 > 表示2个或者多个业务之间如何共享事务  有七种取值分别对应的常量是(0,1,2,3,4,5,6) 
 >
-> 说白了 当事务方法被另一个事务方法调用时，必须指定事务应该如何传播 
+> 说白了 当`事务方法`被另一个`事务方法`调用时，必须指定事务应该如何传播 
 >
 > 比如 方法A有事务支持  方法B也有事务支持    在A方法中调用B方法时  B方法的事务 是用A的事务还是自己再弄一个新的事务      
 >
 > **传播行为不要掌握 会配置就行了**  
+>
+> **事务方法：** 对数据库进行变化操作的方法就是事务方法
 
 ```java
   /**
+  			前提：A调用B，B有事务注解@Transactional，并且子(B)会决定父(A)的报错或回滚动作
+  			有事务时当发生异常会回滚
+  			
         PROPAGATION_REQUIRED , required , 必须
         支持当前事务，A如果有事务，B将使用该事务。
         如果A没有事务，B将创建一个新的事务。
@@ -474,7 +493,7 @@ public class EmployeeDaoTest {
 
         PROPAGATION_MANDATORY，mandatory ，强制
         支持当前事务，A如果有事务，B将使用该事务。
-        如果A没有事务，B将抛异常。
+        如果A没有事务，B将抛异常。相当于B方法就是个异常抛出
 
         PROPAGATION_REQUIRES_NEW ， requires_new ，必须新的
         如果A有事务，将A的事务挂起，B创建一个新的事务
@@ -490,6 +509,9 @@ public class EmployeeDaoTest {
      
         PROPAGATION_NESTED ，nested ，嵌套   nested = 巢居，嵌套
         A和B底层采用保存点机制，形成嵌套事务。
+        如果A有事务，则B会是嵌套事务。
+        如果A没有事务，则B会创建一个新的事务。
+        第一种情况：相当于A的大圆包含B的小圆，A如果不存在事务了B也就不存在事务了，就是外层方法因异常回滚则内层方法也会回滚。
      */
 
 ```
@@ -498,10 +520,10 @@ public class EmployeeDaoTest {
 
 #### 2.5.1. 添加Service层
 
-> 由于事务是 执行操作之前开启 操作之后提交 或者回滚 一般放在Service层处理
+> 由于事务是 执行操作之前开启 操作之后提交 或者 回滚 一般放在Service层处理
 
 ```java
-//编写Service接口 
+// 编写Service接口 
 public interface EmployeeService {
     /**
      * 转账
@@ -513,13 +535,13 @@ public interface EmployeeService {
 //编写实现类
 public class EmployeeServiceImpl implements EmployeeService {
 
-    @Autowired //这里注解与配置文件搭配，进行di
+    @Autowired // 这里注解与配置文件搭配，进行di
     private EmployeeDao employeeDao;
 
     @Override
     public void transfer(Integer fromId, Integer toId, Double money) {
         
-        //根据id 找到员工
+        //修改前先查找 根据id 找到员工
         Employee employee = employeeDao.selectEmployeeById(fromId);
         Employee employee1 = employeeDao.selectEmployeeById(toId);
         
@@ -604,7 +626,7 @@ public class EmployeeServiceImpl implements EmployeeService {
   
       @Test
       public void test1(){
-          employeeService.transfer(1,2,300D);
+          employeeService.transfer(1,2,300D); // Double类型的money
       }
   }
   ```
@@ -619,7 +641,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     <groupId>org.aspectj</groupId>
     <artifactId>aspectjweaver</artifactId>
     <version>1.9.7</version>
-    <scope>runtime</scope>
 </dependency>
 ```
 
@@ -664,7 +685,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 <tx:method name="transfer"/>
             </tx:attributes>
         </tx:advice>
-        <!--3aop配置-->
+        <!--3aop配置,advisor通知器经常用于实现方法拦截的接口或事务处-->
         <aop:config>
             <aop:advisor advice-ref="txAdvice" pointcut="execution(* com.xyz.code.service.*.*(..))"/>
         </aop:config> 
@@ -690,23 +711,269 @@ public class EmployeeServiceImpl implements EmployeeService {
 
    ![](images/QQ图片20200206212345.png)
 
-  
+### 2.6 @Transactioal注解的属性
 
-## 3.常见异常：
+```properties
+propagation 设置传播行为 默认为Propagation.REQUIRED
+isolation 隔离级别 默认为Isolation.DEFAULT，使用数据库默认的事物隔离级别，mysql是可重复读级别的
+timout 超时时间 事务需要在时间内提交，否则进行回滚，默认为-1无限长
+readonly 是否只读 设置true时，只能查询
+rollbackFor 什么情况回滚 设置出现哪些异常时进行事务回滚
+noRollBackFor 什么情况不回滚 设置出现哪些异常不进行回滚
+```
 
-3.1数据库修改数据时中文字符为？号，这里要将数据源的连接的url设置为
+### 2.7 完全注解声明式事务管理
+
+```java
+import javax.sql.DataSource;
+
+Configuration // 代表XML配置文件
+@ComponentScan(basePackages = {"com.aitx.study"}) // 代替context:component-scan标签
+@EnableTransactionManagement // 代替tx:annotation-driven
+public class MyConfig {
+
+    /**
+     * 代替bean标签，创建数据源对象
+     */
+    @Bean
+    public DruidDataSource getDruidDataSource() {
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setUrl("jdbc:mysql://localhost:3306/spring?characterEncoding=utf8&useSSL=false");
+        dataSource.setUsername("root");
+        dataSource.setPassword("admin123456");
+        return dataSource;
+    }
+
+    /**
+     * 创建transactionManager，注意形参位置可以引入容器中注册的bean
+     */
+    @Bean
+    public DataSourceTransactionManager getDataSourceTransactionManager(DataSource dataSource) {
+        DataSourceTransactionManager dataSourceTransactionManager = new DataSourceTransactionManager();
+        dataSourceTransactionManager.setDataSource(dataSource);
+        return dataSourceTransactionManager;
+    }
+
+    /**
+     * 创建EmployeeDao，这里没有在EmployeeDaoImpl类上加@Repository，是因为要给继承的属性注入值
+     */
+    @Bean
+    public EmployeeDao getEmployeeDao(DataSource dataSource) {
+        EmployeeDaoImpl employeeDao = new EmployeeDaoImpl();
+        employeeDao.setDataSource(dataSource);
+        return employeeDao;
+    }
+
+}
+```
+
+**注意：**测试类要将原配置文件修改成配置类;还要注意如果dao层继承JdbcDaoSupport还要注入dataSource属性
+
+## 3.spring框架的新功能
+
+### 3.1 spring使用log4j2
+
+> Spring 5.0 框架自带了通用的日志封装,Spring5 已经移除 Log4jConfigListener，官方建议使用 Log4j2并且Spring5 框架整合 Log4j2
+
+第一步：引入依赖
+
+```xml
+<!--注意当前log4j2版本有漏洞-->
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-api</artifactId>
+    <version>2.11.2</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-core</artifactId>
+    <version>2.11.2</version>
+</dependency>
+<!---log4j与slf-4j桥接-->
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-slf4j-impl</artifactId>
+    <version>2.11.2</version>
+</dependency>
+<!--简单的日志门面simple log facade-->
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>1.7.30</version>
+</dependency>
+```
+
+第二步：在resources文件夹下添加log4j2.xml配置文件
+
+这里将日志打印到console控制台上：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!--日志级别以及优先级排序: OFF > FATAL > ERROR > WARN > INFO > DEBUG > TRACE > ALL -->
+<!--Configuration 后面的 status 用于设置 log4j2 自身内部的信息输出，可以不设置，
+当设置成 trace 时，可以看到 log4j2 内部各种详细输出-->
+<configuration status="INFO">
+    <!--先定义所有的 appender,appender=附加器，输出源，输出目的地-->
+    <appenders>
+        <!--输出日志信息到控制台-->
+        <console name="Console" target="SYSTEM_OUT">
+            <!--控制日志输出的格式-->
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-
+5level %logger{36} - %msg%n"/>
+        </console>
+    </appenders>
+    <!--然后定义 logger，只有定义 logger 并引入的 appender，appender 才会生效-->
+    <!--root：用于指定项目的根日志，如果没有单独指定 Logger，则会使用 root 作为默认的日志输出-->
+    <loggers>
+        <root level="info">
+            <appender-ref ref="Console"/>
+        </root>
+    </loggers>
+</configuration>
+```
+
+第三步：如果项目引入了lombok可以在组件上加上@Slf4j注解,使用log对象打印日志
+
+```java
+@RunWith(value = SpringRunner.class)
+@ContextConfiguration(classes = {MyConfig.class})
+@Slf4j
+public class JdbcTest {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @Test
+    public void test3() {
+        log.info("123");
+        employeeService.transfer(1, 2, 1000D);
+    }
+
+}
+```
+
+### 3.2 @Nullable可空注解
+
+@Nullable 注解可以使用在方法上面，属性上面，参数上面，表示方法返回可以为空，属性值可以为空，参数值可以为空
+
+注意：import org.springframework.lang.Nullable;
+
+### 3.3 GenericApplicationContext函数式注册对象
+
+```java
+@RunWith(value = SpringRunner.class)
+@ContextConfiguration(classes = {MyConfig.class})
+@Slf4j
+public class JdbcTest {
+
+    @Test
+    public void test4() {
+        // 1 创建GenericApplicationContext对象
+        GenericApplicationContext applicationContext = new GenericApplicationContext();
+        // 2 调用genericApplicationContext注册对象
+        applicationContext.refresh();
+        applicationContext.registerBean("user", User.class, User::new);
+        // 3 获取ioc容器中的对象
+        User user = applicationContext.getBean("user", User.class);
+        System.out.println("user = " + user);
+    }
+
+}
+```
+
+相当于，我们可能使用这个对象来创建任意要注册到ioc容器的对象。其中对于refresh()方法有以下解释
+
+```properties
+Refresh(): 加载或刷新配置的持久表示，它可能来自基于 Java 的配置、XML 文件、属性文件、关系数据库模式或其他格式。由于这是一种启动方法，它应该在失败时销毁已经创建的单例，以避免悬空资源。换句话说，在调用此方法之后，应该实例化所有或根本不实例化单例。
+```
+
+### 3.4 整合Junit5
+
+第一步：添加依赖
+
+```xml
+<!--并不需要J-->
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>RELEASE</version>
+    <scope>test</scope>
+</dependency>
+```
+
+第二步：编写测试类
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {MyConfig.class})
+@Slf4j
+public class Junit5Test {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @Test
+    public void testTransaction(){
+        log.info("testTransaction");
+        employeeService.transfer(1,2,1000D);
+    }
+}
+```
+
+当然上面的@ExtendWith注解与@ContextConfiguration注解可以合并成一个复合注解@SpringJUnitConfig
+
+```java
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+
+@SpringJUnitConfig(classes = {MyConfig.class})
+@Slf4j
+public class Junit5Test {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @Test
+    public void testTransaction(){
+        log.info("testTransaction");
+        employeeService.transfer(1,2,1000D);
+    }
+}
+```
+
+## 4.常见异常：
+
+4.1数据库修改数据时中文字符为？号，这里要将数据源的连接的url设置为
 
 ```properties
 jdbc:mysql://localhost:3306/spring?characterEncoding=utf8
 ```
 
-3.2单元测试引入SpringRunner失败问题
+4.2单元测试引入SpringRunner失败问题
 
 删掉spring-test的scope作用域（即变成默认的compile作用域），然后项目右键Maven》update projects。
 
-3.3使用jdbcDaoSupport时出现下面异常 ,说dao层实现类需要jdbcTemplate或dataSource;只需在该类注入属性就行
+4.3使用jdbcDaoSupport时出现下面异常 ,说dao层实现类需要jdbcTemplate或dataSource;只需在该类注入属性就行
 
 ```properties
 Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'employeeDao' defined in class path resource [application.xml]: Invocation of init method failed; nested exception is java.lang.IllegalArgumentException: 'dataSource' or 'jdbcTemplate' is required
+```
+
+4.4 连接数据库时可能报下面的异常
+
+```properties
+Java报错javax.net.ssl.SSLException MESSAGE: closing inbound before receiving peer‘s close_notify
+```
+
+解决办法：在配置文件中数据库连接的**url属性**中加入`useSSL=false`即可解,注意SSL需要大写
+
+```properties
+jdbc:mysql://localhost:3306/spring?useSSL=false
 ```
 
