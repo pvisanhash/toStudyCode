@@ -718,7 +718,7 @@ propagation 设置传播行为 默认为Propagation.REQUIRED
 isolation 隔离级别 默认为Isolation.DEFAULT，使用数据库默认的事物隔离级别，mysql是可重复读级别的
 timout 超时时间 事务需要在时间内提交，否则进行回滚，默认为-1无限长
 readonly 是否只读 设置true时，只能查询
-rollbackFor 什么情况回滚 设置出现哪些异常时进行事务回滚
+rollbackFor 什么情况回滚 设置出现哪些异常时进行事务回滚,默认情况下是运行时异常才回滚，当设置为Exception时可回滚非运行时异常。
 noRollBackFor 什么情况不回滚 设置出现哪些异常不进行回滚
 ```
 
