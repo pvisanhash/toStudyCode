@@ -138,3 +138,49 @@ export PATH=$PATH:/usr/local/mysql/bin
 source ~.bash_profile
 ```
 
+## 7  安装tomcat
+
+下载tomcat9
+
+链接：https://tomcat.apache.org/download-90.cgi
+
+鼠标放到圈中的两个文件中的一个即可，然后双击获取他的下载链接进行下载
+
+![](./images/Snipaste_2022-06-04_00-23-41.png)
+
+进入下载目录，使用命令进行解压
+
+```shell
+tar -zxvf apache-tomcat-9.0.63.tar.gz
+```
+
+将解压后的文件夹移到/usr/local下
+
+配置环境变量 vim ~/.bash_profile
+
+```bash
+export PATH=$PATH:/usr/local/apache-tomcat-9.0.63/bin
+```
+
+刷新配置环境变量
+
+```bash
+source ~.bash_profile
+```
+
+进入/usr/local/apache-tomcat-9.0.63/bin目录执行
+
+```
+# 开启tomcat
+./startup.sh 
+# 关闭tomcat
+./shutdown.sh 
+```
+
+访问http://localhost:8080/即可看到tomcat主页
+
+idea配置tomcat
+
+选择 preferences->build,execution,deployment->application servers-> 加号-> tomcat
+
+![](./images/Snipaste_2022-06-04_00-36-17.png)
