@@ -1110,9 +1110,45 @@ public String testPathVariable(@PathVariable String username, @PathVariable(valu
 
 ### 13.3. 单文件上传之part的方式（重点）
 
-> 这种方式 不需要导入任何包  也不要配置任何视图解析器，用`request.getPart("文件名")`
+> 这种方式 不需要导入任何包  也不要配置任何视图解析器，只需在web.xml中配置multipart-config, 然后控制器方法中用`request.getPart("文件名")`即可
 
-* **编写Controller**
+**第一步：添加配置信息**
+
+在`web.xml`中配置信息，在`servlet标签`中添加`multipart-config标签`
+
+也可以直接在`controller层`类上加`@MultipartConfig`配置多部件，无需在`web.xml`的`servelet标签`中配置
+
+```xml
+      <servlet>
+          <servlet-name>dispatcherServlet</servlet-name>
+          <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+          <init-param>
+              <param-name>contextConfigLocation</param-name>
+              <param-value>classpath:spring-mvc.xml</param-value>
+          </init-param>
+          <!--可以直接复制，单位byte;threshold是起步值可以为0-->
+          <multipart-config>
+              <max-file-size>20848820</max-file-size>
+              <max-request-size>418018841</max-request-size>
+              <file-size-threshold>0</file-size-threshold>
+          </multipart-config>
+      </servlet>
+      <servlet-mapping>
+          <servlet-name>dispatcherServlet</servlet-name>
+          <url-pattern>/</url-pattern>
+      </servlet-mapping>  
+```
+
+```java
+@Controller
+// 可以用此注解代替web.xml中的配置
+@MultipartConfig(maxFileSize = 10240000L, maxRequestSize = 1024000000L, fileSizeThreshold = 0)
+public class UploadController {
+
+}
+```
+
+**第二步：编写Controller**
 
 ```java
 @Controller
@@ -1120,13 +1156,16 @@ public class MyController3 {
 
     @PostMapping(value = "/upload")
     public String fileUpload(HttpServletRequest request) throws IOException, ServletException {
-        Part part = request.getPart("image");      
+        Part part = request.getPart("image");  
+      	// servletContext是application域
         String realPath = request.getServletContext().getRealPath("/WEB-INF");        
-        part.write(realPath + "/" + part.getSubmittedFileName());        
+        part.write(realPath + File.separator + part.getSubmittedFileName());        
         return "success";
     }
 }
 /**
+File.pathSeparator为:
+File.separator为/
 
 request.getContextPath()是上下文路径，是tomcat图标中配置的路径，比如/spring_test_war_exploded
 request.getServletContext().getRealPath("/WEB-INF"); 获取的从盘符开始的绝对路径
@@ -1137,55 +1176,29 @@ part.getSubmittedFileName()是包含文件后缀名
 /
 ```
 
-* **添加配置信息**
+**第三步：编写前端页面或用postman模拟**
 
-  在`web.xml`中配置信息，在`servlet标签`中添加`multipart-config标签`
+可以在target目录查看上传的文件
 
-```xml
-      <servlet>
-          <servlet-name>dispatcherServlet</servlet-name>
-          <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-          <init-param>
-              <param-name>contextConfigLocation</param-name>
-              <param-value>classpath:springMvc.xml</param-value>
-          </init-param>
-          <!--可以直接复制，单位byte;threshold是起步值可以为0-->
-          <multipart-config>
-              <max-file-size>20848820</max-file-size>
-              <max-request-size>418018841</max-request-size>
-              <file-size-threshold>1048576</file-size-threshold>
-          </multipart-config>
-      </servlet>
-      <servlet-mapping>
-          <servlet-name>dispatcherServlet</servlet-name>
-          <url-pattern>/</url-pattern>
-      </servlet-mapping>  
-```
+![](images/QQ图片20200207072520.png)
 
-* **编写前端页面或用postman模拟**
-
-  ![](images/QQ图片20200207072520.png)
-
-  ![](images/Snipaste_2021-09-19_09-05-06.png)
-
+![](images/Snipaste_2021-09-19_09-05-06.png)
 
 ### 13.4. 多文件上传之Part的方式（重点）
 
-* 编写Controller
+**第一步：进行配置文件允许多文件上传**
 
-  用`request.getParts()`方法
-
-  注意：这里可以直接在`controller层`类上加`@MultipartConfig`配置多部件，无需在`web.xml`的`servelet标签`中配置
-
-  但要需要在`tomcat安装目录conf文件夹`下配置`context.xml`：
+需要在`tomcat安装目录conf文件夹`下配置`context.xml`：
 
 ```xml
-  <!--允许任意 多部件解析-->
+ <!--允许任意 多部件解析-->
   <Context allowCasualMultipartParsing="true">  
   </Context>
 ```
 
-代码：
+**第二步：编写Controller**
+
+用`request.getParts()`方法
 
 ```java
 @Controller
@@ -1200,6 +1213,7 @@ public class MyController4 {
             try {
                 part.write(realPath + "/" + part.getSubmittedFileName());
             } catch (IOException e) {
+                // 规范是不能打印堆栈信息
                 e.printStackTrace();
             }
         });
@@ -1208,39 +1222,36 @@ public class MyController4 {
 }
 ```
 
-* 编写前端页面或用postman模拟
+**第三步：编写前端页面或用postman模拟**
 
-  ![](images/QQ图片20200207073634.png)
+![](images/QQ图片20200207073634.png)
 
-  
+![](./images/Snipaste_2022-06-07_04-41-18.png)
 
 ### 13.5.文件上传之springmvc的方式（了解）
 
-> 这种方式 又要导入jar包  又要配置多媒体视图解析器   麻烦  
+> 这种方式 又要导入jar包  又要配置多媒体视图解析器   相对麻烦  
 
-* 导入jar 
+**第一步：导入jar** 
 
-  ![](images/QQ图片20200207074625.png)
+![](images/QQ图片20200207074625.png)
 
-* 编写Controller
-
-```java
-  @Controller //这里不用加@MultipartConfig,只需向容器中添加 多媒体视图解析器
-  public class MyController5 {
-  
-      @PostMapping("/upload3") //注意：虽然是请求体设置的，但要加@RequestParam注解
-      public String upload3(HttpServletRequest request, @RequestParam(value = "image") MultipartFile file) throws IOException {
-          String realPath = request.getServletContext().getRealPath("/WEB-INF");
-          String fullName = file.getOriginalFilename();
-          file.transferTo(new File(realPath + "/" + fullName));
-          return "success";
-      }
-  }
+```xml
+<dependency>
+    <groupId>commons-fileupload</groupId>
+    <artifactId>commons-fileupload</artifactId>
+    <version>1.4</version>
+</dependency>
+<dependency>
+    <groupId>commons-io</groupId>
+    <artifactId>commons-io</artifactId>
+    <version>2.11.0</version>
+</dependency>
 ```
 
-* 生成多媒体视图解析器对象
+**第二步：注册 多媒体(部件)视图解析器 对象**
 
-  在SpringMvc.xml中配置：
+在Spring-mvc.xml中配置：
 
 ```xml
 <!--生成多部件解析器对象-->
@@ -1248,35 +1259,53 @@ public class MyController4 {
 </bean>
 ```
 
-* 编写前端或用postman模拟
+**第三步：编写Controller**
 
-  ![](images/QQ图片20200207074922.png)
+```java
+  // 这里不用加@MultipartConfig,只需向容器中添加 多媒体视图解析器
+	@Controller 
+  public class MyController5 {
+  
+      @PostMapping("/upload3") // 注意：加@RequestParam注解指定上传的参数名
+      public String upload3(HttpServletRequest request, @RequestParam(value = "image") MultipartFile file) throws IOException {
+          String realPath = request.getServletContext().getRealPath("/WEB-INF");
+          String fullName = file.getOriginalFilename();
+          file.transferTo(new File(realPath + File.separator + fullName));
+          return "success";
+      }
+  }
+```
+
+**第四步：编写前端或用postman模拟**
+
+![](images/QQ图片20200207074922.png)
 
 
-## 14. 文件下载 
+## 14  文件下载 
 
-### 14.1. 文件下载方式一 (了解) 
+### 14.1  文件下载方式一 (了解) 
 
 > 这种方式 直接给资源的链接就行了 
 
-* 弊端：不能统计下载次数  并且对于那些不懂电脑的人  不知道使用ctrl+s 或者右键另存为保存 
-* 演示
+**弊端：**不能统计下载次数  并且对于那些不懂电脑的人  不知道使用ctrl+s 或者右键另存为保存 
 
 ![](images/QQ图片20200207183445.png)
 
 ```xml
-    <!--访问静态资源用-->
-    <mvc:default-servlet-handler/>
+<!--访问静态资源用-->
+<mvc:default-servlet-handler/>
+<!--当然为了能继续访问动态资源，需要加注解驱动-->
+<mvc:annotation-driven/>
 ```
 
 ### 14.2. 文件下载方式二（重点）
 
-* 好处： 任何文件下载都可以通过弹窗保存 并且可以统计下载次数 
+**好处：** 任何文件下载都可以通过弹窗保存 并且可以统计下载次数 
 
 html文档：
 
 ```html
-<a href="/download">下载word文档</a> <!--href的值写controller的映射路径-->
+<a href="/download">下载word文档</a> <!--href的值写controller的映射路径(请求路径)-->
 ```
 
 代码：
@@ -1287,29 +1316,32 @@ public class MyController5 {
 
     @GetMapping("/download")
     public ResponseEntity<byte[]> download(HttpServletRequest request) throws IOException {
-        //获取文件地址
+        // 获取文件地址
         String realPath = request.getServletContext().getRealPath("/WEB-INF/test.png");
-        //文件输入流
+        // 文件输入流
         FileInputStream fileInputStream = new FileInputStream(realPath);
-        //小推车
+        // 小推车
         byte[] buffer = new byte[fileInputStream.available()];
-        //读出到小推车中
+        // 读出到小推车中
         fileInputStream.read(buffer);
 
-        //获取文件名
+        // 获取文件名,下面的写法实测不区分系统的
         String fileFullName = realPath.substring(realPath.lastIndexOf("\\") + 1);
 
         /**
          *  构建响应实体
          */
-        //构建头信息，固定写法
+        // 构建头信息，固定写法
         HttpHeaders httpHeaders = new HttpHeaders();
-        //头信息设置内容处置，URLEncode.encode()使文件名不乱码
+        // 头信息设置内容处置，URLEncode.encode()使文件名不乱码
         httpHeaders.setContentDispositionFormData("attachment", URLEncoder.encode(fileFullName, "utf-8"));
-        //填充字节数组，http头，http状态
+        // 填充字节数组，http头，http状态
         ResponseEntity<byte[]> responseEntity = new ResponseEntity<>(buffer, httpHeaders, HttpStatus.OK);
 
-        //返回
+      	// 关闭流
+      	fileInputStream.close();
+      
+        // 返回
         return responseEntity;
 
     }
@@ -1327,10 +1359,10 @@ public class MyController5 {
 在`web.xml`中配置错误页面
 
 ```xml
-    <!--web.xml中配置错误页面-->
-    <error-page>
-        <location>/WEB-INF/pages/error.jsp</location>
-    </error-page>
+<!--web.xml中配置错误页面-->
+<error-page>
+  <location>/WEB-INF/pages/error.jsp</location>
+</error-page>
 ```
 
 测试代码：
@@ -1338,6 +1370,7 @@ public class MyController5 {
 ```java
     @GetMapping("/error")
     public ModelAndView error() {
+      	// 当异常没有进行任何的处理，就会交给tomcat处理，跳转到错误页面
         int i = 10 / 0;
         return new ModelAndView("success");
     }
@@ -1347,37 +1380,42 @@ public class MyController5 {
 
 ### 15.2. 第二种方式
 
-* 第一步：创建一个异常处理类
+**第一步：创建一个异常处理类**
 
-  * 要求实现 `HandlerExceptionResolver`,（处理器异常解析器，处理器就是controller类）
-  * 要求加入到springioc容器中
+* 要求实现 `HandlerExceptionResolver`,（处理器异常解析器，处理器就是controller类）
+* 要求加入到spring ioc容器中
 
-  ```java
+```java
 @Component
-  public class MyExeptionHander implements HandlerExceptionResolver {
-      @Override
-      public ModelAndView resolveException(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) {
-  
-        ModelAndView mv  = new ModelAndView();
-          mv.addObject("msg",e.getMessage());
-          mv.setViewName("error");
-          return mv;
-      }
-  }
-  ```
+public class MyExeptionHander implements HandlerExceptionResolver {
+    @Override
+    public ModelAndView resolveException(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) {
+			// 对象o就是发生异常的控制器方法
+      ModelAndView mv  = new ModelAndView();
+        mv.addObject("msg",e.getMessage());
+        mv.setViewName("error");
+        return mv;
+    }
+}
+```
 
-* 第二步：修改error.jsp
+**第二步：修改error.jsp**
 
-  使用el表达式需要引包，加标签
+使用el表达式需要引包，加标签
 
-  ![](images/QQ图片20200207194722.png)
+![](images/QQ图片20200207194722.png)
 
-* 第三步： 编写Controller 
+**第三步： 编写Controller** 
 
-  用上面的
+```java
+@GetMapping("/error")
+public ModelAndView error() {
+  	// 当异常进行处理时，就不会交给tomcat处理
+    int i = 10 / 0;
+    return new ModelAndView("success");
+}
+```
 
-  
-  
 
 **特点： 虽然可以动态显示错误信息 但是只能返回jsp页面  想要返回html页面 需要依赖模板引擎**
 
@@ -1385,66 +1423,116 @@ public class MyController5 {
 
 > 由于实际开发中  jsp页面用的比较少(可以说 基本不用)  那么我们以上2种方式 则不能满足我们的需求  
 >
-> 这个时候 我们要返回json数据   
+> 这个时候 我们常要返回json数据   
 
-* **第一步：创建枚举保存状态**
+**第一步：创建枚举保存自定义的错误码与信息**
 
 ```java
-@Getter //3get方法
+@Getter // 4 提供get()方法
 public enum StatusEnum {
 
-    ERROR("40000", "输入参数错误");
+    // 3 提供枚举值
+    ERROR("40000", "big error");
 
-    //2属性最好加上final
+    // 1 创建字段，最好加上final,但可以不加
     private final String code;
+
     private final String message;
 
-    //1构造器默认私有化
+    // 2 默认私有化构造器
     StatusEnum(String code, String message) {
         this.code = code;
         this.message = message;
     }
+
+    /**
+     * 根据code获取枚举值
+     *
+     * @param code
+     * @return
+     */
+    public StatusEnum enumOf(String code) {
+        for (StatusEnum value : StatusEnum.values()) {
+            if (value.code.equals(code)) {
+                return value;
+            }
+        }
+        return null;
+    }
 }
+
 ```
 
-* **第二步：自定义异常**
+**第二步：自定义异常**
 
 ```java
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class MyException extends RuntimeException {
-	//异常类中封装StatusEnum枚举类
+
+    private static final long serialVersionUID = 1L;
+
+    // 自定义异常封装状态枚举StatusEnum
     private StatusEnum statusEnum;
 }
 ```
 
-* **第三步：Controller抛出自定义异常**
+**第三步：提供静态工厂**
 
 ```java
-    @GetMapping("/error2")
-    public String error2() {
-        if (true) {
-            throw new MyException(StatusEnum.ERROR);
-        }
-        return "success";
+/**
+ * 静态工厂
+ */
+public class ExceptionFactory {
+
+    /**
+     * 提供静态方法
+     *
+     * @param statusEnum
+     * @return
+     */
+    public static MyException newMyException(StatusEnum statusEnum) {
+        return new MyException(statusEnum);
     }
+
+    public static MyException newMyException() {
+        return new MyException();
+    }
+    
+}
 ```
 
-* **第四步：异常处理类**
+**第四步：Controller抛出自定义异常**
 
 ```java
-@RestControllerAdvice //1加这个相当于@ResponseBody与@ControllerAdvice
+@GetMapping("/error2")
+public String error2() {
+  if (true) {
+    throw ExceptionFactory.newMyException(StatusEnum.ERROR);
+  }
+  return "success";
+}
+```
+
+**第五步：异常处理类**
+
+```java
+// 1加这个相当于@ResponseBody与@ControllerAdvice
+@RestControllerAdvice 
 public class MyExceptionHandler {
 
-    @ExceptionHandler(value = MyException.class) //2加@ExceptionHandler
-    public ResponseEntity handler1(MyException exception) { //3加指定异常
+  	// 2加@ExceptionHandler
+    @ExceptionHandler(value = MyException.class) 
+    public ResponseEntity handler1(MyException exception) { // 3加指定异常
+      	// 4获取异常信息并处理
         StatusEnum statusEnum = exception.getStatusEnum();
         return ResponseEntity.ok(statusEnum);
     }
 }
 ```
 
-## 16. SpringMVC拦截器
+## 16 SpringMVC拦截器
 
 > 拦截器 Interceptor： 只会拦截Controller当中的各种Mapping ---------- SpringMVC  
 >
@@ -1452,7 +1540,7 @@ public class MyExceptionHandler {
 
 **使用步骤**
 
-* **第一步:创建拦截器**
+**第一步:创建拦截器**
 
 注意这里有ctrl+i实现的是默认方法
 
@@ -1463,18 +1551,18 @@ public class MyInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         System.out.println("preHandle执行了");
-        //返回false  程序不往下执行
-        //返回true   程序继续往下执行 类似放行的意思
+        // 返回false  程序不往下执行
+        // 返回true   程序继续往下执行 类似放行的意思
         return true;
     }
 
-    //Controller 方法执行完成后 还没有返回试图时执行
+    // Controller 方法执行完成后 还没有返回视图时执行
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
         System.out.println("postHandle执行了");
     }
 
-    //请求和相应都完成了执行
+    // 请求和响应都完成了才执行
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         System.out.println("afterCompletion执行了");
@@ -1494,11 +1582,11 @@ public class MyInterceptor implements HandlerInterceptor {
               <!--<mvc:mapping path="/interceptor/*" />-->
               <!--配置单个路径-->
               <mvc:mapping path="/interceptor/aaa"/>
-
+            
               <!--排除不拦截的路径-->
               <!--<mvc:exclude-mapping path=""-->
               <!--可以看到拦截器不加注解，这里通过配置加入到容器中-->
-              <bean class="com.shangma.cn.demo1.FirstInteceptor"/>
+              <bean class="com.aitx.study.intercepter.FirstInteceptor"/>
           </mvc:interceptor>
       </mvc:interceptors>
 ```
@@ -1514,7 +1602,7 @@ public class MyInterceptor implements HandlerInterceptor {
             <!--拦截的路径 -->
             <mvc:mapping path="/interceptor/*"/>
             <!--拦截后要走的拦截器-->
-            <bean class="com.shangma.cn.demo1.FirstInteceptor"></bean>
+            <bean class="com.aitx.study.intercepter.FirstInteceptor"></bean>
         </mvc:interceptor>
 
         <!--表示配置一个-->
@@ -1523,21 +1611,25 @@ public class MyInterceptor implements HandlerInterceptor {
             <mvc:mapping path="/interceptor/*"/>
             <!--<mvc:exclude-mapping path=""/>-->
             <!--拦截后要走的拦截器-->
-            <bean class="com.shangma.cn.demo1.FisrtInteceptor"></bean>
+            <bean class="com.aitx.study.intercepter.SecondInteceptor"></bean>
         </mvc:interceptor>
 
     </mvc:interceptors>
 ```
 
-## 17.SpringMVC的静态资源
+## 17 SpringMVC的静态资源
 
-### 17.1. 要了解的点
+> 比如在webapp目录下创建static目录，该目录下放置一些静态文件，如.js,.css,.jpg等
+>
+> Springmvc默认无法访问这些静态资源，需要额外配置
+
+### 17.1 要了解的点
 
 在`web.xml`中注意`Servlet-mapping标签`
 
 ![](images/QQ图片20200207210253.png)
 
-<font color=red>所以</font>:`字符编码过滤器`的`url模式`是`/*`代表拦截所有，即所有的请求都要走那里进行设置字符编码。而`servlet-mapping标签`配置的`url模式`是`/`则拦截除了jsp的所有静态资源，却放行动态资源及jsp。
+<font color=red>所以</font>:`字符编码过滤器`的`url模式`是`/*`代表拦截所有，即所有的请求都要走那里进行设置字符编码。而`servlet-mapping标签`配置的`url模式`是`/`则拦截除了jsp的所有静态资源与动态资源。
 
 ### 17.2. 静态资源解决方式一
 
@@ -1551,6 +1643,8 @@ public class MyInterceptor implements HandlerInterceptor {
 
 ### 17.3. 静态资源解决方式二（推荐）
 
+在`spring-mvc.xml`中配置`mvc:default-servlet-handler标签`
+
 ```xml
 <mvc:default-servlet-handler /> 
 ```
@@ -1558,19 +1652,25 @@ public class MyInterceptor implements HandlerInterceptor {
 一般与mvc注解驱动共同使用，解决动静资源的使用
 
 ```xml
-    <!--访问动态资源用-->
-    <mvc:annotation-driven/>
-    <!--访问静态资源用-->
-    <mvc:default-servlet-handler/>
+<!--访问动态资源用-->
+<mvc:annotation-driven/>
+<!--访问静态资源用-->
+<mvc:default-servlet-handler/>
 ```
 
 ### 17.4. 静态资源解决方式三
 
-![](images/QQ图片20200207211252.png)
+在`spring-mvc.xml`中配置`mvc:resources标签`
 
+根目录static下的所有文件不会被DispatcherServlet拦截，可以直接访问，当做静态资源交给tomcat的Servlet进行处理
 
+```xml
+<!--只要请求方式是/static/**形式的，就会到/static/目录下找-->
+<!--注意：static后面有斜杠-->
+<mvc:resources mapping="/static/**" location="/static/"></mvc:resources>
+```
 
-## 18. SpringMVC类型转换问题
+## 18 SpringMVC类型转换问题
 
 ### 18.1. 日期类型转换之Date类型
 
@@ -1619,6 +1719,7 @@ public class MyDateConvert implements Converter<String, Date> {
             try {
                 return sdf1.parse(s);
             } catch (ParseException e1) {
+              	// 规范是不能打印堆栈信息，可以打错误日志并返回null
                 e1.printStackTrace();
             }
         }
