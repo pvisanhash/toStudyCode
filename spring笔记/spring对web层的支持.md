@@ -89,54 +89,9 @@ Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就�
         </dependency>
 ```
 
-### 3.3. 创建Controller
+### 3.3. 编写配置文件
 
-```java
-// 注意这里导入的是Controller接口
-import org.springframework.web.servlet.mvc.Controller;
-public class MyController implements Controller {
-    @Override
-    public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
-        ModelAndView mv  = new ModelAndView();
-        // 请求域设值
-        mv.addObject("msg","hello Springmvc");
-        // 设置视图
-        mv.setViewName("success");
-        return mv;
-    }
-}
-```
-
-### 3.4. 创建success页面
-
-一般是pages/templates目录
-
-![](images/QQ图片20200207010022.png)
-
-### 3.5. 编写配置文件
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-
-    <!--配置处理器映射，将请求映射到某个处理器方法-->
-    <bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping"></bean>
-    <!--配置处理器适配器，处理器适配器进行真正调用处理器方法-->
-    <bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter"></bean>
-    <!--配置视图解析器-->
-    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
-        <property name="prefix" value="/WEB-INF/pages/"></property>
-        <property name="suffix" value=".jsp"></property>
-    </bean>
-    <!--将实现Controller接口的类放到容器中，并起名字-->
-    <!--因为配置的处理器映射器为BeanNameUrlHandlerMapping，所以这里的beanName就是请求路径-->
-    <bean name="/hello" class="com.xyz.code.controller.MyController"></bean>
-</beans>
-```
-
-### 3.6. web.xml配置Servlet
+`web.xml`配置Servlet：
 
 ```xml
     <servlet>
@@ -159,7 +114,56 @@ public class MyController implements Controller {
    </servlet-mapping>
 ```
 
-### 3.7. 启动tomcat测试
+`Spring-mvc.xml`配置：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--配置处理器映射，将请求映射到某个处理器方法-->
+    <bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping"></bean>
+    <!--配置处理器适配器，处理器适配器进行真正调用处理器方法-->
+    <bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter"></bean>
+    <!--配置视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"></property>
+        <property name="suffix" value=".jsp"></property>
+    </bean>
+    <!--将实现Controller接口的类放到容器中，并起名字-->
+    <!--因为配置的处理器映射器为BeanNameUrlHandlerMapping，所以这里的beanName就是请求路径-->
+    <bean name="/hello" class="com.xyz.code.controller.MyController"></bean>
+</beans>
+```
+
+### 3.4. 创建success页面
+
+一般是pages/templates目录
+
+![](images/QQ图片20200207010022.png)
+
+
+
+### 3.5. 创建Controller
+
+```java
+// 注意这里导入的是Controller接口
+import org.springframework.web.servlet.mvc.Controller;
+public class MyController implements Controller {
+    @Override
+    public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
+        ModelAndView mv  = new ModelAndView();
+        // 请求域设值
+        mv.addObject("msg","hello Springmvc");
+        // 设置视图
+        mv.setViewName("success");
+        return mv;
+    }
+}
+```
+
+### 3.6. 启动tomcat测试
 
 <img src="./images/Snipaste_2022-06-04_01-16-32.png" style="zoom:80%;" />
 
@@ -378,7 +382,7 @@ public class MyController2 {
 
 这里可以配置tomcat使请求url变得更简洁：右上角选择`tomcat图标`下拉选择`eidt configurations`，可修改`name`,`Application context`,`url` ,`port`等
 
-## 7. 请求相关注解
+## 7. 请求映射注解及其衍生注解
 
 - @RequestMapping 
 - @PostMapping
@@ -406,21 +410,21 @@ Checkbox = 复选框
 
 ### 8.3. 对象类型
 
-* **新建对象**
+**新建对象**
 
-  ```java
-  // 注意要加lombok的jar包，才能使用如下注解
-  @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @Builder
-  @Accessors(fluent = false, chain = true)
-  public class Huige {
-      private Integer id;
-      private String username;
-    	private String sex;
-  }
-  ```
+```java
+// 注意要加lombok的jar包，才能使用如下注解
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Accessors(fluent = false, chain = true)
+public class Huige {
+    private Integer id;
+    private String username;
+  	private String sex;
+}
+```
 
 ![](images/QQ图片20200207024526.png)
 
@@ -493,16 +497,17 @@ Checkbox = 复选框
 
 举个例子，当编码格式为“UTF-8”时，在下面这个 form 表单中输入“李四”并提交时，地址栏中的内容为：`http://localhost:8080/s/a?name=%E6%9D%8E%E5%9B%9B`，其中的 E6、9D、8E 就是“李”的 UTF-8 编码（“李”的 Unicode 为 +U674e， 转化为 UTF-8 为 11100110（即 e6）、10011101（即 9d）、10001110 （即 8e） ），E5、9B、9B 就是“四”的 UTF-8 编码。（UTF-8 中一个汉字占三个字节，一个 % 表示一个字节，十六进制表示。）
 
+```html
 <form action="./a" method="get">
     Name: <input type="text" name="name" /> <br />
     <input type="submit" value="Submit" />
 </form>
+```
+
 
 当你在浏览器地址栏手动输入 `localhost:8080/s/a?name=李四` 并按 Enter 键时，实际发送出去的 request 仍然是经过编码的，对于 Chrome 浏览器，默认编码为 UTF-8。
 
 ### 9.2 get请求接收参数乱码
-
-**走json和不走json的演示 还有不同tomcat版本的演示  还有表单和postman的演示**
 
 > 如果你的get请求 传递中文参数时乱码 可以有如下解决方式  
 
@@ -754,7 +759,7 @@ public String testOriginal(HttpServletRequest request, HttpServletResponse respo
     // 通过请求获取session对象
     HttpSession session = request.getSession();
     // 只是演示
-    // 通过请求进行请求重定向
+    // 通过请求进行请求转发
     request.getRequestDispatcher("/hello").forward(request, response);
     // 通过响应进行请求重定向
     response.sendRedirect("/hello");
