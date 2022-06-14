@@ -47,46 +47,46 @@ Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就�
 ![](images/QQ图片20200207005740.png)
 
 ```xml
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jcl</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>5.3.8</version>
-        </dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-aop</artifactId>
+  <version>5.3.8</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-beans</artifactId>
+  <version>5.3.8</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-context</artifactId>
+  <version>5.3.8</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-core</artifactId>
+  <version>5.3.8</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-expression</artifactId>
+  <version>5.3.8</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-jcl</artifactId>
+  <version>5.3.8</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-web</artifactId>
+  <version>5.3.8</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-webmvc</artifactId>
+  <version>5.3.8</version>
+</dependency>
 ```
 
 ### 3.3. 编写配置文件
@@ -94,24 +94,24 @@ Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就�
 `web.xml`配置Servlet：
 
 ```xml
-    <servlet>
-        <servlet-name>dispacherServlet</servlet-name>
-        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-        <!--初始化参数加载配置文件
+<servlet>
+  <servlet-name>dispacherServlet</servlet-name>
+  <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+  <!--初始化参数加载配置文件
          注意： key是 固定写法  必须写contextConfigLocation
-        -->
-        <init-param>
-            <param-name>contextConfigLocation</param-name>
-            <param-value>classpath:spring-mvc.xml</param-value>
-        </init-param>
-        <!--tomcat启动时就加载这个类-->
-        <load-on-startup>1</load-on-startup>
-    </servlet>
-   <servlet-mapping>
-       <servlet-name>dispacherServlet</servlet-name>
-        <!--/代表除了.jsp的请求都包括(因为jsp也是个特殊的servlet)，/*是所有的请求-->
-       <url-pattern>/</url-pattern>
-   </servlet-mapping>
+  -->
+  <init-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>classpath:spring-mvc.xml</param-value>
+  </init-param>
+  <!--tomcat启动时就加载这个类-->
+  <load-on-startup>1</load-on-startup>
+</servlet>
+<servlet-mapping>
+  <servlet-name>dispacherServlet</servlet-name>
+  <!--/代表除了.jsp的请求都包括(因为jsp也是个特殊的servlet)，/*是所有的请求-->
+  <url-pattern>/</url-pattern>
+</servlet-mapping>
 ```
 
 `Spring-mvc.xml`配置：
@@ -219,69 +219,69 @@ public class MyController implements Controller {
 添加依赖
 
 ```xml
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjweaver</artifactId>
-            <version>1.9.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jcl</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>5.3.8</version>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.12</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
-        </dependency>
-    </dependencies>
+<dependencies>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>org.aspectj</groupId>
+    <artifactId>aspectjweaver</artifactId>
+    <version>1.9.7</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-beans</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-core</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-expression</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-jcl</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-web</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-webmvc</artifactId>
+    <version>5.3.8</version>
+  </dependency>
+  <dependency>
+    <groupId>log4j</groupId>
+    <artifactId>log4j</artifactId>
+    <version>1.2.12</version>
+  </dependency>
+  <dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <version>4.13.1</version>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <version>1.18.20</version>
+  </dependency>
+</dependencies>
 ```
 
 ### 6.3 编写配置文件
@@ -308,18 +308,18 @@ public class MyController implements Controller {
 在`spring-mvc.xml`配置文件中写如下内容：
 
 ```xml
-    <!--开启组件扫描-->
-    <context:component-scan base-package="com.xyz.code"/>
+<!--开启组件扫描-->
+<context:component-scan base-package="com.xyz.code"/>
 
-    <!--配置处理器映射-->
-    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"></bean>
-    <!--配置处理器适配器-->
-    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"></bean>
-    <!--配置视图解析器-->
-    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
-        <property name="prefix" value="/WEB-INF/pages/"></property>
-        <property name="suffix" value=".jsp"></property>
-    </bean>
+<!--配置处理器映射-->
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"></bean>
+<!--配置处理器适配器-->
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"></bean>
+<!--配置视图解析器-->
+<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+  <property name="prefix" value="/WEB-INF/pages/"></property>
+  <property name="suffix" value=".jsp"></property>
+</bean>
 ```
 
 `spring-mvc.xml`如果不想配置处理器映射，与处理器适配器，可与mvc注解驱动代替：
@@ -575,32 +575,32 @@ request.setCharacterEncoding("UTF-8");
 在`web.xml`配置：
 
 ```xml
-   <!--解决Post请求乱码问题使用过滤器
-  	CharacterEncodingFilter  在高版本的Spring中是可以解决 get请求 和Post请求 、
+<!--解决Post请求乱码问题使用过滤器
+   CharacterEncodingFilter  在高版本的Spring中是可以解决 get请求 和Post请求 、
     低版本  比如说4.X中 只能解决Post请求 不能解决get请求
-   -->
-    <filter>
-        <filter-name>characterEncodingFilter</filter-name>
-        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
-      	<!--这些参数就是类中的属性-->
-        <init-param>
-            <param-name>encoding</param-name>
-            <param-value>utf-8</param-value>
-        </init-param>
-        <init-param>
-            <param-name>forceRequestEncoding</param-name>
-            <param-value>true</param-value>
-        </init-param>
-        <init-param>
-            <param-name>forceResponseEncoding</param-name>
-            <param-value>true</param-value>
-        </init-param>
-    </filter>
-    <filter-mapping>
-        <filter-name>characterEncodingFilter</filter-name>
-      	<!--代表所有请求都会进行过滤，包括jsp-->
-        <url-pattern>/*</url-pattern>
-    </filter-mapping>
+-->
+<filter>
+  <filter-name>characterEncodingFilter</filter-name>
+  <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+  <!--这些参数就是类中的属性-->
+  <init-param>
+    <param-name>encoding</param-name>
+    <param-value>utf-8</param-value>
+  </init-param>
+  <init-param>
+    <param-name>forceRequestEncoding</param-name>
+    <param-value>true</param-value>
+  </init-param>
+  <init-param>
+    <param-name>forceResponseEncoding</param-name>
+    <param-value>true</param-value>
+  </init-param>
+</filter>
+<filter-mapping>
+  <filter-name>characterEncodingFilter</filter-name>
+  <!--代表所有请求都会进行过滤，包括jsp-->
+  <url-pattern>/*</url-pattern>
+</filter-mapping>
 ```
 
 **Tomcat 10 及之后的版本：**
@@ -610,7 +610,8 @@ Tomcat 10 及之后的版本，处理 post 请求的编码为 UTF-8，如果浏�
 Tomcat 10 的 conf/web.xml 文件中设置了处理 request 和 response 的编码为 UTF-8。
 
 ```xml
-<request-character-encoding>UTF-8</request-character-encoding>  
+<request-character-encoding>UTF-8</request-character-encoding> 
+
 <response-character-encoding>UTF-8</response-character-encoding> 
 ```
 
@@ -694,14 +695,14 @@ spring-mvc.xml中配置如下：
 在配置文件中的`<mvc:annotation-driven>`中修改StringHttpMessageConverter的defaultCharset
 
 ```xml
-    <mvc:annotation-driven>
-        <mvc:message-converters register-defaults="true">
-            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
-                <property name="defaultCharset" value="UTF-8"/>
-                <property name="writeAcceptCharset" value="false"/>
-            </bean>
-        </mvc:message-converters>
-    </mvc:annotation-driven>
+<mvc:annotation-driven>
+  <mvc:message-converters register-defaults="true">
+    <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+      <property name="defaultCharset" value="UTF-8"/>
+      <property name="writeAcceptCharset" value="false"/>
+    </bean>
+  </mvc:message-converters>
+</mvc:annotation-driven>
 ```
 
 ![](./images/Snipaste_2022-06-04_15-10-12.png)
@@ -736,12 +737,12 @@ Help->edit custom VM options在最后添加这句重启idea即可。
 首先pom.xml文件中要引入javax.servlet-api
 
 ```xml
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
-            <scope>provided</scope>
-        </dependency>
+<dependency>
+  <groupId>javax.servlet</groupId>
+  <artifactId>javax.servlet-api</artifactId>
+  <version>4.0.1</version>
+  <scope>provided</scope>
+</dependency>
 ```
 
 ```java
@@ -772,18 +773,18 @@ public String testOriginal(HttpServletRequest request, HttpServletResponse respo
 ### 11.1. 返回ModelAndView
 
 ```java
-    /**
-     * 直接在方法体中建ModelAndView对象，可添加请求域数据，可设置视图名称
-     *
-     * @return
-     */
-    @GetMapping(value = "/modelAndView")
-    public ModelAndView testReturnModelAndView() {
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("success");
-        modelAndView.addObject("message", "hello testReturnModelAndView");
-        return modelAndView;
-    }
+/**
+ * 直接在方法体中建ModelAndView对象，可添加请求域数据，可设置视图名称
+ *
+ * @return
+ */
+@GetMapping(value = "/modelAndView")
+public ModelAndView testReturnModelAndView() {
+  ModelAndView modelAndView = new ModelAndView();
+  modelAndView.setViewName("success");
+  modelAndView.addObject("message", "hello testReturnModelAndView");
+  return modelAndView;
+}
 ```
 
 ### 11.2. 返回字符串 
@@ -796,39 +797,39 @@ public String testOriginal(HttpServletRequest request, HttpServletResponse respo
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.ModelAndView;
 
-		/**
-     * 直接返回string,这个string就是视图名称，会请求转发到这个视图页面，并且请求域中没有添加对象
-     *
-     * @return
-     */
-    @GetMapping(value = "/testReturnString")
-    public String testReturnString() {
-        return "success";
-    }
+/**
+ * 直接返回string,这个string就是视图名称，会请求转发到这个视图页面，并且请求域中没有添加对象
+ *
+ * @return
+ */
+@GetMapping(value = "/testReturnString")
+public String testReturnString() {
+  return "success";
+}
 
-    /**
-     * 返回值String代表视图名称，入参model可添加请求域对象
-     *
-     * @param model
-     * @return
-     */
-    @GetMapping(value = "/testReturnStringAndModel")
-    public String testReturnStringAndModel(Model model) {
-        model.addAttribute("message", "testReturnStringAndModel");
-        return "success";
-    }
+/**
+ * 返回值String代表视图名称，入参model可添加请求域对象
+ *
+ * @param model
+ * @return
+ */
+@GetMapping(value = "/testReturnStringAndModel")
+public String testReturnStringAndModel(Model model) {
+  model.addAttribute("message", "testReturnStringAndModel");
+  return "success";
+}
 
-    /**
-     * 返回值String代表视图名称，入参map可添加请求域对象
-     *
-     * @param map
-     * @return
-     */
-    @GetMapping(value = "/testReturnStringAndMap")
-    public String testReturnStringAndMap(Map map) {
-        map.put("message", "testReturnStringAndMap");
-        return "success";
-    }
+/**
+ * 返回值String代表视图名称，入参map可添加请求域对象
+ *
+ * @param map
+ * @return
+ */
+@GetMapping(value = "/testReturnStringAndMap")
+public String testReturnStringAndMap(Map map) {
+  map.put("message", "testReturnStringAndMap");
+  return "success";
+}
 ```
 
 #### 11.2.2. 字符串之普通字符串
@@ -848,17 +849,17 @@ public String testReturnRealString() {
 ```
 
 ```java
-    /**
-     * 可以验证如果返回中文字符串，则会乱码,可在@GetMapping中加入produces属性设置值
-     * 同时也注意到字符编码过滤器只能解决post请求乱码问题，response响应乱码可以通过@GetMapping中加入produces属性解决
-     *
-     * @return
-     */
-    @GetMapping(value = "/testResponseEncodeError", produces = "text/html;charset=utf-8")
-    @ResponseBody
-    public String testResponseEncodeError() {
-        return "会乱码吗";
-    }
+/**
+ * 可以验证如果返回中文字符串，则会乱码,可在@GetMapping中加入produces属性设置值
+ * 同时也注意到字符编码过滤器只能解决post请求乱码问题，response响应乱码可以通过@GetMapping中加入produces属性解决
+ *
+ * @return
+ */
+@GetMapping(value = "/testResponseEncodeError", produces = "text/html;charset=utf-8")
+@ResponseBody
+public String testResponseEncodeError() {
+  return "会乱码吗";
+}
 ```
 
 #### 11.2.3. 字符串之转发和重定向
@@ -979,13 +980,13 @@ public void testReturnVoid(HttpServletRequest httpServletRequest, HttpServletRes
 报404，尝试找/WEB-INF/pages/testReturnNull.jsp文件
 
 ```java
-    /**
-     * 返回值为String类型时返回null，默认将请求路径解析成视图名，即请求testReturnNull视图
-     */
-    @GetMapping(value = "/testReturnNull")
-    public String testReturnNull() {
-        return null;
-    }
+/**
+ * 返回值为String类型时返回null，默认将请求路径解析成视图名，即请求testReturnNull视图
+ */
+@GetMapping(value = "/testReturnNull")
+public String testReturnNull() {
+  return null;
+}
 ```
 
 ![](./images/Snipaste_2022-06-04_16-24-44.png)
@@ -1124,24 +1125,24 @@ public String testPathVariable(@PathVariable String username, @PathVariable(valu
 也可以直接在`controller层`类上加`@MultipartConfig`配置多部件，无需在`web.xml`的`servelet标签`中配置
 
 ```xml
-      <servlet>
-          <servlet-name>dispatcherServlet</servlet-name>
-          <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-          <init-param>
-              <param-name>contextConfigLocation</param-name>
-              <param-value>classpath:spring-mvc.xml</param-value>
-          </init-param>
-          <!--可以直接复制，单位byte;threshold是起步值可以为0-->
-          <multipart-config>
-              <max-file-size>20848820</max-file-size>
-              <max-request-size>418018841</max-request-size>
-              <file-size-threshold>0</file-size-threshold>
-          </multipart-config>
-      </servlet>
-      <servlet-mapping>
-          <servlet-name>dispatcherServlet</servlet-name>
-          <url-pattern>/</url-pattern>
-      </servlet-mapping>  
+<servlet>
+  <servlet-name>dispatcherServlet</servlet-name>
+  <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+  <init-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>classpath:spring-mvc.xml</param-value>
+  </init-param>
+  <!--可以直接复制，单位byte;threshold是起步值可以为0-->
+  <multipart-config>
+    <max-file-size>20848820</max-file-size>
+    <max-request-size>418018841</max-request-size>
+    <file-size-threshold>0</file-size-threshold>
+  </multipart-config>
+</servlet>
+<servlet-mapping>
+  <servlet-name>dispatcherServlet</servlet-name>
+  <url-pattern>/</url-pattern>
+</servlet-mapping>  
 ```
 
 ```java
@@ -1196,9 +1197,10 @@ part.getSubmittedFileName()是包含文件后缀名
 需要在`tomcat安装目录conf文件夹`下配置`context.xml`：
 
 ```xml
- <!--允许任意 多部件解析-->
-  <Context allowCasualMultipartParsing="true">  
-  </Context>
+<!--允许任意 多部件解析-->
+<Context allowCasualMultipartParsing="true">
+  
+</Context>
 ```
 
 **第二步：编写Controller**
@@ -1267,18 +1269,18 @@ public class MyController4 {
 **第三步：编写Controller**
 
 ```java
-  // 这里不用加@MultipartConfig,只需向容器中添加 多媒体视图解析器
-	@Controller 
-  public class MyController5 {
-  
-      @PostMapping("/upload3") // 注意：加@RequestParam注解指定上传的参数名
-      public String upload3(HttpServletRequest request, @RequestParam(value = "image") MultipartFile file) throws IOException {
-          String realPath = request.getServletContext().getRealPath("/WEB-INF");
-          String fullName = file.getOriginalFilename();
-          file.transferTo(new File(realPath + File.separator + fullName));
-          return "success";
-      }
+// 这里不用加@MultipartConfig,只需向容器中添加 多媒体视图解析器
+@Controller 
+public class MyController5 {
+
+  @PostMapping("/upload3") // 注意：加@RequestParam注解指定上传的参数名
+  public String upload3(HttpServletRequest request, @RequestParam(value = "image") MultipartFile file) throws IOException {
+    String realPath = request.getServletContext().getRealPath("/WEB-INF");
+    String fullName = file.getOriginalFilename();
+    file.transferTo(new File(realPath + File.separator + fullName));
+    return "success";
   }
+}
 ```
 
 **第四步：编写前端或用postman模拟**
@@ -1373,12 +1375,12 @@ public class MyController5 {
 测试代码：
 
 ```java
-    @GetMapping("/error")
-    public ModelAndView error() {
-      	// 当异常没有进行任何的处理，就会交给tomcat处理，跳转到错误页面
-        int i = 10 / 0;
-        return new ModelAndView("success");
-    }
+@GetMapping("/error")
+public ModelAndView error() {
+  // 当异常没有进行任何的处理，就会交给tomcat处理，跳转到错误页面
+  int i = 10 / 0;
+  return new ModelAndView("success");
+}
 ```
 
 **缺点：页面固定  传值麻烦**
@@ -1391,12 +1393,12 @@ public class MyController5 {
 * 要求加入到spring ioc容器中
 
 ```java
-@Component
+@Component // 加入容器
 public class MyExeptionHander implements HandlerExceptionResolver {
     @Override
     public ModelAndView resolveException(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) {
-			// 对象o就是发生异常的控制器方法
-      ModelAndView mv  = new ModelAndView();
+				// 对象o就是发生异常的控制器方法
+      	ModelAndView mv  = new ModelAndView();
         mv.addObject("msg",e.getMessage());
         mv.setViewName("error");
         return mv;
@@ -1415,14 +1417,13 @@ public class MyExeptionHander implements HandlerExceptionResolver {
 ```java
 @GetMapping("/error")
 public ModelAndView error() {
-  	// 当异常进行处理时，就不会交给tomcat处理
+  	// 当异常进行处理时，就不会交给tomcat处理，会找mvc的ioc容器中找handlerExceptionResolver
     int i = 10 / 0;
     return new ModelAndView("success");
 }
 ```
 
-
-**特点： 虽然可以动态显示错误信息 但是只能返回jsp页面  想要返回html页面 需要依赖模板引擎**
+**特点： 虽然可以动态显示错误信息 但是只能返回jsp页面  想要返回html页面 需要依赖模板引擎  不能定制化处理各种异常**
 
 ### 15.3. 第三种方式（必须掌握）
 
@@ -1470,6 +1471,8 @@ public enum StatusEnum {
 
 **第二步：自定义异常**
 
+异常包含状态枚举值
+
 ```java
 @Data
 @AllArgsConstructor
@@ -1484,6 +1487,8 @@ public class MyException extends RuntimeException {
 ```
 
 **第三步：提供静态工厂**
+
+静态工厂生成异常对象
 
 ```java
 /**
@@ -1508,7 +1513,7 @@ public class ExceptionFactory {
 }
 ```
 
-**第四步：Controller抛出自定义异常**
+**第四步：Controller模拟抛出自定义异常**
 
 ```java
 @GetMapping("/error2")
@@ -1539,7 +1544,7 @@ public class MyExceptionHandler {
 
 ## 16 SpringMVC拦截器
 
-> 拦截器 Interceptor： 只会拦截Controller当中的各种Mapping ---------- SpringMVC  
+> 拦截器 Interceptor： 只会拦截Controller当中的各种Mapping，即会拦截各种控制器方法 ---------- SpringMVC  
 >
 > 过滤器Filter :  /* 拦截所有请求 包括静态资源   可以在任何web项目当中用 -----Web - --Servet
 
@@ -1547,7 +1552,7 @@ public class MyExceptionHandler {
 
 **第一步:创建拦截器**
 
-注意这里有ctrl+i实现的是默认方法
+注意这里用ctrl+i实现的是默认方法
 
 ```java
 public class MyInterceptor implements HandlerInterceptor {
@@ -1575,56 +1580,56 @@ public class MyInterceptor implements HandlerInterceptor {
 }
 ```
 
-**在springMvc.xml配置文件中添加配置**
+**在spring-mvc.xml配置文件中添加配置**
 
 
 ```xml
-      <mvc:interceptors>
-          <mvc:interceptor>
-              <!--访问的路径符合如下规则时,则会进入这个拦截器执行-->
+<mvc:interceptors>
+  <mvc:interceptor>
+    <!--访问的路径符合如下规则时,则会进入这个拦截器执行-->
 
-              <!--配置多个路径-->
-              <!--<mvc:mapping path="/interceptor/*" />-->
-              <!--配置单个路径-->
-              <mvc:mapping path="/interceptor/aaa"/>
-            
-              <!--排除不拦截的路径-->
-              <!--<mvc:exclude-mapping path=""-->
-              <!--可以看到拦截器不加注解，这里通过配置加入到容器中-->
-              <bean class="com.aitx.study.intercepter.FirstInteceptor"/>
-          </mvc:interceptor>
-      </mvc:interceptors>
+    <!--配置多个路径-->
+    <!--<mvc:mapping path="/interceptor/*" />-->
+    <!--配置单个路径-->
+    <mvc:mapping path="/interceptor/aaa"/>
+
+    <!--排除不拦截的路径-->
+    <!--<mvc:exclude-mapping path=""-->
+    <!--可以看到拦截器不加注解，这里通过配置加入到容器中-->
+    <bean class="com.aitx.study.intercepter.FirstInteceptor"/>
+  </mvc:interceptor>
+</mvc:interceptors>
 ```
 
 **也可以配置多个拦截器**
 
 ```xml
-    <!-- 配置拦截器  可以配置多个 -->
-    <mvc:interceptors>
+<!-- 配置拦截器  可以配置多个 -->
+<mvc:interceptors>
 
-        <!--表示配置一个-->
-        <mvc:interceptor>
-            <!--拦截的路径 -->
-            <mvc:mapping path="/interceptor/*"/>
-            <!--拦截后要走的拦截器-->
-            <bean class="com.aitx.study.intercepter.FirstInteceptor"></bean>
-        </mvc:interceptor>
+  <!--表示配置一个-->
+  <mvc:interceptor>
+    <!--拦截的路径 -->
+    <mvc:mapping path="/interceptor/*"/>
+    <!--拦截后要走的拦截器-->
+    <bean class="com.aitx.study.intercepter.FirstInteceptor"></bean>
+  </mvc:interceptor>
 
-        <!--表示配置一个-->
-        <mvc:interceptor>
-            <!--拦截的路径 -->
-            <mvc:mapping path="/interceptor/*"/>
-            <!--<mvc:exclude-mapping path=""/>-->
-            <!--拦截后要走的拦截器-->
-            <bean class="com.aitx.study.intercepter.SecondInteceptor"></bean>
-        </mvc:interceptor>
+  <!--表示配置一个-->
+  <mvc:interceptor>
+    <!--拦截的路径 -->
+    <mvc:mapping path="/interceptor/*"/>
+    <!--<mvc:exclude-mapping path=""/>-->
+    <!--拦截后要走的拦截器-->
+    <bean class="com.aitx.study.intercepter.SecondInteceptor"></bean>
+  </mvc:interceptor>
 
-    </mvc:interceptors>
+</mvc:interceptors>
 ```
 
 ## 17 SpringMVC的静态资源
 
-> 比如在webapp目录下创建static目录，该目录下放置一些静态文件，如.js,.css,.jpg等
+> 比如在webapp目录下创建static目录，该目录下放置一些静态文件，如.js,.css,.jpg等,称为静态资源。
 >
 > Springmvc默认无法访问这些静态资源，需要额外配置
 
@@ -1634,7 +1639,7 @@ public class MyInterceptor implements HandlerInterceptor {
 
 ![](images/QQ图片20200207210253.png)
 
-<font color=red>所以</font>:`字符编码过滤器`的`url模式`是`/*`代表拦截所有，即所有的请求都要走那里进行设置字符编码。而`servlet-mapping标签`配置的`url模式`是`/`则拦截除了jsp的所有静态资源与动态资源。
+<font color=red>所以</font>:`字符编码过滤器`的`url模式`是`/*`代表拦截所有，即所有的请求都要走那里进行设置字符编码。而dispatcherServlet的`servlet-mapping标签`配置的`url模式`是`/`则拦截除了jsp的所有静态资源与动态资源。
 
 ### 17.2. 静态资源解决方式一
 
@@ -1644,13 +1649,14 @@ public class MyInterceptor implements HandlerInterceptor {
 
 这样，静态资源不符合，则不进入DispatcherServlet
 
-**缺点： 不符合Rest风格API**
+**缺点： 以某种后缀的请求URL不符合Rest风格API**
 
 ### 17.3. 静态资源解决方式二（推荐）
 
 在`spring-mvc.xml`中配置`mvc:default-servlet-handler标签`
 
 ```xml
+<!--DispatcherServlet处理不了的静态资源交给tomcat默认的servlet进行处理-->
 <mvc:default-servlet-handler /> 
 ```
 
@@ -1667,7 +1673,7 @@ public class MyInterceptor implements HandlerInterceptor {
 
 在`spring-mvc.xml`中配置`mvc:resources标签`
 
-根目录static下的所有文件不会被DispatcherServlet拦截，可以直接访问，当做静态资源交给tomcat的Servlet进行处理
+根目录static下的所有文件不会被DispatcherServlet拦截，可以直接访问，目录下的文件被当做静态资源交给tomcat的Servlet进行处理
 
 ```xml
 <!--只要请求方式是/static/**形式的，就会到/static/目录下找-->
@@ -1679,63 +1685,60 @@ public class MyInterceptor implements HandlerInterceptor {
 
 ### 18.1. 日期类型转换之Date类型
 
-#### 18.1.1. Date类型传参之key-value的形式
+#### 18.1.1. Date类型传参之key-value表单的形式
 
 key-value形式就是表单中保存数据格式，也是postman中的x-www-form-urlencoded
 
-* **问题演示**
+**问题演示：**
 
-  ![](images/QQ图片20200207214313.png)
+![](images/QQ图片20200207214313.png)
 
-  **错误说明： 表单传递的是个字符串 接收的birthday是个日期类型 不会自动转换**
+**错误说明： 表单传递的是个字符串 接收的birthday是个Date日期类型 不会自动转换**
 
-* **解决方式一**
+**解决方式一：添加注解**
 
-  ![](images/QQ图片20200207214717.png)
+![](images/QQ图片20200207214717.png)
 
 ```java
-  @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public class User implements Serializable {
-  
-      private String username;
-      @DateTimeFormat(pattern = "yyyy-MM-dd") //这里加上日期时间格式化注解
-      private Date birthday;
-  }
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class User implements Serializable {
+
+  private String username;
+  @DateTimeFormat(pattern = "yyyy-MM-dd") //这里加上日期时间格式化注解
+  private Date birthday;
+}
 ```
 
-* **解决方式二**
-* 新建类型转换器
+**解决方式二：新建类型转换器**
 
 ```java
 import org.springframework.core.convert.converter.Converter;    
 //Converter 第一个泛型 表示from 
-		  //第二个泛型 表示 to
+//第二个泛型 表示 to
 public class MyDateConvert implements Converter<String, Date> {
-    @Override
-    public Date convert(String s) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        try {
-            Date parse = sdf.parse(s);
-            return parse;
-        } catch (ParseException e) {
-            SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
-            try {
-                return sdf1.parse(s);
-            } catch (ParseException e1) {
-              	// 规范是不能打印堆栈信息，可以打错误日志并返回null
-                e1.printStackTrace();
-            }
-        }
-        return null;
+  @Override
+  public Date convert(String s) {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    try {
+      Date parse = sdf.parse(s);
+      return parse;
+    } catch (ParseException e) {
+      SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
+      try {
+        return sdf1.parse(s);
+      } catch (ParseException e1) {
+        // 规范是不能打印堆栈信息，可以打错误日志并返回null
+        e1.printStackTrace();
+      }
     }
+    return null;
+  }
 }
 ```
 
-  * 配置转换器
-
-在`springMvc.xml`中配置
+在`spring-mvc.xml`中配置转换器
 
 ```xml
 <!--只是实现转换器，这里将实现的转换器放到容器中-->
@@ -1759,63 +1762,63 @@ public class MyDateConvert implements Converter<String, Date> {
 
 
 
-* **自定义格式方式一：**
+**自定义格式方式一：**
 
-  ![](images/QQ图片20200229230858.png)
+![](images/QQ图片20200229230858.png)
 
-  ```java
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public class User implements Serializable {
-  
-      private String username;
-      @JsonFormat(pattern = "yyyy-MM-dd") //可以在请求实体类，响应实体类的日期属性上加
-      private Date birthday;
-  }
-  ```
+```java
+@NoArgsConstructor
+@AllArgsConstructor
+public class User implements Serializable {
 
-* **自定义格式方式二**
+    private String username;
+    @JsonFormat(pattern = "yyyy-MM-dd") //可以在请求实体类，响应实体类的日期属性上加
+    private Date birthday;
+}
+```
 
-  > 不管是接收还是返回json都生效
+**自定义格式方式二**
 
-  在`SpringMvc.xml`中配置，相当于在容器加了两个Bean
+> 不管是接收还是返回json都生效
 
-  ```xml
-      <mvc:annotation-driven>
-          <mvc:message-converters>
-              
-              <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
-                <property name="objectMapper" ref="objectMapper"/>
-              </bean>
-          </mvc:message-converters>
-    </mvc:annotation-driven>
-  
-  	<!--这里用到p空间依赖注入-->
-      <bean id="objectMapper" class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean"
-            p:indentOutput="true"
-            p:simpleDateFormat="yyyy-MM-dd HH:mm:ss"
-        />
-  ```
+在`Spring-mvc.xml`中配置，相当于在容器加了两个Bean
+
+```xml
+<mvc:annotation-driven>
+  <mvc:message-converters>
+
+    <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+      <property name="objectMapper" ref="objectMapper"/>
+    </bean>
+  </mvc:message-converters>
+</mvc:annotation-driven>
+
+<!--这里用到p空间依赖注入-->
+<bean id="objectMapper" class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean"
+      p:indentOutput="true"
+      p:simpleDateFormat="yyyy-MM-dd HH:mm:ss"
+/>
+```
 
 ### 18.2. 日期转换类型之LocalDateTime类型 
 
-#### 18.2.1. 参数类型传值之Key-value
+#### 18.2.1. 参数类型传值之Key-value表单形式
 
-* **第一种解决方式**
+**第一种解决方式：**
 
-  ![](images/QQ图片20200229233001.png)
+![](images/QQ图片20200229233001.png)
 
-* **第二种解决方式**
+**第二种解决方式：**
 
-  1、定义2个Converts
+1、定义2个Converts
 
 ```java
-    public class MyConvert1 implements Converter<String,LocalDateTime> {
-        @Override
-        public LocalDateTime convert(String s) {
-           return LocalDateTime.parse(s,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        }
-    }
+public class MyConvert1 implements Converter<String,LocalDateTime> {
+  @Override
+  public LocalDateTime convert(String s) {
+    return LocalDateTime.parse(s,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+  }
+}
 ```
 
 
@@ -1828,25 +1831,25 @@ public class MyConvert2 implements Converter<String,LocalDate> {
 }
 ```
 
-​	2、加载convert
+2、加载convert
 
-​	只是定义了转换器，但要加入容器中
+只是定义了转换器，但要加入容器中
 
 ```xml
-	
-    <mvc:annotation-driven conversion-service="conversionService"/>
-    <bean id="conversionService"
-       class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
-        <property name="converters">
-            <set>
-                <bean class="com.xyz.code.convert.MyLocalDateTimeConvert"/>
-                <bean class="com.xyz.code.convert.MyLocalDateConvert"/>
-            </set>
-        </property>
-    </bean>
+<mvc:annotation-driven conversion-service="conversionService"/>
+
+<bean id="conversionService"
+      class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+  <property name="converters">
+    <set>
+      <bean class="com.xyz.code.convert.MyLocalDateTimeConvert"/>
+      <bean class="com.xyz.code.convert.MyLocalDateConvert"/>
+    </set>
+  </property>
+</bean>
 ```
 
-#### 18.2.2. 参数类型传值之json 
+#### 18.2.2. 参数类型传值之json类型 
 
 ![](images/QQ图片20200229234415.png)
 
@@ -1864,21 +1867,35 @@ jsr = java specific request = java 规范请求
 
 **导入这个包后 什么都不需要配置 直接使用@JsonFormat注解  接收和响应 都会按照指定的格式生效**
 
+**解决方式一：引入jar包，添加注解（推荐）**
 
+![](images/QQ图片20200229234954.png)
 
-* **解决方式一（推荐）**
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.datatype</groupId>
+    <artifactId>jackson-datatype-jsr310</artifactId>
+    <version>2.13.2</version>
+</dependency>
+```
 
-  ![](images/QQ图片20200229234954.png)
+**解决方式二：配置Jackson2ObjectMapperFactoryBean**
 
-* **解决方式二**
+首先还是要引入jackson-datatype-jsr310包
 
-  ![](images/QQ图片20200301003410.png)
+然后在`spring-mvc.xml`中配置：
 
-* **最终解决方式**
+```xml
+<bean class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean" p:indentOutput="true" p:modules-ref="module">
+<!--这种配置默认格式为yyyy-MM-ddTHH:mm:ss,并且返回的也是一个对象-->
+</bean>
 
-  **牵扯到新技术 后面再说**
+<bean id="module" class="com.fasterxml.jackson.datatype.jsr310.JavaTimeModule"></bean>
+```
 
-  
+**最终解决方式：**
+
+**牵扯到新技术 后面再说**
 
 ## 19.SpringMvc常见异常
 
