@@ -1683,6 +1683,14 @@ public class MyInterceptor implements HandlerInterceptor {
 
 ## 18 SpringMVC类型转换问题
 
+> 字符串类型的时间格式并不会自动转成相应的时间类型
+>
+> DateTimeFormat注解可以解析字符串为Date,LocalDateTime类型，但只能用于表单key-value形式
+>
+> JsonFormat注解可以解析字符串为Date(无需引包),LocalDateTime(需要引包)类型，但是只用于json形式
+>
+> 此外，还可以配置转换器等方式完成字符串转时间
+
 ### 18.1. 日期类型转换之Date类型
 
 #### 18.1.1. Date类型传参之key-value表单的形式
