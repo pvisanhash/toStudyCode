@@ -1359,7 +1359,13 @@ public class MyController5 {
 
 >我们的开发中 三层架构 dao层 service层 controller层的异常  一般都会抛给SpringMVC来处理   
 >
->所以我们异常处理 是针对的SpringMVC的异常处理 
+>所以我们异常处理 是针对的SpringMVC的异常处理
+>
+>最常用的异常处理方式是定义异常处理类并加上注解RestControllerAdvice，方法上加上注解 @ExceptionHandler
+>
+>也可以实现接口HandlerExceptionResolver（处理器异常解析器）
+>
+>最后也可以在web.xml中配置error-page
 
 ### 15.1. 第一种方式
 
@@ -1547,6 +1553,8 @@ public class MyExceptionHandler {
 > 拦截器 Interceptor： 只会拦截Controller当中的各种Mapping，即会拦截各种控制器方法 ---------- SpringMVC  
 >
 > 过滤器Filter :  /* 拦截所有请求 包括静态资源   可以在任何web项目当中用 -----Web - --Servet
+>
+> 拦截器一般都是实现接口HandlerInterceptor（处理器拦截器）
 
 **使用步骤**
 
