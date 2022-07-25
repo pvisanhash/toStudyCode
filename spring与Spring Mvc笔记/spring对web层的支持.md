@@ -1970,6 +1970,26 @@ public String testAjax(String username, String password){
 
 ResponseEntity用于控制器方法的返回值类型，该控制器方法的返回值就是响应到浏览器的响应报文
 
+### 8、@RequestParam与@RequestBody的区别
+
+注解@RequestParam接收的参数是来自HTTP请求体或请求url的QueryString中。
+RequestParam可以接受简单类型的属性，也可以接受对象类型。
+@RequestParam有三个配置参数：
+required 表示是否必须，默认为 true，必须。
+defaultValue 可设置请求参数的默认值。
+value 为接收url的参数名（相当于key值）。
+@RequestParam用来处理 Content-Type 为 application/x-www-form-urlencoded 编码的内容，Content-Type默认为该属性。@RequestParam也可用于其它类型的请求，例如：POST、DELETE等请求。
+
+
+
+注解@RequestBody接收的参数是来自requestBody中，即请求体。一般用于处理非 Content-Type: application/x-www-form-urlencoded编码格式的数据，比如：application/json、application/xml等类型的数据。
+就application/json类型的数据而言，使用注解@RequestBody可以将body里面所有的json数据传到后端，后端再进行解析。
+GET请求中，因为没有HttpEntity，所以@RequestBody并不适用。
+POST请求中，通过HttpEntity传递的参数，必须要在请求头中声明数据的类型Content-Type，SpringMVC通过使用
+HandlerAdapter 配置的HttpMessageConverters来解析HttpEntity中的数据，然后绑定到相应的bean上。	
+
+
+
 ## 15. 文件上传
 
 > 目前 市场流行的文件上传  分为2种 

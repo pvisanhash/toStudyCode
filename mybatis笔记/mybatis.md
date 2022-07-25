@@ -1,4 +1,4 @@
-myBatis笔记
+# myBatis笔记
 
 ## 1. java项目的基本三层架构
 
@@ -27,6 +27,7 @@ myBatis笔记
   
 ```properties
 batis = 藜木科；跟spring搭配，是春天的藜木科
+abatis = 鹿砦，带刺铁丝网
 dtb = data transfer bus = 数据传输总线
 ```
 
@@ -50,7 +51,6 @@ dtb = data transfer bus = 数据传输总线
 ```mysql
 create database mybatis;
 use mybatis;
-
 
 CREATE TABLE `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -214,17 +214,17 @@ public class UserTest {
     public void test1() throws IOException {
         SqlSession sqlSession = null;
         try {
-            //配置文件路径
+            // 配置文件路径
             String resource = "mybatis-config.xml";
-            //通过路径加载配置文件
+            // 通过路径加载配置文件
             InputStream inputStream = Resources.getResourceAsStream(resource);
-            //构建sqlSessionFactory
+            // 构建sqlSessionFactory
             SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
-            //开启sqlSession
+            // 开启sqlSession
             sqlSession = sqlSessionFactory.openSession();
-            //操作数据库 参数1：名称空间.id ；参数2：sql语句需要的参数
+            // 操作数据库 参数1：名称空间.id ；参数2：sql语句需要的参数
             User user = ((User) sqlSession.selectOne("xyz.findUserById", 10));
-            //打印结果
+            // 打印结果
             System.out.println(user);
         } finally {
             //关闭资源
@@ -481,7 +481,7 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
         User user = new User().setUsername("xiaohong").
                 setAddress("北京").setBirthday(new Date()).setSex("男");
         sqlSession.insert("xyz.insertUser", user);
-        //要提交事务  不提交事务 则可能没有真正的持久化硬盘中
+        // 要提交事务  不提交事务 则可能没有真正的持久化硬盘中
         sqlSession.commit();
         sqlSession.close();
     }
@@ -512,22 +512,22 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
 ##### 6.2.3.3. 编写代码 
 
 ```java
-    @Test
-    public void updateUser() throws IOException {
+@Test
+public void updateUser() throws IOException {
 
-        String path = "mybatis-config.xml";
-        InputStream inputStream = Resources.getResourceAsStream(path);
-        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
-        SqlSession sqlSession = sqlSessionFactory.openSession();
-        //先查出来 再修改
-        User user = ((User) sqlSession.selectOne("xyz.findUserById", 27));
-        user.setSex("男").setAddress("成都");
-        //修改
-        sqlSession.update("xyz.updateUser", user);
-        sqlSession.commit();
-        //这里最好finally关闭
-        sqlSession.close();
-    }
+  String path = "mybatis-config.xml";
+  InputStream inputStream = Resources.getResourceAsStream(path);
+  SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+  SqlSession sqlSession = sqlSessionFactory.openSession();
+  // 先查出来 再修改
+  User user = ((User) sqlSession.selectOne("xyz.findUserById", 27));
+  user.setSex("男").setAddress("成都");
+  // 修改
+  sqlSession.update("xyz.updateUser", user);
+  sqlSession.commit();
+  // 这里最好finally关闭
+  sqlSession.close();
+}
 ```
 
 ##### 6.2.3.4. 查看结果 
@@ -552,17 +552,17 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
 ##### 6.2.4.3. 编写代码 
 
 ```java
-    @Test
-    public void deleteUser() throws IOException {
-        String path = "mybatis-config.xml";
-        InputStream resourceAsStream = Resources.getResourceAsStream(path);
-        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
-        SqlSession sqlSession = sqlSessionFactory.openSession();
-        sqlSession.delete("xyz.deleteUser", 27);
-        //只要不是查询  增删改 都需要提交事务
-        sqlSession.commit();
-        sqlSession.close();
-    }
+@Test
+public void deleteUser() throws IOException {
+  String path = "mybatis-config.xml";
+  InputStream resourceAsStream = Resources.getResourceAsStream(path);
+  SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
+  SqlSession sqlSession = sqlSessionFactory.openSession();
+  sqlSession.delete("xyz.deleteUser", 27);
+  // 只要不是查询  增删改 都需要提交事务
+  sqlSession.commit();
+  sqlSession.close();
+}
 ```
 
 ##### 6.2.4.4. 查看结果
@@ -589,17 +589,17 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
 ##### 6.2.5.3. 编写代码 
 
 ```java
-    @Test
-    public void search() throws IOException {
-        String path  = "mybatis-config.xml";
-        InputStream resourceAsStream = Resources.getResourceAsStream(path);
-        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
-        SqlSession sqlSession = sqlSessionFactory.openSession();
-        List<User> users = sqlSession.selectList("xyz.search", "xiao");
-        users.forEach(System.out::println);
-        //要关闭sql会话
-        sqlSession.close();
-    }
+@Test
+public void search() throws IOException {
+  String path  = "mybatis-config.xml";
+  InputStream resourceAsStream = Resources.getResourceAsStream(path);
+  SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
+  SqlSession sqlSession = sqlSessionFactory.openSession();
+  List<User> users = sqlSession.selectList("xyz.search", "xiao");
+  users.forEach(System.out::println);
+  // 要关闭sql会话
+  sqlSession.close();
+}
 ```
 
 ##### 6.2.5.4. 查看结果
@@ -692,10 +692,10 @@ public class TestDemo2 {
 
     @Test
     public  void  updateUser() throws IOException {
-       //先查出来 再修改
+       // 先查出来 再修改
         User user = ((User) sqlSession.selectOne("xyz.findUserById", 27));
         user.setSex("男").setAddress("成都");
-        //修改
+        // 修改
         sqlSession.update("xyz.updateUser", user);
     }
 
@@ -719,7 +719,7 @@ public class TestDemo2 {
         sqlSession.commit();
         sqlSession.close();
         try {
-            //这里的输入流可不关闭，因为不是new的
+            // 这里的输入流可不关闭，因为不是new的
             inputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -831,9 +831,9 @@ public class UserDaoTest {
 
 ### 10.1. Mapper代理书写规范
 
-* Mapper接口的完整路径 要和Mapper中的namespace一致
+* Mapper接口的完整路径 要和Mapper的XML文件中的namespace一致
 * Mapper接口中的方法  要和映射文件中select update insert delete标签中的 id值一致 
-* Mapper接口中方法的参数只能有一个 并且类型要和映射文件中select update insert delete标签中的parameterType的类型一致 （一般可省略参数类型）
+* Mapper接口中方法的参数一般只有一个 并且类型要和映射文件中select update insert delete标签中的parameterType的类型一致 （一般可省略参数类型）
 * Mapper接口中返回值要和要和映射文件中select update insert delete标签中的resultType或者resultMap的类型一致 
 
 ### 10.2. 编写Mapper接口
@@ -864,7 +864,7 @@ public interface UserMapper {
 
 <mapper namespace="com.xyz.code.mapper.UserMapper">
 
-    <!--查询所有,返回的虽然是集合，但类型还是用的元素的类开型-->
+    <!--查询所有,返回的虽然是集合，但类型还是用的元素的类型-->
     <select id="selectAll" resultType="com.xyz.code.entity.User">
      select * from user
     </select>
@@ -896,12 +896,12 @@ public class UserMapperTest {
         InputStream in = Resources.getResourceAsStream(path);
 
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(in);
-		//设置为true时 自动提交事务
+				// 设置为true时 自动提交事务
         SqlSession sqlSession = sqlSessionFactory.openSession(true);
-        //获取Mapper接口
+        // 获取Mapper接口
         UserMapper mapper = sqlSession.getMapper(UserMapper.class);
 
-        //查询所有
+        // 查询所有
         List<User> users = mapper.selectAll();
         users.forEach(user -> System.out.println(user));
 
@@ -1170,18 +1170,18 @@ List<User> search(UserExt userExt);
   	  @Test
       public  void  testMapper() throws IOException {
           
-          String path = "mybaits-config.xml";
+        String path = "mybaits-config.xml";
         InputStream in = Resources.getResourceAsStream(path);
   
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(in);
   
-        //设置为true时 自动提交事务
+        // 设置为true时 自动提交事务
         SqlSession sqlSession = sqlSessionFactory.openSession(true);
   
-          //getMapper表示底层使用了动态代理
+          // getMapper表示底层使用了动态代理
           UserMapper mapper = sqlSession.getMapper(UserMapper.class);
           
-          //封装条件的类
+          // 封装条件的类
           UserExt userExt  = new UserExt().setUser(new User().setSex("男"));
           List<User> users = mapper.searchUser(userExt);
           users.forEach(user1 -> System.out.println(user1));
@@ -1317,7 +1317,7 @@ List<User> search(UserExt userExt);
   UserMapper接口中加入代码：
 
 ```java
-  //根据ids查询
+  // 根据ids查询
   List<User> selectByIds(UserExt2 userExt);
 ```
 
@@ -1544,7 +1544,7 @@ public class User implements Serializable {
 #### 14.2.2. 编写Mapper
 
 ```java
-//查询用户与用户购物车
+// 查询用户与用户购物车
 List<User> selectUserAndUserCart();
 ```
 
@@ -1706,11 +1706,11 @@ public class CartMapperTest {
         InputStream in = Resources.getResourceAsStream(path);
 
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(in);
-		//设置为true时 自动提交事务
+				// 设置为true时 自动提交事务
         SqlSession sqlSession = sqlSessionFactory.openSession(true);
         CartMapper mapper = sqlSession.getMapper(CartMapper.class);
 
-        //查询
+        // 查询
         List<Cart> carts = mapper.selectCartAndCartItem();
         carts.forEach(cart -> System.out.println(cart));
 
