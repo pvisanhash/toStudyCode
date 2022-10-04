@@ -4,7 +4,7 @@
 
 ### 1.1. 新建web工程
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225089.png)
+![](images/QQ图片20200208165600.png)
 
 ### 1.2. MyBatis和Spring整合 
 
@@ -13,27 +13,27 @@
 * mybatis的包（必须导入）
 * mybatis包中的lib目录下的依赖包（可选）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225090.png)
+![](images/QQ图片20200208170114.png)
 
 #### 1.2.2. 导入驱动包
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225091.png)
+![](images/QQ图片20200208170152.png)
 
 #### 1.2.3.导入Spring的核心包 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225092.png)
+![](images/QQ图片20200208170407.png)
 
 #### 1.2.4. 导入AOP相关和AspectJ
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225093.png) 
+![](images/QQ图片20200208170649.png) 
 
 #### 1.2.5. 导入Spring对持久层的支持包
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225094.png)
+![](images/QQ图片20200208170917.png)
 
 #### 1.2.6. 引入数据源(可选)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225095.png)
+![](images/QQ图片20200208171211.png)
 
 #### 1.2.7. 编写连接信息
 
@@ -50,7 +50,7 @@ jdbc.password=root
 
 > 直接从资料中拿过来就行,可以从mybatis教程中获取
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225096.png)
+![](images/QQ图片20200208171738.png)
 
 log4j.properties文件：
 
@@ -104,7 +104,7 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
 
 #### 1.2.9. 构建lib包的路径
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225097.png)
+![](images/QQ图片20200208171935.png)
 
 
 
@@ -177,7 +177,7 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
 
 #### 1.2.12. 导入spring-mybatis整合jar（注意）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225098.png)
+![](images/QQ图片20200208172914.png)
 
 #### 1.2.13. 数据源信息交给Spring管理
 
@@ -257,7 +257,7 @@ mybatis-config.xml删除后：
 
 #### 1.2.15. 加载mybatis的映射文件
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225099.png)
+![](images/QQ图片20200208174617.png)
 
 mybatis-config.xml删除以下内容：
 
@@ -293,11 +293,11 @@ springContext.xml新增以下内容：
 
 #### 1.3.1. 导入SpringMVC包
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225100.png)
+![](images/QQ图片20200208175208.png)
 
 #### 1.3.2. 导入jackson
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225101.png)
+![](images/QQ图片20200208175339.png)
 
 #### 1.3.3. 文件上传包(可选)
 

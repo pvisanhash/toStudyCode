@@ -7,7 +7,7 @@
   * **我们的项目都在一个大的工程中 所有的代码都写在了一个工程中 这样功能做不到抽取  更做不到分模块开发**
   * **在实际开发中 手动导入jar包 可能存在jar包之间的版本兼容问题  特别是依赖包 ** 
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221777.png)
+  ![](images/QQ图片20200212124917.png)
 
   
 
@@ -40,7 +40,7 @@
 
 * **间接依赖**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221778.png)
+  ![](images/QQ图片20200212130848.png)
   
   Maven 可以把 jar 包所依赖的其它 jar 包自动下载并引入项目。
 
@@ -62,7 +62,7 @@
 
 官网：https://maven.apache.org/
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221779.png)
+![](./images/mavendowm.png)
 
 ​	**注意点：下载下来之后 是个压缩包  解压时 路径不要有中文** 
 
@@ -89,7 +89,7 @@ mvn –v
 - conf :  maven配置文件
 - lib: maven需要的jar包 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221780.png)
+![](./images/maveninfo.png)
 
 ## 5. Maven的核心概念
 
@@ -201,7 +201,7 @@ Hello
 
 maven 的 pom.xml 记录的关于构建项目的各个方面的设置，maven 从 pom.xml 文件开始，按照助约定的 工程目录编译，测试，打包，部署，发布项目。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221781.png)
+![](./images/Snipaste_2022-02-24_01-45-40.png)
 
 #### 5.2.2 手动创建java的maven工程
 
@@ -249,7 +249,7 @@ public class HelloMaven {
 
 7.进入到 `Hello目录下`，执行 `mvn compile`,会生成如下的目录结构  
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221782.png)
+![](./images/Snipaste_2021-11-06_14-17-41.png)
 
 8.进入到 `target/classes目录下` 执行 `java com.xyz.HelloMaven`
 
@@ -267,7 +267,7 @@ version：版本号
 
 的路径，artifactId 和 version 决定 jar 包的名称。 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221783.png)
+![](images/Snipaste_2021-11-06_15-17-48.png)
 
 ### 5.4 依赖管理
 
@@ -342,7 +342,7 @@ pom.xml 加入依赖的方式：
 
 ③：私服：在局域网环境中部署的服务器，为当前局域网范围内的所有 Maven工程服务。公司中常常使用这种方式。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221784.png)
+![](images/Snipaste_2021-11-06_13-13-58.png)
 
 #### 5.5.4 maven对仓库的使用
 
@@ -360,7 +360,7 @@ pom.xml 加入依赖的方式：
 
 #### 5.5.6 配置本地仓库
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221785.png)
+![](./images/1.png)
 
 ### 5.6 生命周期
 
@@ -410,9 +410,9 @@ pom.xml 加入依赖的方式：
 
 **注意：执行以上命令必须在命令行进入 pom.xml 所在目录！**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221786.png)
+![](images/QQ图片20200212132534.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221787.png)
+![](images/Snipaste_2021-11-06_16-48-54.png)
 
 #### 5.6.2 手动测试命令
 
@@ -461,11 +461,11 @@ public class HelloMavenTest {
 
 -5.执行先执行 mvn compile ,观察目录结构的变化，生成 target 目录 ,发现并没有生成测试java程序的class
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221782.png)
+![](./images/Snipaste_2021-11-06_14-17-41.png)
 
 -6.在执行 mvn clean， 观察 taget 目录被清除
 
- ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221788.png)
+ ![](images/Snipaste_2021-11-06_14-19-58.png)
 
 -7.执行 mvn compile 
 
@@ -473,15 +473,15 @@ public class HelloMavenTest {
 
 -9.进入 Hello 目录，执行 mvn test-compile 生成 test-target 测试编译后的目录 。发现执行test-compile，也执行了comile命令，并多了generated-test-sources与test-classes目录
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221789.png)
+![](images/Snipaste_2021-11-06_14-21-20.png)
 
 -10. 进入 Hello 目录，执行 mvn test 执行 HelloMavenTest 类中方法，生成测试报告 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221790.png)
+![](images/Snipaste_2021-11-06_14-24-00.png)
 
 -11.进入目录 surefire-reports，查看测试报告 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221791.png)
+![](images/Snipaste_2021-11-06_14-25-00.png)
 
 -12.修改 MyTest.java, 增加测试方法 
 
@@ -501,25 +501,25 @@ public class HelloMavenTest {
 
 -13. 进入 Hello 目录，执行 mvn test-compile 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221792.png)
+![](images/Snipaste_2021-11-06_14-29-36.png)
 
 -14. 进入 Hello 目录，执行 mvn test ,可以看到测试不通过
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221793.png)
+![](images/Snipaste_2021-11-06_14-30-53.png)
 
 -15. 修改 testAddNumber2()方法中 60 为 50 
 
 -16. 进入 Hello 目录，执行 mvn package ，生成 xxx.jar 文件，这就是所说的打包 ,target目录下多了两个文件结构
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221794.png)
+![](images/Snipaste_2021-11-06_14-33-06.png)
 
 -17. 进入 Hello 目录，执行 mvn install ， 把 xxx.jar 文件安装到本地 maven 仓库，安装成功后查看本地仓库中的 jar 文件 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221795.png)
+![](images/Snipaste_2021-11-06_14-35-12.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221797.png)
+![](images/Snipaste_2021-11-06_14-36-20.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221798.png)
+![](images/Snipaste_2021-11-06_14-37-09.png)
 
 ### 5.7 插件和目标
 
@@ -539,9 +539,9 @@ maven-clean-plugin:2.5:clean
 
 mvn clean install是会清除原先的jar包，重新生成jar包替换安装到本地仓库，可以看到jar包与其他文件更新了，修改时间变化了
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221799.png)
+![](images/Snipaste_2021-11-06_14-56-08.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221800.png)
+![](images/Snipaste_2021-11-06_15-05-22.png)
 
 **clean插件 maven-clean-plugin:2.5:clean**
 
@@ -609,7 +609,7 @@ compile 插件执行时先调用 resouces 插件，功能就是把 src\main\java
 >
 > **这种方式已经过时  了解即可**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221801.png)
+![](./images/QQ图片20190823173548.png)
 
 ### 6.2  和Idea集成
 
@@ -617,13 +617,13 @@ compile 插件执行时先调用 resouces 插件，功能就是把 src\main\java
 
 > 配置全局Maven设置(不要设置当前工程的Maven) 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221802.png)
+![](./images/QQ图片20190823173805.png)
 
-![im](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221803.png)
+![im](./images/QQ图片20190823173932.png)
 
 **下面的设置一般不配也没关系，需要的时候可以配置**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221804.png)
+![](images/Snipaste_2021-11-06_15-38-13.png)
 
 **Delegate IDE build/run action to maven依情况选择，有时候不要选择**
 
@@ -986,11 +986,11 @@ src/main/java 和 src/test/java 这两个目录中的所有*.java 文件会分�
 
 ### 7.1. 创建普通java工程
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221805.png)
+![](images/QQ图片20200212150902.png)
 
 **目录结构**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221806.png)
+![](images/QQ图片20200212151043.png)
 
 ### 7.2. 创建web工程
 
@@ -1000,71 +1000,71 @@ src/main/java 和 src/test/java 这两个目录中的所有*.java 文件会分�
 archetype = 原型，骨架
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221807.png)
+![](./images/QQ图片20190823174127.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221808.png)
+![](./images/QQ图片20190823174218.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221809.png)
+![](images/QQ图片20190823174305.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221810.png)
+![](./images/QQ图片20190823174444.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221811.png)
+![](images/QQ图片20200212153645.png)
 
 #### 7.2.2. java工程改造成web工程 (推荐)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221812.png)
+![](./images/QQ图片20190823174626.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221813.png)
+![](./images/QQ图片20190823174713.png)
 
 ​    
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221814.png)
+![](./images/QQ图片20190823174812.png)
 
 在对的模块下添加web
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221815.png)
+![](./images/QQ图片20190823174930.png)
 
 这里改成了 E:\javamaven\src\main\webapp\WEB-INF\web.xml ,即在src/main下创建webapp文件夹
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221816.png)
+![](./images/QQ图片20190823175205.png)
 
 这里是： E:\javamaven\src\main\webapp\，即src/main/webapp是web根目录
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221817.png)
+![](./images/QQ图片20190823175521.png)
 
 ###  7.3. 工程目录介绍
 
 * **大概介绍**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221818.png)
+  ![](images/QQ图片20200212154100.png)
 
 * **POM文件**
 
   * **大概介绍**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221819.png)
+  ![](images/QQ图片20200212154613.png)
 
   
 
   * **坐标信息**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221820.png)
+  ![](images/QQ图片20200212154905.png)
 
   * **环境变量的配置**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221821.png)
+  ![](images/QQ图片20200212154959.png)
 
   
 
   * **坐标依赖**
 
-    ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221822.png)
+    ![](images/QQ图片20200212155125.png)
 
   * **插件信息**
 
     
 
-    ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221823.png)
+    ![](images/QQ图片20200212155433.png)
 
 
 ## 8. maven工程的运行方式
@@ -1074,7 +1074,7 @@ archetype = 原型，骨架
 
 > 和web工程一样
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221824.png)
+![](images/QQ图片20200212155915.png)
 
 ### 8.2. maven-tomcat插件的方式
 
@@ -1097,17 +1097,17 @@ archetype = 原型，骨架
               </plugin>
   ```
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221825.png)
+  ![](images/QQ图片20200212160143.png)
 
 * **插件启动方式一**
 
   
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221826.png)
+  ![](./images/tomcat1.png)
 
 * **插件启动方式二**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221827.png)
+  ![](./images/tomcat2.png)
 
 ### 8.3. maven-jetty插件的方式
 
@@ -1133,21 +1133,21 @@ archetype = 原型，骨架
 
 * **运行方式一**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221828.png)
+  ![](images/QQ图片20200212161215.png)
 
   ​		
 
 * **第二种运行方式**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221829.png)
+  ![](images/QQ图片20200212161335.png)
 
 ## 9.maven的JDK版本问题
 
 * **问题描述**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221830.png)
+  ![](images/QQ图片20200212162823.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221831.png)
+![](images/QQ图片20200212162912.png)
 
 ### 9.1. 解决方式一（pom.xml配置属性）
 
@@ -1165,7 +1165,7 @@ archetype = 原型，骨架
 
 * **刷新**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221832.png)
+  ![](images/QQ图片20200212163224.png)
 
 ### 9.2. 解决方式二（pom.xml中配置compile插件）
 
@@ -1189,7 +1189,7 @@ archetype = 原型，骨架
 
 * **刷新**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221832.png)
+  ![](images/QQ图片20200212163224.png)
 
 ### 9.3. 解决方式三（maven配置文件中添加profile）
 
@@ -1213,7 +1213,7 @@ archetype = 原型，骨架
 
 ## 10. 坐标的作用范围scope
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221833.png)
+![](images/QQ图片20200212165446.png)
 
 *  **compile** 
 
@@ -1231,7 +1231,7 @@ archetype = 原型，骨架
 
 		该依赖在打包过程中，不需要打进去，这个由运行的环境来提供，比如tomcat或者基础类库等等，事实上，该依赖可以参与编译、测试和运行等周期，与compile等同。区别在于打包阶段进行了exclude操作。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221834.png)
+![](images/Snipaste_2021-11-06_16-27-24.png)
 
 如下就展示了依赖的范围
 

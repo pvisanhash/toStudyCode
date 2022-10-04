@@ -12,7 +12,7 @@
 /usr/libexec/java_home -V
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042216148.png)
+![](./images/Snipaste_2022-03-27_04-58-58.png)
 
 拷贝 JDK 地址，键入如下命令准备编辑环境变量：
 
@@ -120,11 +120,11 @@ source ~/.bash_profile
 
 选择对应的版本，比如mac arm版本，根据提示安装
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042216150.png)
+![](./images/Snipaste_2022-03-27_17-07-25.png)
 
 打开偏好设置，查看mysql
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042216151.png)
+![](./images/Snipaste_2022-03-27_20-02-37.png)
 
 配置环境变量 vim ~/.bash_profile
 
@@ -146,7 +146,7 @@ source ~.bash_profile
 
 鼠标放到圈中的两个文件中的一个即可，然后双击获取他的下载链接进行下载
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042216152.png)
+![](./images/Snipaste_2022-06-04_00-23-41.png)
 
 进入下载目录，使用命令进行解压
 
@@ -183,7 +183,7 @@ idea配置tomcat
 
 选择 preferences->build,execution,deployment->application servers-> 加号-> tomcat
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042216153.png)
+![](./images/Snipaste_2022-06-04_00-36-17.png)
 
 
 

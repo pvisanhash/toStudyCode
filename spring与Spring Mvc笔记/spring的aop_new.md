@@ -2,7 +2,7 @@
 
 ## 1. 什么是AOP
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225499.png)
+![](images/QQ图片20200206020305.png)
 
 **AOP：面向切面(方面)编程，是一种在程序运行期间通过动态代理实现在不修改源代码的情况下给程序动态统一的添加新功能的一种技术**
 
@@ -75,7 +75,7 @@ public class Demo1Test {
 
 ### 5.5. 运行打印结果
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225500.png)
+![](images/QQ图片20200206021901.png)
 
 
 
@@ -164,17 +164,17 @@ public class UserDaoTest {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225501.png)
+![](images/QQ图片20200206024708.png)
 
 上面相当于将需要添加的功能放到一个切面类中，然后用JDK的动态代理生成指定接口的代理类，当调用代理类的方法时，会先执行切面中定义的方法，后执行被代理类的方法。
 
 ## 7.AOP的专业术语
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225502.png)
+![](images/QQ图片20200206030059.png)
 
 **理解**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225503.png)
+![](images/QQ图片20200206042335.png)
 
 **切面：有时指的是切面类，有时指的是切面的动作**
 
@@ -186,11 +186,11 @@ public class UserDaoTest {
 
 ### 8.1. 导入jar包
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225504.png)
+![](images/QQ图片20200206035128.png)
 
 有时会多导入有关aspectJ的包来完成
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225508.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-05-25_01-20-10.png" style="zoom:33%;" />
 
 ### 8.2. 使用的类 
 
@@ -511,7 +511,7 @@ execution(* com.xyz.code.dao.UserDao.addUser())
 
 ### 11.1. 导入jar包 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225505.png)
+![](images/QQ图片20200206061948.png)
 
 **注意：不要手动导入junit.jar   通过idea的提示导入junit的依赖**
 
@@ -519,11 +519,11 @@ execution(* com.xyz.code.dao.UserDao.addUser())
 
 `SpringRunner`是`SpringJUnit4ClassRunner`的子类，常用`SpringRunner`作为`@RunWith`的`value`属性值
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225506.png)
+![](./images/Snipaste_2022-05-25_01-51-54.png)
 
 `@ContextConfiguration`注解指定你的`配置文件`或`配置类`
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225507.png)
+![](images/QQ图片20200206062135.png)
 
 ## 12.常见异常
 

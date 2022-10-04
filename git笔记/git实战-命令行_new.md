@@ -10,7 +10,7 @@ git commit -m '提交信息'
 
 作用：进行一次本地提交，会让当前分支引用移到到最新的提交snapshot上
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217665.png" style="zoom: 25%;" />
+<img src="./images/Snipaste_2022-04-05_01-37-14.png" style="zoom: 25%;" />
 
 ## 2.git branch
 
@@ -30,7 +30,7 @@ git checout -b 分支名 引用：新建分支，并检出到该新建分支上�
 git branch -d 分支名：删除分支，注意HEAD指针不能指向删除的分支
 ```
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217666.png" style="zoom: 33%;" />
+<img src="./images/Snipaste_2022-04-05_01-45-27.png" style="zoom: 33%;" />
 
 注意：当前分支的切换严重依赖于`git checkout `,git后续版本会启用`git switch`命令
 
@@ -44,7 +44,7 @@ git merge 要被合并的分支名：合并其他分支到当前分支来，会�
 
 
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217667.png" style="zoom: 25%;" />
+<img src="./images/Snipaste_2022-04-05_01-58-08.png" style="zoom: 25%;" />
 
 ## 4.git rebase
 
@@ -59,9 +59,9 @@ git rebase 重新定基的分支 被移动的分支 ：如git rebase main dev �
 
 比如：`git checkout bugFix`;  `git rebase main`则会形成c2'分支，bugFix分支指向这个c2'。此时如果想要将main分支变成最新，可使用如下命令：`git checkout main`; `git rebase bugFix` 就会让main分支指向c2'。注意rebase操作后原c2提交还存在（图中灰暗部分）
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217668.png" style="zoom:25%;" />
+<img src="./images/Snipaste_2022-04-05_02-09-25.png" style="zoom:25%;" />
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217669.png" style="zoom:25%;" />
+<img src="./images/Snipaste_2022-04-05_02-10-15.png" style="zoom:25%;" />
 
 ## 5.分离的HEAD指针
 
@@ -77,7 +77,7 @@ HEAD 通常情况下是指向分支名的（如 bugFix）。在你提交时，�
 
 如果想看 HEAD 指向，可以通过 `cat .git/HEAD` 查看， 如果 HEAD 指向的是一个引用，还可以用 `git symbolic-ref HEAD` 查看它的指向。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217670.png" style="zoom: 33%;" />
+<img src="./images/Snipaste_2022-04-05_02-22-46.png" style="zoom: 33%;" />
 
 正常情况下，比如bugFix上有*号代表，HEAD指向bugFix,bugFix指向c4 ，当git checkout c4,则HEAD指针指向c4 。
 
@@ -100,7 +100,7 @@ HEAD 通常情况下是指向分支名的（如 bugFix）。在你提交时，�
 
 但是该操作符后面的数字与 `~` 后面的不同，并不是用来指定向上返回几代，而是指定合并提交记录的某个父提交。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217671.png" style="zoom: 33%;" />
+<img src="./images/Snipaste_2022-04-05_02-34-49.png" style="zoom: 33%;" />
 
 比如HEAD原来指向main（main上有*），`git checkout bugFix^` 就会使HEAD指向c3,当然也可以直接`git checkout c3` 或者 `git checkout bugFix~1`;
 
@@ -114,7 +114,7 @@ git branch -f main HEAD~3
 
 上面的命令会将 main 分支强制指向 HEAD 的第 3 级父提交。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217672.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-05_02-43-39.png" style="zoom:33%;" />
 
 比如原main分支指向c4，`git branch -f main HEAD~3`  则main分支指向c1
 
@@ -130,7 +130,7 @@ git reset --参数 引用 : 重置到引用位置
 
 `git reset HEAD~1`  Git 把 main 分支移回到 `C1`；现在我们的本地代码库根本就不知道有 `C2` 这个提交了。（注意：在reset后， `C2` 所做的变更还在，但是处于未加入暂存区状态。）
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217673.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-05_02-52-55.png" style="zoom:33%;" />
 
 虽然在你的本地分支中使用 `git reset` 很方便，但是这种“改写历史”的方法对大家一起使用的远程分支是无效的哦！为了撤销更改并**分享**给别人，我们需要使用 `git revert`。HEAD指向c2
 
@@ -138,7 +138,7 @@ git reset --参数 引用 : 重置到引用位置
 
 奇怪！在我们要撤销的提交记录后面居然多了一个新提交！这是因为新提交记录 `C2'` 引入了**更改** —— 这些更改刚好是用来撤销 `C2` 这个提交的。也就是说 `C2'` 的状态与 `C1` 是相同的。revert 之后就可以把你的更改推送到远程仓库与别人分享啦。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217674.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-05_02-55-57.png" style="zoom:33%;" />
 
 ## 9.git cherry-pick
 
@@ -158,7 +158,7 @@ git cherry-pick hash值1 hash值2 ...     : 会复制提交记录到HEAD指针�
 
 这就是了！我们只需要提交记录 `C2` 和 `C4`，所以 Git 就将被它们抓过来放到当前分支下了。 就是这么简单!
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217675.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-05_03-04-26.png" style="zoom:33%;" />
 
 ## 10.交互式的rebase
 
@@ -178,7 +178,7 @@ git cherry-pick hash值1 hash值2 ...     : 会复制提交记录到HEAD指针�
 
 Git 严格按照你在对话框中指定的方式进行了复制。 注意这个是rebase不包含c1的，即左闭右开，[c5,c1)。还有rebase的基是c1,main指向最新的提交c5'。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217676.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-05_03-12-37.png" style="zoom:33%;" />
 
 ## 11.本地栈式提交
 
@@ -192,7 +192,7 @@ git rebase -i 引用
 git cherry-pick 引用1 引用2 等
 ```
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217677.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-06_01-49-29.png" style="zoom:33%;" />
 
 如上图所示，只要c4提交，要将c4提交移到c1后，可以如下操作：
 
@@ -203,7 +203,7 @@ git rebase -i main 后只选c4 ; git checkout main ; git rebase bugFix
 git checkout main; git cherry-pick c4; git branch -f bugFix main
 ```
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217678.png" style="zoom: 33%;" />
+<img src="./images/Snipaste_2022-04-06_01-55-25.png" style="zoom: 33%;" />
 
 ## 12.修改提交
 
@@ -218,9 +218,9 @@ git checkout main; git cherry-pick c4; git branch -f bugFix main
 - 接着再用 `git rebase -i` 来将他们调回原来的顺序
 - 最后我们把 main 移到修改的最前端（用你自己喜欢的方法如merge，rebase或者强制修改分支位置），就大功告成啦！
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217679.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-06_02-03-23.png" style="zoom:33%;" />
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217680.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-06_02-06-23.png" style="zoom:33%;" />
 
 正如你所见到的，我们可以使用 `rebase -i` 对提交记录进行重新排序。只要把我们想要的提交记录挪到最前端，我们就可以很轻松的用 `--amend` 修改它，然后把它们重新排成我们想要的顺序。
 
@@ -232,7 +232,7 @@ git checkout main; git cherry-pick c4; git branch -f bugFix main
 git checkout main; git cherry-pick c2; git commit --amend; git cherry-pick c3;
 ```
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217681.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-06_02-11-32.png" style="zoom:33%;" />
 
 可以看到，`git commit --amend`会在右边形成一个新的提交，老的提交置灰
 
@@ -276,7 +276,7 @@ git describe <ref>
 
 当 `ref` 提交记录上有某个标签时，则只输出标签名称
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217682.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-06_02-26-13.png" style="zoom:33%;" />
 
 ## 15.git clone
 
@@ -300,7 +300,7 @@ git clone 远程仓库地址
 
 因此，如果你看到一个名为 `orgin/main` 的分支，那么这个分支名就叫 `main`，远程仓库的名称就是 `origin`。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217683.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-08-18.png" style="zoom:33%;" />
 
 如果检出远程分支会怎么样呢？
 
@@ -308,7 +308,7 @@ git clone 远程仓库地址
 
 正如你所见，Git 变成了分离 HEAD 状态，当添加新的提交时 `orgin/main` 也不会更新。这是因为 `orgin/main` 只有在远程仓库中相应的分支更新了以后才会更新。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217684.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-10-03.png" style="zoom:33%;" />
 
 ## 16.git fetch
 
@@ -318,7 +318,7 @@ Git 远程仓库相当的操作实际可以归纳为两点：向远程仓库传�
 
 你会看到当我们从远程仓库获取数据时, `本地库的远程分支`也会`更新`以反映最新的`远程仓库`。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217685.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-15-00.png" style="zoom:33%;" />
 
 在解释 `git fetch` 前，我们先看看实例。这里我们有一个远程仓库, 它有两个我们本地仓库中没有的提交。
 
@@ -326,7 +326,7 @@ Git 远程仓库相当的操作实际可以归纳为两点：向远程仓库传�
 
 就是这样了! `C2`,`C3` 被下载到了本地仓库，同时远程分支 `o/main` 也被更新，反映到了这一变化。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217686.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-16-37.png" style="zoom:33%;" />
 
 **git fetch 做了些什么?**
 
@@ -362,7 +362,7 @@ Git 远程仓库相当的操作实际可以归纳为两点：向远程仓库传�
 
 实际上，由于先抓取更新再合并到本地分支这个流程很常用，因此 Git 提供了一个专门的命令来完成这两个操作。它就是我们要讲的 `git pull`。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217687.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-23-54.png" style="zoom:33%;" />
 
 我们先来看看 `fetch`、`merge` 依次执行的效果
 
@@ -370,7 +370,7 @@ Git 远程仓库相当的操作实际可以归纳为两点：向远程仓库传�
 
 我们用 `fetch` 下载了 `C3`, 然后通过 `git merge o/main` 合并了这一提交记录。现在我们的 `main` 分支包含了远程仓库中的更新（在本例中远程仓库名为 `origin`）
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217688.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-24-52.png" style="zoom:33%;" />
 
 如果使用 `git pull` 呢?
 
@@ -390,7 +390,7 @@ git push 远程库别名 分支
 
 注意 —— `git push` 不带任何参数时的行为与 Git 的一个名为 `push.default` 的配置有关。它的默认值取决于你正使用的 Git 的版本，但是在教程中我们使用的是 `upstream`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217689.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-32-35.png" style="zoom:33%;" />
 
 这里我们准备了一些远程仓库中没有的提交记录, 咱们开始先上传吧!
 
@@ -398,7 +398,7 @@ git push 远程库别名 分支
 
 过去了, 远程仓库接收了 `C2`，远程仓库中的 `main` 分支也被更新到指向 `C2` 了，我们的远程分支 (o/main) 也同样被更新了。所有的分支都同步了！
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217690.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-33-37.png" style="zoom:33%;" />
 
 **远程库提交历史的偏离**
 
@@ -408,7 +408,7 @@ git push 远程库别名 分支
 
 因为这情况（历史偏离）有许多的不确定性，Git 是不会允许你 `push` 变更的。实际上它会强制你先合并远程最新的代码，然后才能分享你的工作。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217691.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-37-49.png" style="zoom:33%;" />
 
 说了这么多，咱们还是看看上图实际案例吧！
 
@@ -424,7 +424,7 @@ git push 远程库别名 分支
 
 我们用 `git fetch` 更新了本地仓库中的远程分支，然后用 rebase 将我们的工作移动到最新的提交记录下，最后再用 `git push` 推送到远程仓库。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217692.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-41-28.png" style="zoom:33%;" />
 
 还有其它的方法可以在远程仓库变更了以后更新我的工作吗? 当然有，我们还可以使用 `merge`
 
@@ -438,7 +438,7 @@ git push 远程库别名 分支
 
 我们用 `git fetch` 更新了本地仓库中的远程分支，然后**合并**了新变更到我们的本地分支（为了包含远程仓库的变更），最后我们用 `git push` 把工作推送到远程仓库
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217693.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-45-09.png" style="zoom:33%;" />
 
 很好！但是要敲那么多命令，有没有更简单一点的？
 
@@ -450,7 +450,7 @@ git push 远程库别名 分支
 
 跟之前结果一样，但是命令更短了。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217694.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-47-33.png" style="zoom:33%;" />
 
 换用常规的 `pull`
 
@@ -458,7 +458,7 @@ git push 远程库别名 分支
 
 还是跟以前一样
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217695.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-07_03-49-12.png" style="zoom:33%;" />
 
 由 fetch、rebase/merge 和 push 组成的工作流很普遍
 
@@ -482,7 +482,7 @@ git push 远程库别名 分支
 
 ## 20.快速更新main分支
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217696.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-11_02-15-28.png" style="zoom:33%;" />
 
 如上图所示，远程库的分支最新提交是c3,本地库的远程分支最新提交是c1,本地main分支最新提交是c2 。
 
@@ -492,7 +492,7 @@ git push 远程库别名 分支
 git pull --rebase; git push
 ```
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217697.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-11_02-18-56.png" style="zoom:33%;" />
 
 **为什么不用 merge 呢?**
 
@@ -601,17 +601,17 @@ git push origin main
 
 `git checkout C0; git push origin main`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217698.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-35-28.png" style="zoom:33%;" />
 
 好了! 通过指定参数, 远程仓库中的 `main` 分支得到了更新。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217699.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-36-24.png" style="zoom:33%;" />
 
 如果不指定参数会发生什么呢?
 
 `git checkout C0; git push`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217698.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-35-28.png" style="zoom:33%;" />
 
 命令失败了（正如你看到的，什么也没有发生）! 因为我们所检出的 HEAD 没有跟踪任何分支。
 
@@ -639,21 +639,21 @@ git push origin <source>:<destination>
 
 `git push origin foo^:main`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217700.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-42-49.png" style="zoom:33%;" />
 
 这是个令人困惑的命令，但是它确实是可以运行的 —— Git 将 `foo^` 解析为一个位置，上传所有未被包含到远程仓库里 `main` 分支中的提交记录。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217701.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-44-00.png" style="zoom:33%;" />
 
 如果你要推送到的目的分支不存在会怎么样呢？没问题！Git 会在远程仓库中根据你提供的名称帮你创建这个分支！
 
 `git push origin main:newBranch`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217702.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-45-06.png" style="zoom:33%;" />
 
 先在远程库创建newBranch指向c1,后生成c2,最后newBranch指向c2  。 同时本地出现要支o/newBranch
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217703.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-48-40.png" style="zoom:33%;" />
 
 ## 23.Git fetch 的参数
 
@@ -679,11 +679,11 @@ Git 会到远程仓库的 `foo` 分支上，然后获取所有本地不存在的
 
 `git fetch origin foo`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217704.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-56-15.png" style="zoom:33%;" />
 
 我们只下载了远程仓库中 `foo` 分支中的最新提交记录，并更新了 o/foo
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217705.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_07-57-18.png" style="zoom:33%;" />
 
 你可能会好奇 —— 为何 Git 会将新提交放到 `o/foo` 而不是放到我本地的 foo 分支呢？之前不是说这样的 参数就是同时应用于本地和远程的位置吗？
 
@@ -701,21 +701,21 @@ Git 会到远程仓库的 `foo` 分支上，然后获取所有本地不存在的
 
 `git fetch origin foo~1:bar`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217706.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_08-01-00.png" style="zoom:33%;" />
 
 哇! 看见了吧, Git 将 `foo~1` 解析成一个 origin 仓库的位置，然后将那些提交记录下载到了本地的 `bar` 分支（一个本地分支）上。注意由于我们指定了目标分支，`foo` 和 `o/foo` 都没有被更新。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217707.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_08-01-56.png" style="zoom:33%;" />
 
 如果执行命令前目标分支不存在会怎样呢？我们看一下上个对话框中没有 bar 分支的情况。
 
 `git fetch origin foo~1:bar`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217708.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_08-02-54.png" style="zoom:33%;" />
 
 看见了吧，跟 git push 一样，Git 会在 fetch 前自己创建立本地分支指向c1, 就像是 Git 在 push 时，如果远程仓库中不存在目标分支，会自己在建立一样。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217709.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_08-04-19.png" style="zoom:33%;" />
 
 没有参数呢?
 
@@ -740,21 +740,21 @@ Git 有两种关于 `<source>` 的用法是比较诡异的，即你可以在 git
 
 `git push origin :foo`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217710.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-08-32.png" style="zoom:33%;" />
 
 就是这样子, 我们通过给 push 传空值 source，成功删除了远程仓库中的 `foo` 分支, 这真有意思...
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217711.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-10-00.png" style="zoom:33%;" />
 
 如果 fetch 空 到本地，会在本地创建一个新分支。
 
 `git fetch origin :bar`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217712.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-11-27.png" style="zoom:33%;" />
 
 很神奇吧！但无论怎么说, 这就是 Git！
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217713.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-12-13.png" style="zoom:33%;" />
 
 ## 25.Git pull 参数
 
@@ -788,11 +788,11 @@ git fetch origin bar~1:bugFix; git merge bugFix
 
 `git pull origin main`
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217714.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-17-14.png" style="zoom:33%;" />
 
 看到了吧! 通过指定 `main` 我们更新了 `o/main`。然后将 `o/main` merge 到我们的检出位置，**无论**我们当前检出的位置是哪。
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217715.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-18-13.png" style="zoom:33%;" />
 
 pull 也可以用 source:destination 吗? 当然喽, 看看吧:
 
@@ -800,8 +800,8 @@ pull 也可以用 source:destination 吗? 当然喽, 看看吧:
 
 哇, 这个命令做的事情真多。它先在本地创建了一个叫 `foo` 的分支，从远
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217717.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-20-12.png" style="zoom:33%;" />
 
 哇, 这个命令做的事情真多。它先在本地创建了一个叫 `foo` 的分支，从远程仓库中的 main 分支中下载提交记录，并合并到 `foo`，然后再 merge 到我们的当前检出的分支 `bar` 上。操作够多的吧？！
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042217718.png" style="zoom:33%;" />
+<img src="./images/Snipaste_2022-04-14_13-21-08.png" style="zoom:33%;" />

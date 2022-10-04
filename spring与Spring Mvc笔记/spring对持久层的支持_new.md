@@ -6,7 +6,7 @@
 >
 > orm = object relation model
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225489.png)
+![](images/QQ图片20200206174117.png)
 
 ## 1 . 使用JDBC模板操作数据库
 
@@ -162,7 +162,7 @@ junit 4的依赖：
 
 ### 1.5. 测试
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225490.png)
+![](images/QQ图片20200206181118.png)
 
 ### 1.6. 代码优化
 
@@ -256,11 +256,11 @@ public class SprintDemo {
 
 **注意：**如果将测试类放置在test目录下（非main目录下）,虽然编译后的文件分别在classes,test-classes中，但也能读取到配置文件。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225491.png)
+![](./images/Snipaste_2022-05-26_23-47-37.png)
 
 #### 1.6.4. 关于数据源的说明
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225492.png)
+![](images/QQ图片20200206183324.png)
 
 ### 1.7.dao层的编写  
 
@@ -436,11 +436,11 @@ public class EmployeeDaoTest {
 
 ### 2.2. 问题演示 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225493.png)
+![](images/QQ图片20200206193940.png)
 
 ### 2.3. Spring事务的一些概念
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225494.png)
+![](images/QQ图片20200206200242.png)
 
 * **PlatformTransactionManager** 
 
@@ -448,13 +448,13 @@ public class EmployeeDaoTest {
   >
   > 我们使用 DataSourceTransactionManager这个实体类间接实现了接口
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225495.png)
+  ![](images/QQ图片20200206200747.png)
 
 * **TransactionStatus**
 
   > 这个接口表示事务的状态 例如：是否有保存点，事务是否完成等等
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225496.png)
+  ![](images/QQ图片20200206201106.png)
 
 * **TransactionDefinition**
 
@@ -464,7 +464,7 @@ public class EmployeeDaoTest {
   >
   > 进行事务配置时，**必须配置详情**。spring将配置项封装到该对象实例。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225497.png)
+![](images/QQ图片20200206201346.png)
 
 ### 2.4. 传播行为（不要掌握）
 
@@ -709,7 +709,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 * **再需要的事务地方添加注解**
 
-   ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042225498.png)
+   ![](images/QQ图片20200206212345.png)
 
 ### 2.6 @Transactioal注解的属性
 

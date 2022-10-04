@@ -25,7 +25,7 @@ MVC的工作流程： 用户通过视图层发送请求到服务器，在服务�
 
 ### 2.1  简介
 
-![>](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223041.png)
+![>](images/QQ图片20200207003247.png)
 
 Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就包含在Spring Framework中。正式名称“ Spring Web MVC”来自其源模块[spring-webmvc](https://github.com/spring-projects/spring-framework/tree/master/spring-webmvc)的名称， 但它通常被称为“ Spring MVC”。
 
@@ -47,7 +47,7 @@ Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就�
 
 ### 3.1. 创建web工程
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223042.png)
+![](images/QQ图片20200207004151.png)
 
 ### 3.2. 导入jar包
 
@@ -55,7 +55,7 @@ Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就�
 
 或使用maven导入依赖
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223043.png)
+![](images/QQ图片20200207005740.png)
 
 ```xml
 <dependency>
@@ -152,7 +152,7 @@ Spring Web MVC是基于Servlet API构建的原始Web框架，并从一开始就�
 
 一般是pages/templates目录
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223044.png)
+![](images/QQ图片20200207010022.png)
 
 
 
@@ -176,25 +176,25 @@ public class MyController implements Controller {
 
 ### 3.6. 启动tomcat测试
 
-<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223099.png" style="zoom:80%;" />
+<img src="./images/Snipaste_2022-06-04_01-16-32.png" style="zoom:80%;" />
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223045.png)
+![](./images/Snipaste_2022-06-04_01-18-26.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223046.png)
+![](./images/Snipaste_2022-06-04_01-19-49.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223047.png)
+![](./images/Snipaste_2022-06-04_01-23-45.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223048.png)
+![](./images/Snipaste_2021-09-16_13-22-16.png)
 
 ## 4. SpringMVC的执行流程
 
 ### 4.1 SpringMvc的执行流程
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223049.png)
+![](images/QQ图片20200207015036.png)
 
 ### 4.2. SpringMVC的内部流程
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223050.jpg)
+![](images/springmvc执行流程原理.jpg)
 
 **了解 不同的写法 使用不同的处理器映射器  和不同的处理器适配器**
 
@@ -204,19 +204,19 @@ public class MyController implements Controller {
 
 ### 5.1 建立maven工程并添加web framework
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223051.png)
+![](./images/Snipaste_2022-06-04_03-07-05.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223052.png)
+![](./images/Snipaste_2022-06-04_03-08-05.png)
 
 选择file->ProjectStructure后
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223053.png)
+![](./images/Snipaste_2022-06-04_03-11-58.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223054.png)
+![](./images/Snipaste_2022-06-04_03-14-32.png)
 
 创建成功会有如下所示，webapp有蓝色小圆点
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223055.png)
+![](./images/Snipaste_2022-06-04_03-16-55.png)
 
 ### 5.2 修改pom.xml文件并导入依赖
 
@@ -372,9 +372,9 @@ public class MyController implements Controller {
 
 ### 5.5 添加tomcat用于本地测试
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223056.png)
+![](./images/Snipaste_2022-06-04_03-40-21.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223057.png)
+![](./images/Snipaste_2022-06-04_03-42-22.png)
 
 ### 5.6 编写Controller
 
@@ -829,11 +829,11 @@ public String testRest(@PathVariable("id") String id, @PathVariable("username") 
 
 ### 8.1. 普通参数类型
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223058.png)
+![](images/QQ图片20200207023509.png)
 
 **不一致的情况**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223059.png)
+![](images/QQ图片20200207023633.png)
 
 ### 8.2. 数组类型
 
@@ -841,7 +841,7 @@ public String testRest(@PathVariable("id") String id, @PathVariable("username") 
 Checkbox = 复选框
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223060.png)
+![](images/QQ图片20200207023829.png)
 
 > 若请求所传输的请求参数中有多个同名的请求参数，此时可以在控制器方法的形参中设置字符串数组或者字符串类型的形参接收此请求参数
 >
@@ -869,19 +869,19 @@ public class Huige {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223061.png)
+![](images/QQ图片20200207024526.png)
 
 ### 8.4. 包装类类型
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223062.png)
+![](images/QQ图片20200207025934.png)
 
 ### 8.5. List集合类型
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223063.png)
+![](images/QQ图片20200207030815.png)
 
 ### 8.6. Map集合类型
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223064.png)
+![](images/QQ图片20200207031434.png)
 
 ### 8.7. JSON格式字符串（重点）
 
@@ -911,7 +911,7 @@ public class Huige {
 </dependency>
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223065.png)
+![](images/QQ图片20200207033600.png)
 
 ### 8.8. Rest方式接收参数@PathVariable
 
@@ -1142,7 +1142,7 @@ response.setContentType("text/html;charset=UTF-8")
 
 > spring MVC有一系列HttpMessageConverter去处理@ResponseBody注解的返回值，如返回list或其它则使用 MappingJacksonHttpMessageConverter；如果是string，则使用 StringHttpMessageConverter，而StringHttpMessageConverter使用的是字符集默认是ISO-8859-1，而且是final的。所以在当返回json中有中文时会出现乱码。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223066.png)
+![](./images/Snipaste_2022-06-04_14-59-31.png)
 
 **方法一：**
 
@@ -1152,7 +1152,7 @@ response.setContentType("text/html;charset=UTF-8")
 @GetMapping(value = "/testResponseEncodeError", produces = "text/html;charset=utf-8")
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223067.png)
+![](./images/Snipaste_2022-06-04_15-21-15.png)
 
 **方法二：**
 
@@ -1177,7 +1177,7 @@ spring-mvc.xml中配置如下：
 </mvc:annotation-driven>
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223068.png)
+![](./images/Snipaste_2022-06-04_15-08-15.png)
 
 **方法三：**
 
@@ -1201,7 +1201,7 @@ spring-mvc.xml中配置如下：
 </mvc:annotation-driven>
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223069.png)
+![](./images/Snipaste_2022-06-04_15-08-57.png)
 
 **方法四:**
 
@@ -1218,14 +1218,14 @@ spring-mvc.xml中配置如下：
 </mvc:annotation-driven>
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223070.png)
+![](./images/Snipaste_2022-06-04_15-10-12.png)
 
 ### 9.5 Tomcat控制台中文乱码
 
 **第一种：修改tomcat配置(不推荐)**
 将tomcat控制台日志输出编码格式更改为GBK，修改tomcat根目录下conf/logging.properties文件中的ConsoleHandler.encoding=utf-8（如果只修改ConsoleHandler.encoding不行，可以全部修改），这种方式能解决cmd控制台中文乱码，但不建议使用。因为更改了tomcat默认编码，如果我们使用idea启动tomcat，idea的默认编码不是GBK，就会同样产生idea控制台下tomcat乱码问题
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223071.png)
+![](./images/Snipaste_2022-06-04_11-59-32.png)
 
 **第二种：修改idea配置**
 
@@ -1399,7 +1399,7 @@ public User testReturnObject() {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223072.png)
+![](./images/Snipaste_2022-06-04_16-01-48.png)
 
 如果我们不加@ResponseBody,会如何？
 
@@ -1415,7 +1415,7 @@ public User testReturnObject2() {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223073.png)
+![](./images/Snipaste_2022-06-04_16-59-52.png)
 
 ### 10.4. 返回void(无返回值) 
 
@@ -1431,7 +1431,7 @@ public void testReturnVoid()  {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223074.png)
+![](./images/Snipaste_2022-06-04_16-33-16.png)
 
 **一般情况下返回值void,方法体类进行请求转发或重定向**
 
@@ -1462,7 +1462,7 @@ public String testReturnNull() {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223076.png)
+![](./images/Snipaste_2022-06-04_16-24-44.png)
 
 **返回值为ModelAndView类型时返回null：**
 
@@ -1492,7 +1492,7 @@ public User testReturnNull3() {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223077.png)
+![](./images/Snipaste_2022-06-04_16-42-13.png)
 
 **返回值为User类型且加@ResponseBody注解时：**
 
@@ -1525,7 +1525,7 @@ public ResponseEntity testReturnResponseEntity() {
 }
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223078.png)
+![](./images/Snipaste_2022-06-04_16-56-59.png)
 
 ## 11 域对象共享数据
 
@@ -1599,7 +1599,7 @@ public class ExtendedModelMap extends ModelMap implements Model {}
 public class BindingAwareModelMap extends ExtendedModelMap {}
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223079.png)
+![](./images/Snipaste_2022-06-18_04-55-19.png)
 
 ### 11.7 向session域共享数据
 
@@ -2085,9 +2085,9 @@ part.getSubmittedFileName()是包含文件后缀名
 
 可以在target目录查看上传的文件
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223080.png)
+![](images/QQ图片20200207072520.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223081.png)
+![](images/Snipaste_2021-09-19_09-05-06.png)
 
 ### 15.4. 多文件上传之Part的方式（重点）
 
@@ -2130,9 +2130,9 @@ public class MyController4 {
 
 **第三步：编写前端页面或用postman模拟**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223082.png)
+![](images/QQ图片20200207073634.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223083.png)
+![](./images/Snipaste_2022-06-07_04-41-18.png)
 
 ### 15.5.文件上传之springmvc的方式（了解）
 
@@ -2140,7 +2140,7 @@ public class MyController4 {
 
 **第一步：导入jar** 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223084.png)
+![](images/QQ图片20200207074625.png)
 
 ```xml
 <dependency>
@@ -2184,7 +2184,7 @@ public class MyController5 {
 
 **第四步：编写前端或用postman模拟**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223085.png)
+![](images/QQ图片20200207074922.png)
 
 
 ## 16  文件下载 
@@ -2195,7 +2195,7 @@ public class MyController5 {
 
 **弊端：**不能统计下载次数  并且对于那些不懂电脑的人  不知道使用ctrl+s 或者右键另存为保存 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223086.png)
+![](images/QQ图片20200207183445.png)
 
 ```xml
 <!--访问静态资源用-->
@@ -2341,7 +2341,7 @@ public class MyExeptionHander implements HandlerExceptionResolver {
 
 使用el表达式需要引包，加标签
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223087.png)
+![](images/QQ图片20200207194722.png)
 
 **第三步： 编写Controller** 
 
@@ -2610,7 +2610,7 @@ public class MyInterceptor implements HandlerInterceptor {
 
 在`web.xml`中注意`Servlet-mapping标签`
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223088.png)
+![](images/QQ图片20200207210253.png)
 
 <font color=red>所以</font>:`字符编码过滤器`的`url模式`是`/*`代表拦截所有，即所有的请求都要走那里进行设置字符编码。而dispatcherServlet的`servlet-mapping标签`配置的`url模式`是`/`则拦截除了jsp的所有静态资源与动态资源。
 
@@ -2618,7 +2618,7 @@ public class MyInterceptor implements HandlerInterceptor {
 
 > 静态资源不进入DispatcherServlet 就行了,统一Controller的访问
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223089.png)
+![](images/QQ图片20200207210625.png)
 
 这样，静态资源不符合，则不进入DispatcherServlet
 
@@ -2672,13 +2672,13 @@ key-value形式就是表单中保存数据格式，也是postman中的x-www-form
 
 **问题演示：**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223090.png)
+![](images/QQ图片20200207214313.png)
 
 **错误说明： 表单传递的是个字符串 接收的birthday是个Date日期类型 不会自动转换**
 
 **解决方式一：添加注解**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223091.png)
+![](images/QQ图片20200207214717.png)
 
 ```java
 @Data
@@ -2739,13 +2739,13 @@ public class MyDateConvert implements Converter<String, Date> {
 
 > 如果传递的是个json 那么则上述的key-value处理方式则失效   处理json 默认使用了 jackson 我们只需要导入jar包就行了  默认接收的格式 yyyy-MM-dd  其他格式则报错
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223092.png)
+![](images/QQ图片20200229230349.png)
 
 
 
 **自定义格式方式一：**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223093.png)
+![](images/QQ图片20200229230858.png)
 
 ```java
 @NoArgsConstructor
@@ -2787,7 +2787,7 @@ public class User implements Serializable {
 
 **第一种解决方式：**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223094.png)
+![](images/QQ图片20200229233001.png)
 
 **第二种解决方式：**
 
@@ -2832,25 +2832,25 @@ public class MyConvert2 implements Converter<String,LocalDate> {
 
 #### 18.2.2. 参数类型传值之json类型 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223095.png)
+![](images/QQ图片20200229234415.png)
 
 **注意：如果使用java8中的日期时 此时我们需要一个jackson的支持包**
 
 jsr = java specific request = java 规范请求
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223096.png)
+![](images/QQ图片20200229234532.png)
 
   
 
 **导入这个包**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223097.png)
+![](images/QQ图片20200229234629.png)
 
 **导入这个包后 什么都不需要配置 直接使用@JsonFormat注解  接收和响应 都会按照指定的格式生效**
 
 **解决方式一：引入jar包，添加注解（推荐）**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223098.png)
+![](images/QQ图片20200229234954.png)
 
 ```xml
 <dependency>

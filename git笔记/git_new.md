@@ -14,27 +14,27 @@
 * 集中式版本管理系统(svn) subversion
 * 分布式版本管理系统(git)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248197.png)
+![](images/QQ图片20200210223528.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248199.png)
+![](images/QQ图片20200210224728.png)
 
 ## 4. git的下载安装
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248200.png)
+![](images/QQ图片20200210224935.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248201.png)
+![](images/QQ图片20200210225031.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248202.png)
+![](images/QQ图片20200210225350.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248203.png)
+![](images/QQ图片20200210225441.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248204.png)
+![](images/QQ图片20200210225535.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248205.png)
+![](images/QQ图片20200210230448.png)
 
 一般执行默认安装就行，如果想要修改，可参考如下点：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248206.png)
+![](images/Snipaste_2021-10-18_02-36-50.png)
 
 ```properties
 CRLF: "\r\n", windows系统环境下的换行方式，CRLF = carriage return line feed = 回车换行
@@ -71,21 +71,21 @@ LF: "\n", Linux系统环境下的换行方式 LF = line feed = 换行
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248207.png)
+![](images/Snipaste_2021-10-18_02-39-33.png)
 
 ### 6.2.本地库和远程库
 
 #### 6.2.1.团队内部协作
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248208.png)
+![](images/Snipaste_2021-10-18_02-48-37.png)
 
 #### 6.2.2.跨团队协作
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248209.png)
+![](images/Snipaste_2021-10-18_03-07-50.png)
 
 #### 6.2.3.其他协作方式（推荐）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248210.png)
+![](images/Snipaste_2021-10-18_03-10-40.png)
 
 ## 7. git基础命令演示
 
@@ -97,7 +97,7 @@ LF: "\n", Linux系统环境下的换行方式 LF = line feed = 换行
 
 * **命令演示**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248211.png)
+  ![](images/QQ图片20200210231615.png)
   
 #### 7.1.1.设置签名
 
@@ -130,7 +130,7 @@ git config --global user.email abc_global@gmail.com
 
 * **命令演示**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248212.png)
+  ![](images/QQ图片20200210232048.png)
 
 * **其他添加方式**
 
@@ -169,11 +169,11 @@ git commit --amend -m "提交信息" //amend = 修改
 
 *  **问题演示**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248213.png)
+  ![](images/QQ图片20200210232525.png)
 
 * **配置邮箱名字**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248214.png)
+  ![](images/QQ图片20200210232913.png)
   
   
 
@@ -212,7 +212,7 @@ git config --global --edit
 
 * **演示**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248215.png)
+  ![](images/QQ图片20200210233910.png)
   
 ### 7.6. git log
 
@@ -224,7 +224,7 @@ git config --global --edit
 
 * **演示**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248216.png)
+  ![](images/QQ图片20200210234700.png)
   
 ```properties
 #日志过多，多屏显示控制方式：
@@ -264,7 +264,7 @@ git reflog
 
 **演示:**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248217.png)
+![](images/QQ图片20200211000532.png)
 
 ## 9. git reset重置命令
 
@@ -305,17 +305,17 @@ git reset --mixed 版本号 ： 重置仓库区和暂存区（不掌握）
 git reset --hard  版本号 ： 重置仓库区和暂存区和工作区。（掌握）
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248218.png)
+![](images/Snipaste_2021-10-18_03-40-52.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248219.png)
+![](images/Snipaste_2021-10-18_03-41-27.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248220.png)
+![](images/Snipaste_2021-10-18_03-41-52.png)
 
 **对于三个参数的英文介绍**
 
 **这里的index file 指的是暂存区文件（索引文件）；working tree指的是工作区文件（工作树）**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248221.png)
+![](images/Snipaste_2021-10-18_03-58-16.png)
 
 **如果想删除文件并找回：**
 
@@ -329,7 +329,7 @@ git reset --hard  版本号 ： 重置仓库区和暂存区和工作区。（掌
 删除操作尚未提交到本地库：指针位置使用 HEA
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248222.png)
+![](images/QQ图片20200211002253.png)
 
 ## 10. git的忽略文件
 
@@ -355,11 +355,11 @@ https://github.com/github/gitignore/blob/master/Java.gitignore
 
 **注意：window系统 无法创建此文件**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248223.png)
+![](images/QQ图片20200211002751.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248224.png)
+![](images/QQ图片20200211003055.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248225.png)
+![](images/QQ图片20200211003327.png)
 
 ```bash
 ## 其他忽略方式举例 
@@ -429,11 +429,11 @@ git config --global core.excludesfile /Users/aitx/AitxPersonalWorkSpace/Git/toSt
 
 > 实际开发当中  一个项目 可能多人并行开发 此时分支很好的解决了相互影响的问题  不同的人 或者完成不同的功能  开启不同的分支  就能互不影响的开发功能 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248226.png)
+![](images/Snipaste_2021-10-22_07-17-57.png)
 
 **注意：当git执行 git init初始化git的时候 已经有个分支了 这个分支叫主分支 master**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248227.png)
+![](images/QQ图片20200211003924.png)
 
 ### 11.1. 分支的操作 
 
@@ -485,15 +485,15 @@ git config --global core.excludesfile /Users/aitx/AitxPersonalWorkSpace/Git/toSt
 
 注意：此时 commit 一定不能带具体文件名 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248228.png)
+![](images/Snipaste_2021-10-22_07-23-07.png)
 
 ### 11.2. 分支操作演示
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248229.png)
+![](images/QQ图片20200211005137.png)
 
 ### 11.3. 分支合并演示
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248230.png)
+![](images/QQ图片20200211010407.png)
 
 ## 12. github的使用
 
@@ -509,21 +509,21 @@ git config --global core.excludesfile /Users/aitx/AitxPersonalWorkSpace/Git/toSt
 //第二步： hosts文件 配置映射   140.82.113.4   github.com
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248231.png)
+![](images/QQ图片20200211120923.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248232.png)
+![](images/QQ图片20200211121022.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248233.png)
+![](images/QQ图片20200211121102.png)
 
  
 
 ### 12.2. 创建远程仓库
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248234.png)
+![](images/QQ图片20200211121532.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248235.png)
+![](images/QQ图片20200211123158.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248236.png)
+![](images/QQ图片20200211123444.png)
 
 ### 12.3. 操作远程仓库演示
 
@@ -544,9 +544,9 @@ git remote add origin https://github.com/xyz/abc.git
 git push origin main
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248237.png)
+![](images/QQ图片20200211124540.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248238.png)
+![](images/QQ图片20200211124638.png)
 
 #### 12.3.2. 从github上下载演示
 
@@ -556,43 +556,43 @@ git push origin main
 git clone https://github.com/xyz/abc.xyz
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248239.png)
+![](images/QQ图片20200211134244.png)
 
 #### 12.3.3. 操作github的完整流程
 
 * **创建仓库**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248240.png)
+  ![](images/QQ图片20200211134506.png)
 
 * **本地初始化git**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248241.png)
+  ![](images/QQ图片20200211134609.png)
 
 * **编写代码**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248242.png)
+  ![](images/QQ图片20200211134745.png)
 
 * **添加到本地仓库**
 
-   ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248244.png)
+   ![](images/QQ图片20200211134946.png)
 
 
 
 * **上传到github**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248245.png)
+  ![](images/QQ图片20200211135231.png)
 
 * **结果演示**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248246.png)
+  ![](images/QQ图片20200211135328.png)
 
 * **继续写代码**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248247.png)
+  ![](images/QQ图片20200211135534.png)
 
 * **新的代码上传本地仓库**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248248.png)
+  ![](images/QQ图片20200211135635.png)
 
 * **新的代码上传到github**
 
@@ -601,11 +601,11 @@ git clone https://github.com/xyz/abc.xyz
 git pull
 ```
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248249.png)
+  ![](images/QQ图片20200211140000.png)
 
 * **结果查看**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248250.png)
+  ![](images/QQ图片20200211140101.png)
 
 #### 12.3.4. 实际开发中分支操作完整流程演示
 
@@ -639,41 +639,41 @@ git merge [远程库地址别名/远程分支名]
 
 12.3.5. 尚硅谷的github演示
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248251.png)
+![](images/Snipaste_2021-10-23_06-12-27.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248252.png)
+![](images/Snipaste_2021-10-23_06-12-58.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248253.png)
+![](images/Snipaste_2021-10-23_06-13-28.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248254.png)
+![](images/Snipaste_2021-10-23_06-14-01.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248255.png)
+![](images/Snipaste_2021-10-23_06-14-38.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248256.png)
+![](images/Snipaste_2021-10-23_06-15-20.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248257.png)
+![](images/Snipaste_2021-10-23_06-16-01.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248258.png)
+![](images/Snipaste_2021-10-23_06-16-38.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248259.png)
+![](images/Snipaste_2021-10-23_06-17-11.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248260.png)
+![](images/Snipaste_2021-10-23_06-17-46.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248261.png)
+![](images/Snipaste_2021-10-23_06-18-13.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248262.png)
+![](images/Snipaste_2021-10-23_06-18-59.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248263.png)
+![](images/Snipaste_2021-10-23_06-19-31.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248264.png)
+![](images/Snipaste_2021-10-23_06-19-57.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248265.png)
+![](images/Snipaste_2021-10-23_06-20-24.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248266.png)
+![](images/Snipaste_2021-10-23_06-20-49.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248267.png)
+![](images/Snipaste_2021-10-23_06-21-37.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248268.png)
+![](images/Snipaste_2021-10-23_06-22-20.png)
 
 ## 13. github的免密登录（ssh）
 
@@ -683,15 +683,15 @@ git merge [远程库地址别名/远程分支名]
 
 > ssh-keygen -t rsa
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248269.png)
+![](images/QQ图片20200211142722.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248270.png)
+![](images/QQ图片20200211142827.png)
 
 ### 13.2. 复制公钥中的内容 
 
 直接打开文件复制id_rsa.pub的内容：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248271.png)
+![](images/QQ图片20200211143111.png)
 
 命令行复制id_rsa.pub的内容：
 
@@ -711,31 +711,31 @@ git merge [远程库地址别名/远程分支名]
 
 *  **进入配置位置的第一步**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248272.png)
+  ![](images/QQ图片20200211143239.png)
 
 * **进入配置位置第二步**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248273.png)
+  ![](images/QQ图片20200211143311.png)
 
 * **配置**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248274.png)
+  ![](images/QQ图片20200211143507.png)
 
 ### 13.4. 结果演示
 
 > 注意：要使用ssh免密码登陆  必须使用ssh的方式 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248275.png)
+![](images/QQ图片20200211143738.png)
 
 * **ssh的方式克隆代码**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248276.png)
+  ![](images/QQ图片20200211144157.png)
 
 
 
 * **添加到github**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248278.png)
+  ![](images/QQ图片20200211144450.png)
 
 
 
@@ -747,11 +747,11 @@ git merge [远程库地址别名/远程分支名]
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248279.png)
+![](images/QQ图片20200211150609.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248280.png)
+![](images/QQ图片20200211150908.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248281.png)
+![](images/QQ图片20200211151004.png)
 
 ### 14.2. 把项目交给git管理 
 
@@ -759,41 +759,41 @@ git merge [远程库地址别名/远程分支名]
 
 第一种方式： 开启版本控制集成
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248282.png)
+![](images/QQ图片20200211151407.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248283.png)
+![](images/QQ图片20200211151546.png)
 
 第二种方式：导入到版本控制
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248284.png)
+![](images/Snipaste_2021-10-23_11-36-52.png)
 
 选择要创建 Git 本地仓库的工程。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248285.png)
+![](images/Snipaste_2021-10-23_11-37-30.png)
 
 ### 14.3. 界面操作的几种方式
 
 > 普通操作和svn一样，在项目上右键，选择git
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248286.png)
+![](images/QQ图片20200211151728.png)
 
 > 点击菜单栏的VCS
 >
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248287.png)
+![](images/QQ图片20200211151828.png)
 
 > 点击右上角的图标
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248288.png)
+![](images/QQ图片20200211151902.png)
 
 > 点击右下角 ，操作git分支
 >
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248289.png)
+![](images/Snipaste_2021-10-23_11-48-53.png)
 
 > 点击左下角，操作git日志记录
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248290.png)
+![](images/Snipaste_2021-10-23_11-50-20.png)
 
 **以上几种都可以操作git  哪一种都可以 **
 
@@ -812,25 +812,25 @@ git merge [远程库地址别名/远程分支名]
 
 右键点击项目选择 Git -> Add 将项目添加到暂存区。相当于 git add .
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248291.png)
+![](images/Snipaste_2021-10-23_12-11-52.png)
 
 #### 14.4.2.提交到本地仓库
 
 右键点击项目选择 Git -> commit Directory 将项目提交到本地库。相当于 git commit -m "my message"
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248292.png)
+![](images/Snipaste_2021-10-23_12-13-37.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248293.png)
+![](images/Snipaste_2021-10-23_12-15-10.png)
 
 #### 14.4.3. 操作日志，选择版本
 
 在 IDEA 的左下角，点击 Version Control，然后点击 Log 查看版本；相当于 git log/git reflog
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248294.png)
+![](images/Snipaste_2021-10-23_12-21-38.png)
 
 右键选择要切换的版本，然后在菜单里点击 Checkout Revision。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248295.png)
+![](images/Snipaste_2021-10-23_12-23-35.png)
 
 ### 14.5. 操作分支
 
@@ -838,79 +838,79 @@ git merge [远程库地址别名/远程分支名]
 
 右键项目选择 Git，在 Repository 里面，点击 Branches 按钮
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248296.png)
+![](images/QQ图片20200211152117.png)
 
 在弹出的 Git Branches 框里，点击 New Branch 按钮。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248297.png)
+![](images/Snipaste_2021-10-23_12-27-37.png)
 
 填写分支名称，创建 hot-fix 分支。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248298.png)
+![](images/Snipaste_2021-10-23_12-28-13.png)
 
 然后再 IDEA 的右下角看到 hot-fix，说明分支创建成功，并且当前已经切换成 hot-fix 分支
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248299.png)
+![](images/Snipaste_2021-10-23_12-29-09.png)
 
 或者右下操作分支：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248289.png)
+![](images/Snipaste_2021-10-23_11-48-53.png)
 
 > 切换分支
 
 在 IDEA 窗口的右下角，切换到 master 分支 ；相当于 git checkout master
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248300.png)
+![](images/Snipaste_2021-10-23_12-30-27.png)
 
 然后在 IDEA 窗口的右下角看到了 master，说明 master 分支切换成功。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248301.png)
+![](images/Snipaste_2021-10-23_12-31-05.png)
 
 > 合并分支
 
 在 IDEA 窗口的右下角，将 hot-fix 分支合并到当前 master 分支。; 相当于git merge hot-fix
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248302.png)
+![](images/Snipaste_2021-10-23_12-31-58.png)
 
 如果代码没有冲突，分支直接合并成功，分支合并成功以后，代码自动提交，无需手动提交本地库。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248303.png)
+![](images/Snipaste_2021-10-23_12-32-51.png)
 
 > 解决冲突
 
 如图所示，如果 master 分支和 hot-fix 分支都修改了代码，在合并分支的时候就会发生冲突
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248304.png)
+![](images/Snipaste_2021-10-23_12-37-10.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248305.png)
+![](images/Snipaste_2021-10-23_12-37-34.png)
 
 我们现在站在 master 分支上合并 hot-fix 分支，就会发生代码冲突
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248306.png)
+![](images/Snipaste_2021-10-23_12-38-11.png)
 
 点击 Conflicts 框里的 Merge 按钮，进行手动合并代码
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248307.png)
+![](images/Snipaste_2021-10-23_12-39-01.png)
 
 手动合并完代码以后，点击右下角的 Apply 按钮。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248308.png)
+![](images/Snipaste_2021-10-23_12-40-18.png)
 
 代码冲突解决，自动提交本地库。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248309.png)
+![](images/Snipaste_2021-10-23_12-40-56.png)
 
 > 删除分支
 
 点击分支后，弹出框选择Delete；相当于 git branch -d hot-fix
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248310.png)
+![](images/Snipaste_2021-10-23_12-46-08.png)
 
 ### 14.5. 设置忽略文件
 
 第一种方式：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248311.png)
+![](images/QQ图片20200211152538.png)
 
 第二种方式：
 
@@ -964,55 +964,55 @@ excludesfile = /Users/aitx/AitxPersonalWorkSpace/Git/toStudyCode/.gitignore_glob
 
 #### 15.1.1. 设置github帐号
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248312.png)
+![](images/Snipaste_2021-10-23_14-42-45.png)
 
 如果出现 401 等情况连接不上的，是因为网络原因，可以使用以下方式（`使用token`）连接：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248313.png)
+![](images/Snipaste_2021-10-23_14-43-40.png)
 
 然后去 GitHub 账户上设置 token。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248314.png)
+![](images/Snipaste_2021-10-23_14-44-34.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248315.png)
+![](images/Snipaste_2021-10-23_14-44-57.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248316.png)
+![](images/Snipaste_2021-10-23_14-45-20.png)
 
 点击生成 token。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248317.png)
+![](images/Snipaste_2021-10-23_14-45-55.png)
 
 复制红框中的字符串到 idea 中。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248318.png)
+![](images/Snipaste_2021-10-23_14-46-26.png)
 
 点击登录。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248319.png)
+![](images/Snipaste_2021-10-23_14-47-00.png)
 
 #### 15.1.2. 分享工程到github上
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248320.png)
+![](images/Snipaste_2021-10-23_14-47-44.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248321.png)
+![](images/Snipaste_2021-10-23_14-48-21.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248322.png)
+![](images/Snipaste_2021-10-23_14-48-42.png)
 
 来到 GitHub 中发现已经帮我们创建好了 gitTest 的远程仓库
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248323.png)
+![](images/Snipaste_2021-10-23_14-49-11.png)
 
 #### 15.1.3. push工程到远程库
 
 右键点击项目，可以将当前分支的内容 push 到 GitHub 的远程仓库中。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248324.png)
+![](images/Snipaste_2021-10-23_14-50-19.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248325.png)
+![](images/Snipaste_2021-10-23_14-50-43.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248326.png)
+![](images/Snipaste_2021-10-23_14-51-14.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248327.png)
+![](images/Snipaste_2021-10-23_14-51-36.png)
 
 注意：push 是将本地库代码推送到远程库，如果本地库代码跟远程库代码版本不一致， push 的操作是会被拒绝的。也就是说，要想 push 成功，一定要保证本地库的版本要比远程库的版本高！因此一个成熟的程序员在动手改本地代码之前，一定会先检查下远程库跟本地代码的区别！如果本地的代码版本已经落后，切记要先 pull 拉取一下远程库的代码，将本地代码更新到最新以后，然后再修改，提交，推送！ 
 
@@ -1020,27 +1020,27 @@ excludesfile = /Users/aitx/AitxPersonalWorkSpace/Git/toStudyCode/.gitignore_glob
 
 右键点击项目，可以将远程仓库的内容 pull 到本地仓库。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248328.png)
+![](images/Snipaste_2021-10-23_14-53-19.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248330.png)
+![](images/Snipaste_2021-10-23_14-53-41.png)
 
 注意：pull 是拉取远端仓库代码到本地，如果远程库代码和本地库代码不一致，会自动 合并，如果自动合并失败，还会涉及到手动解决冲突的问题。
 
 #### 15.1.5. clone远程库到本地
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248331.png)
+![](images/Snipaste_2021-10-23_14-55-14.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248332.png)
+![](images/Snipaste_2021-10-23_14-55-41.png)
 
 为 clone 下来的项目,导入，然后点击 Next。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248333.png)
+![](images/Snipaste_2021-10-23_14-56-18.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248334.png)
+![](images/Snipaste_2021-10-23_14-56-58.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248335.png)
+![](images/Snipaste_2021-10-23_14-57-48.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248336.png)
+![](images/Snipaste_2021-10-23_14-58-16.png)
 
 ## 16. 在线简历（免服务器）必备
 
@@ -1050,29 +1050,29 @@ excludesfile = /Users/aitx/AitxPersonalWorkSpace/Git/toStudyCode/.gitignore_glob
 
   * **创建一个仓库  仓库名必须叫 用户名+github.io**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248337.png)
+  ![](images/QQ图片20200211145206.png)
 
   * **必须开启https访问**
 
-    ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248338.png)
+    ![](images/QQ图片20200211145311.png)
 
 
 
 * **把你的简历html提交到这个仓库**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248339.png)
+  ![](images/QQ图片20200211145416.png)
 
 
 
 * **可以通过网址访问你的在线简历了**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248340.png)
+  ![](images/QQ图片20200211145537.png)
 
 ## 17.git的基本原理
 
 ### 17.1.哈希算法
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248341.png)
+![](images/Snipaste_2021-10-22_07-28-29.png)
 
 哈希是一个系列的加密算法，各个不同的哈希算法虽然加密强度不同，但是有以下 几个共同点： 
 
@@ -1088,7 +1088,7 @@ Git 底层采用的是 SHA-1 算法。
 
 哈希算法可以被用来验证文件。原理如下图所示：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248342.png)
+![](images/Snipaste_2021-10-22_07-30-44.png)
 
 ### 17.2.git保存版本的机制
 
@@ -1100,13 +1100,13 @@ Git 底层采用的是 SHA-1 算法。
 over time = 随着时间
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248343.png)
+![](images/Snipaste_2021-10-22_07-35-18.png)
 
 #### 17.2.2.Git 的文件管理机制
 
 Git 把数据看作是小型文件系统的一组快照。每次提交更新时 Git 都会对当前 的全部文件制作一个快照并保存这个快照的索引。为了高效，如果文件没有修改， Git 不再重新存储该文件，而是只保留一个链接指向之前存储的文件。所以 Git 的 工作方式可以称之为快照流snapshot。
 
-![1634859478170](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248344.png)
+![1634859478170](./images/1634859478170.png)
 
 如指针指向快照，B指向原来的文件B
 
@@ -1116,13 +1116,13 @@ Git 把数据看作是小型文件系统的一组快照。每次提交更新时 
 
 提交的对象包含tree，tree（树）包含blob（二进制长对象）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248345.png)
+![](images/Snipaste_2021-10-22_07-41-29.png)
 
 **提交对象及其父对象形成的链条**
 
 原来的提交就是父对象，子对象指向父对象
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248346.png)
+![](images/Snipaste_2021-10-22_07-44-34.png)
 
 #### 17.3.git的分支管理机制
 
@@ -1130,19 +1130,19 @@ Git 把数据看作是小型文件系统的一组快照。每次提交更新时 
 
 这里版本f30ab有两个分支，master与testing，现在HEAD指向master
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248347.png)
+![](images/Snipaste_2021-10-22_07-49-35.png)
 
 ##### 17.3.2.分支的切换
 
 HEAD原来指向master分支，后来指向testing分支:
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248348.png)
+![](images/Snipaste_2021-10-22_07-52-24.png)
 
 如果在test分支上继续新增内容，则会出现如下情况:
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248349.png)
+![](images/Snipaste_2021-10-22_07-54-02.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248350.png)
+![](images/Snipaste_2021-10-22_07-55-26.png)
 
 如果不同的分支有不同的内容:
 
@@ -1164,19 +1164,19 @@ HEAD原来指向master分支，后来指向testing分支:
 
 Git 很多特性并没有用到。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248351.png)
+![](images/Snipaste_2021-10-23_06-43-16.png)
 
 #### 18.2.2  GitFlow 工作流
 
 Gitflow 工作流通过为功能开发、发布准备和维护设立了独立的分支，让发布迭代过程更流畅。严格的分支模型也为大型项目提供了一些非常必要的结构。 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248352.png)
+![](images/Snipaste_2021-10-23_06-45-09.png)
 
 #### 18.2.3 Forking工作流
 
 Forking 工作流是在 GitFlow 基础上，充分利用了 Git 的 Fork 和 pull request 的 功能以达到代码审核的目的。更适合安全可靠地管理大团队的开发者，而且能接受不信任贡献者的提交。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248353.png)
+![](images/Snipaste_2021-10-23_06-46-30.png)
 
 ### 18.3 GitFlow工作流详解
 
@@ -1202,9 +1202,9 @@ Forking 工作流是在 GitFlow 基础上，充分利用了 Git 的 Fork 和 pul
 
 ​	为了不影响较短周期的开发工作，一般把中长期开发模块，会从开发分支中独立出来。 开发完成后会合并到开发分支。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248354.png)
+![](images/Snipaste_2021-10-23_06-50-59.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248355.png)
+![](images/Snipaste_2021-10-23_06-53-14.png)
 
 ## 19. gitlab 服务器搭建
 
@@ -1276,37 +1276,37 @@ gitlab-ctl stop
 
 初次登录时需要为 gitlab 的 root 用户设置密码。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248356.png)
+![](images/Snipaste_2021-10-23_15-03-52.png)
 
 ### 19.6.IDEA集成gitlab
 
 1）安装 GitLab 插件
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248357.png)
+![](images/Snipaste_2021-10-23_15-05-06.png)
 
 2）设置 GitLab 插件
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248358.png)
+![](images/Snipaste_2021-10-23_15-05-45.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248359.png)
+![](images/Snipaste_2021-10-23_15-06-10.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248360.png)
+![](images/Snipaste_2021-10-23_15-07-04.png)
 
 3）push 本地代码到 GitLab 远程库
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248361.png)
+![](images/Snipaste_2021-10-23_15-07-43.png)
 
 自定义远程连接
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248362.png)
+![](images/Snipaste_2021-10-23_15-08-34.png)
 
 注意：gitlab 网页上复制过来的连接是：http://gitlab.example.com/root/git-test.git， 需要手动修改为：http://gitlab-server/root/git-test.git 选择 gitlab 远程连接，进行 push
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248363.png)
+![](images/Snipaste_2021-10-23_15-09-30.png)
 
 首次向连接 gitlab，需要登录帐号和密码，用 root 帐号和我们修改的密码登录即可。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248364.png)
+![](images/Snipaste_2021-10-23_15-09-59.png)
 
 代码 Push 成功。
 

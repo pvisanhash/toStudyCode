@@ -144,7 +144,7 @@ public class SparseArray {
 
 先入先出：先存入的数据，先取出
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226730.png)
+![](./images/Snipaste_2022-07-26_00-50-04.png)
 
 
 
@@ -302,7 +302,7 @@ public class MyQueueTest {
 
 使用数组模拟环形队列：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226731.png)
+![](./images/Snipaste_2022-07-26_01-51-55.png)
 
 完成以下任务：
 
@@ -480,9 +480,9 @@ public class MyQueueTest {
 
 ## 链表 Linked List
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226732.png)
+![](./images/Snipaste_2022-07-26_22-07-00.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226733.png)
+![](./images/Snipaste_2022-07-26_22-12-01.png)
 
 因为头节点不能动，所以加个head指针用于辅助移动
 
@@ -1160,7 +1160,7 @@ Jossephu问题：设编号为1，2，… n的n个人围坐一圈，约定编号�
 
 提示：用一个不带头结点的[循环链表](https://so.csdn.net/so/search?q=循环链表&spm=1001.2101.3001.7020)来处理Josephu 问题：先构成一个有n个结点的单循环链表，然后由k结点起从1开始计数，计到m时，对应结点从链表中删除，然后再从被删除结点的下一个结点又从1开始计数，直到最后一个结点从链表中删除算法结束。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226734.png)
+![](./images/Snipaste_2022-07-30_12-25-15.png)
 
 构建单向环形链表思路：
 
@@ -1168,7 +1168,7 @@ Jossephu问题：设编号为1，2，… n的n个人围坐一圈，约定编号�
 
 2 后面当我们每创建一个新的节点，就把该节点加入到已有的环形链表
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226735.png)
+![](./images/Snipaste_2022-07-30_13-42-30.png)
 
 ```java
 public class Josephu {
@@ -1320,11 +1320,11 @@ class Boy {
 
 ## 栈 Stack
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226736.png)
+![](./images/Snipaste_2022-08-03_12-43-27.png)
 
 ### 数组模拟栈
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226737.png)
+![](./images/Snipaste_2022-08-03_13-13-10.png)
 
 ```java
 public class MyStackDemo {
@@ -1605,7 +1605,7 @@ class LinkedListStack {
 
 举例： (3+4)×5-6 对应的后缀表达式就是 3 4 + 5 × 6 –
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226738.png)
+![](./images/Snipaste_2022-08-05_02-07-17.png)
 
 后缀表达式的计算机求值
 
@@ -1629,7 +1629,7 @@ class LinkedListStack {
 
 ### 栈实现计算器 中缀表达式（不考虑括号）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226739.png)
+![](./images/Snipaste_2022-08-04_04-03-28.png)
 
 ```java
 public class Calculator {
@@ -1823,7 +1823,7 @@ class ArrayStack2 {
 
 ### 逆波兰（后缀表达式）计算器的初步实现
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226740.png)
+![](./images/Snipaste_2022-08-05_01-28-36.png)
 
 ```java
 public class PolandNotation {
@@ -1923,9 +1923,9 @@ public class PolandNotation {
 8 依次弹出s2中的元素并输出，结果的逆序即为中缀表达式对应的后缀表达式
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226741.png)
+![](./images/Snipaste_2022-08-05_01-58-39.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226742.png)
+![](./images/Snipaste_2022-08-05_01-59-21.png)
 
 ### 逆波兰计算器的实现：不考虑小数点，未兼容处理符号
 
@@ -2368,7 +2368,7 @@ public class Recursion {
 
 8行7列的矩阵
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226743.png)
+![](./images/Snipaste_2022-08-06_06-37-17.png)
 
 ```java
 public class Maze {
@@ -2657,7 +2657,7 @@ k次方阶O(n^k)
 
 n的n次方O(n^n)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226744.png)
+![](./images/Snipaste_2022-08-14_01-56-01.png)
 
 平均时间复杂度
 
@@ -2667,7 +2667,7 @@ n的n次方O(n^n)
 
 最环情况下的时间复杂度，一般讨论的时间复杂度都是最坏时间复杂度
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226745.png)
+![](./images/Snipaste_2022-08-14_02-24-06.png)
 
 ### 空间复杂度 space complexity
 
@@ -2679,7 +2679,7 @@ n的n次方O(n^n)
 
 ### 冒泡排序 bubble sorting
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226746.png)
+![](./images/Snipaste_2022-08-14_02-41-13.png)
 
 ```Java
 public class BubbleSort {
@@ -2851,7 +2851,7 @@ public class SequenceSearch {
 
 ### 二分查找/折半查找  递归方式 Binary Search Recursion
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226747.png)
+![](./images/Snipaste_2022-08-14_11-44-13.png)
 
 ```java
 public class BinarySearch {
@@ -3238,7 +3238,7 @@ class EmpLinkedList {
 
 树：查找快，删除、新增效率好
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226748.png)
+![](./images/Snipaste_2022-08-15_00-16-51.png)
 
 ### 二叉树 binary tree
 
@@ -3250,17 +3250,17 @@ class EmpLinkedList {
 
 完全二叉树：如果二叉树的所有的叶子节点都在最后一层或倒数第二层，而且最后一层的叶子节点在左边边续，倒数第二层的叶子节点在右边连续。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226749.png)
+![](./images/Snipaste_2022-08-15_00-28-10.png)
 
 #### 遍历方式 : preorder,infix order,postorder
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226750.png)
+![](./images/Snipaste_2022-08-15_00-40-50.png)
 
 1. 前序遍历: 先输出父节点，再遍历左子树和右子树
 2. 中序遍历: 先遍历左子树，再输出父节点，再遍历右子树
 3. 后序遍历: 先遍历左子树，再遍历右子树，最后输出父节点
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226751.png)
+![](./images/Snipaste_2022-08-15_00-48-25.png)
 
 ```java
 public class BinaryTreeDemo {
@@ -3400,7 +3400,7 @@ class HeroNode {
 
 #### 查找方式：preorder,inorder,postorder
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226752.png)
+![](./images/Snipaste_2022-08-15_23-40-26.png)
 
 ```java
 public class BinaryTreeDemo {
@@ -3646,7 +3646,7 @@ class HeroNode {
 
 删除节点
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226753.png)
+![](./images/Snipaste_2022-08-15_23-54-33.png)
 
 ```java
 public class BinaryTreeDemo {
@@ -3953,7 +3953,7 @@ class HeroNode {
 
 要求：在遍历数组arr时，仍然可以以前序遍历，中序遍历和后序遍历的方式完成结点的遍历
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226754.png)
+![](./images/Snipaste_2022-08-16_00-49-59.png)
 
 
 
@@ -4095,9 +4095,9 @@ class ArrayBinaryTree {
 
 #### 线索化二叉树 threaded binary tree
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226755.png)
+![](./images/Snipaste_2022-08-17_04-04-17.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226756.png)
+![](./images/Snipaste_2022-08-17_04-12-07.png)
 
 ```java
 public class ThreadedBinaryTreeDemo {
@@ -4426,7 +4426,7 @@ class HeroNode {
 
 #### 遍历线索化二叉树
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226757.png)
+![](./images/Snipaste_2022-08-17_05-06-24.png)
 
 ```java
 public class ThreadedBinaryTreeDemo {
@@ -4789,11 +4789,11 @@ class HeroNode {
 
 #### 堆排序 Heap Sort
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226758.png)
+![](./images/Snipaste_2022-08-17_05-49-52.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226759.png)
+![](./images/Snipaste_2022-08-17_05-52-45.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226760.png)
+![](./images/Snipaste_2022-08-17_05-56-16.png)
 
 堆排序是利用堆这种数据结构而设计的一种排序算法，堆排序是一种选择排序，它的最坏，最好，平均时间复杂度均为O(nlogn)，它也是不稳定排序。
 
@@ -4829,38 +4829,38 @@ class HeroNode {
 步骤一 构造初始堆。将给定无序序列构造成一个大顶堆（一般升序采用大顶堆，降序采用小顶堆)
 （1）假设给定无序序列结构如下：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226761.png)
+![](./images/Snipaste_2022-08-17_06-14-19.png)
 
 （2）此时我们从最后一个非叶子结点开始（叶结点自然不用调整，第一个非叶子结点 arr.length/2-1=5/2-1=1，也就是下面的数值为6的结点），从左至右，从下至上进行调整
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226762.png)
+![](./images/Snipaste_2022-08-17_06-15-02.png)
 
 （3）找到第二个非叶节点4，由于[4,9,8]中9元素最大，4和9交换
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226763.png)
+![](./images/Snipaste_2022-08-17_06-15-40.png)
 
 （4）这时，交换导致了子根[4,5,6]结构混乱，继续调整，[4,5,6]中6最大，交换4和6
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226764.png)
+![](./images/Snipaste_2022-08-17_06-16-18.png)
 
 （5）此时，我们就将一个无序序列构造成了一个大顶堆
 
 步骤二 将堆顶元素与末尾元素进行交换，使末尾元素最大。然后继续调整堆，再将堆顶元素与末尾元素交换，得到第二大元素。如此反复进行交换、重建、交换
  （1）将堆顶元素9和末尾元素4进行交换
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226765.png)
+![](./images/Snipaste_2022-08-17_06-17-03.png)
 
 （2）重新调整结构，使其继续满足堆定义
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226766.png)
+![](./images/Snipaste_2022-08-17_06-17-39.png)
 
 （3）再将堆顶元素 8 与末尾元素 5 进行交换，得到第二大元素 8
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226767.png)
+![](./images/Snipaste_2022-08-17_06-18-15.png)
 
 （4）后续过程，继续进行调整，交换，如此反复进行，最终使得整个序列有序
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226768.png)
+![](./images/Snipaste_2022-08-17_06-18-58.png)
 
 步骤总结：
  1).将无序序列构建成一个堆，根据升序降序需求选择大顶堆或小顶堆
@@ -5015,7 +5015,7 @@ public class HeapSort {
  （1）若将树中结点赋给一个有着某种含义的数值，则这个数值称为该结点的权。
  （2）结点的带权路径长度为：从根结点到该结点之间的路径长度与该结点的权的乘积
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226769.png)
+![](./images/Snipaste_2022-08-18_04-11-53.png)
 
 
 
@@ -5027,7 +5027,7 @@ public class HeapSort {
 
 WPL最小的就是赫夫曼树
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226770.png)
+![](./images/Snipaste_2022-08-18_04-13-11.png)
 
 
 
@@ -5045,7 +5045,7 @@ WPL最小的就是赫夫曼树
 
 以{13, 7, 8, 3, 29, 6, 1}这个为例：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226771.png)
+![](./images/Snipaste_2022-08-18_04-16-16.png)
 
 ```java
 public class HuffmanTree {
@@ -5142,7 +5142,7 @@ class Node implements Comparable<Node> {
 
 #### 二叉排序树 Binary Sort Tree
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226772.png)
+![](./images/Snipaste_2022-08-18_04-58-32.png)
 
 ##### 创建(添加)与遍历
 
@@ -5246,7 +5246,7 @@ class Node {
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226773.png)
+![](./images/Snipaste_2022-08-23_22-39-39.png)
 
  删除叶子节点
  (1) 需先去找到要删除的结点  targetNode
@@ -5540,19 +5540,19 @@ class Node {
 
 ## 图 graph
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226774.png)
+![](./images/Snipaste_2022-08-23_23-01-40.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226775.png)
+![](./images/Snipaste_2022-08-23_23-03-32.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226776.png)
+![](./images/Snipaste_2022-08-23_23-06-46.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226777.png)
+![](./images/Snipaste_2022-08-23_23-09-03.png)
 
 
 
 ### 图的快速入门
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226778.png)
+![](./images/Snipaste_2022-08-23_23-18-42.png)
 
 ### 图的遍历
 
@@ -6208,7 +6208,7 @@ public class HanoiTower {
 
 有一个背包，容量为4磅 ， 现有如下物品
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226779.png)
+![](./images/Snipaste_2022-09-02_01-54-37.png)
 
 要求：
 1、要求达到的目标为装入的背包的总价值最大，并且重量不超出
@@ -6230,7 +6230,7 @@ public class HanoiTower {
  v[ i - 1 ] [ j - w[ i ] ] ： 装入i-1商品，到剩余空间为  j-w[i] 的最大值
  注：此二位数组可以看成 x轴和 y 轴， v[y] [x]  或者 v[i] [j]，以后表格对应，x轴对应的是 重量(容量)，y轴则是 物品编号
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226780.png)
+![](./images/Snipaste_2022-09-02_03-17-11.png)
 
 
 
@@ -6330,7 +6330,7 @@ public class Knapsack {
 
 假设存在下面需要付费的广播台，以及广播台信号可以覆盖的地区。 如何选择最少的广播台，让所有的地区都可以接收到信号
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226781.png)
+![](./images/Snipaste_2022-09-06_06-12-47.png)
 
 
 
@@ -6345,7 +6345,7 @@ public class Knapsack {
 （1）穷举法：
  如何找出覆盖所有地区的广播台的集合呢，使用穷举法实现,列出每个可能的广播台的集合，这被称为幂集。假设总的有n个广播台，则广播台的组合总共有2ⁿ -1 个,假设每秒可以计算10个子集， 如图: (思考：这里为什么是2ⁿ -1，可以这样想，有n个占位，每个占位可以选与不选，则有2ⁿ个选择可能，再减去全为空的情况则为2ⁿ -1)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226782.png)
+![](./images/Snipaste_2022-09-06_06-17-12.png)
 
 
 
@@ -6471,7 +6471,7 @@ public class GreedyAlgorithm {
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226783.png)
+![](./images/Snipaste_2022-09-06_07-26-41.png)
 
 最小生成树:
 
@@ -6496,7 +6496,7 @@ public class GreedyAlgorithm {
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226784.png)
+![](./images/Snipaste_2022-09-06_13-20-22.png)
 
 
 
@@ -6640,7 +6640,7 @@ class Graph {
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226785.png)
+![](./images/Snipaste_2022-09-07_07-58-08.png)
 
  
 
@@ -6667,7 +6667,7 @@ class Graph {
 
 什么情况会构成回路？
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226786.png)
+![](./images/Snipaste_2022-09-07_08-00-02.png)
 
 （1）在将<E,F> <C,D> <D,E>加入到最小生成树R中之后，这几条边的顶点就都有了终点：
  <1> C的终点是F。
@@ -6927,7 +6927,7 @@ class EData {
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226788.png)
+![](./images/Snipaste_2022-09-08_07-43-41.png)
 
 2、迪杰斯特拉(Dijkstra)算法介绍
 
@@ -7170,7 +7170,7 @@ class Graph {
 
 Floyd算法就是解决问题2
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226789.png)
+![](./images/Snipaste_2022-09-13_03-39-19.png)
 
 
 
@@ -7189,13 +7189,13 @@ Floyd算法就是解决问题2
  （1）设置顶点vi到顶点vk的最短路径已知为Lik，顶点vk到vj的最短路径已知为Lkj，顶点vi到vj的路径为Lij，则vi到vj的最短路径为：min((Lik+Lkj),Lij)，vk的取值为图中所有顶点，则可获得vi到vj的最短路径
  （2）至于vi到vk的最短路径Lik或者vk到vj的最短路径Lkj，是以同样的方式获得
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226790.png)
+![](./images/Snipaste_2022-09-13_03-41-52.png)
 
 
 
 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042226791.png)
+![](./images/Snipaste_2022-09-13_03-42-42.png)
 
 
 

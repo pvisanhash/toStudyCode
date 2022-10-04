@@ -2,7 +2,7 @@
 
 ## 1. java项目的基本三层架构
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222944.png)
+![](./images/QQ截图20200723120914.png)
 
 ## 2. 框架和库的区别
 
@@ -36,11 +36,11 @@ dtb = data transfer bus = 数据传输总线
 * 第一种方式 从官网（也是跳转到github）
 * 第二种方式 github  
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222945.png)
+![](images/QQ图片20200203151436.png)
 
 ## 5. mybatis的目录介绍
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222946.png)
+![](images/QQ图片20200203151824.png)
 
 ## 6. Mybatis操作数据库
 
@@ -74,7 +74,7 @@ values (1,'盛世名',NULL,'2',NULL),
 
 #### 6.1.3. 创建java项目
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222947.png)
+![](images/QQ图片20200203153256.png)
 
 #### 6.1.4. 导入jar包（新建lib） 
 
@@ -82,7 +82,7 @@ values (1,'盛世名',NULL,'2',NULL),
 >
 > 导入mysql的驱动包 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222948.png)
+![](images/QQ图片20200203175250.png)
 
 **注意： 直接导入mybatis 和  mysql驱动包  2个包就可以了  但是建议把所有的包都导入进去**
 
@@ -153,7 +153,7 @@ public class User implements Serializable {
 
 #### 6.1.8. 基本目录结构如下
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222949.png)
+![](images/QQ图片20200203175850.png)
 
 ### 6.2. 增删改查
 
@@ -237,15 +237,15 @@ public class UserTest {
 
 ##### 6.2.1.4. 结果打印 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222950.png)
+![](images/QQ图片20200203180402.png)
 
 
 
 ##### 6.2.1.5. 警告说明 （log4j日志配置文件）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222951.png)
+![](images/QQ图片20200203180650.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222952.png)
+![](images/QQ图片20200203180817.png)
 
 **直接百度下载即可，这里提供了：**
 
@@ -489,7 +489,7 @@ log4j.appender.error.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss a} [Threa
 
 ##### 6.2.2.4. 查看结果
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222953.png)
+![](images/Snipaste_2021-09-20_09-08-54.png)
 
 注意：如果数据出现问号在数据库连接上加上characterEncoding=UTF-8
 
@@ -532,7 +532,7 @@ public void updateUser() throws IOException {
 
 ##### 6.2.3.4. 查看结果 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222954.png)
+![](images/Snipaste_2021-09-20_12-39-06.png)
 
 #### 6.2.4. 删除用户 
 
@@ -567,7 +567,7 @@ public void deleteUser() throws IOException {
 
 ##### 6.2.4.4. 查看结果
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222955.png)
+![](images/Snipaste_2021-09-20_12-56-06.png)
 
 #### 6.2.5. 模糊查询 
 
@@ -604,7 +604,7 @@ public void search() throws IOException {
 
 ##### 6.2.5.4. 查看结果
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222956.png)
+![](images/Snipaste_2021-09-20_13-05-25.png)
 
 #### 6.2.6. 添加用户返回主键
 
@@ -636,7 +636,7 @@ public void search() throws IOException {
 
 可以看到返回的主键直接赋值到id上了
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222957.png)
+![](images/Snipaste_2021-09-20_13-14-14.png)
 
 ## 7. 面临的问题
 
@@ -645,7 +645,7 @@ public void search() throws IOException {
 
 **生命周期介绍**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222958.png)
+![](images/QQ图片20200203220832.png)
 
 ## 8. 简单的封装
 
@@ -931,7 +931,7 @@ public class UserMapperTest {
 
 ### 11.2. 数据源问题
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222959.png)
+![](images/QQ图片20200203231052.png)
 
 ### 11.3. 连接信息抽出
 
@@ -1020,7 +1020,7 @@ jdbc.password=root
 
 #### 11.4.2. 使用别名
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222960.png)
+![](images/QQ图片20200204031030.png)
 
 ### 11.5. mapper的resources属性值
 
@@ -1030,7 +1030,7 @@ jdbc.password=root
 .是包的形式
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222961.png)
+![](images/QQ图片20200204031257.png)
 
 #### 11.5.1. resource属性
 
@@ -1059,7 +1059,7 @@ jdbc.password=root
 
 **要求：接口名称要和mapper文件名一致 并且在同一个目录下**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222963.png)
+![](images/QQ图片20200204032126.png)
 
 #### 11.5.4. 开发中的写法(package)
 
@@ -1208,7 +1208,7 @@ List<User> search(UserExt userExt);
 
   
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222964.png)
+  ![](images/QQ图片20200204042039.png)
 
 * 第二步：使用resultmap 设置属性和别名的对应关系
 
@@ -1249,7 +1249,7 @@ List<User> search(UserExt userExt);
 
 ### 13.1. 问题演示
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222965.png)
+![](images/QQ图片20200204044318.png)
 
 ```properties
 这里如果查询条件是null,则查询语句变为select * from user where sex=? and username like '%%'，
@@ -1291,7 +1291,7 @@ List<User> search(UserExt userExt);
 
 ### 13.4. 其他写法(sql标签与include标签)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222966.png)
+![](./images/QQ图片20200204045737.png)
 
 ### 13.5. foreach标签使用
 
@@ -1979,7 +1979,7 @@ public interface CartItemMapper {
 >
 >  mybatis的一级缓存 默认是开启的
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222967.png)
+![](./images/QQ图片20200204183028.png)
 
 #### 16.2.1. 一级缓存的演示 
 
@@ -2029,7 +2029,7 @@ public class CacheTest {
 
 **myBatis的二级缓存 高版本默认是开启的**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222968.png)
+![](images/QQ图片20200204185939.png)
 
 也可以明式地在mybatis-config配置文件的settings标签中声明
 
@@ -2041,7 +2041,7 @@ public class CacheTest {
 
 *  修改实体类 
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222969.png)
+  ![](images/QQ图片20200204190728.png)
 
 * 修改映射文件 
 
@@ -2093,7 +2093,7 @@ public class CacheTest {
 
 使用`useCache="false"`可以指定某个查询不使用缓存
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222970.png)
+![](images/QQ图片20200204191230.png)
 
 #### 16.3.3. 刷新二级缓存
 
@@ -2109,7 +2109,7 @@ public class CacheTest {
 >
 >而缓存数据还是原来的，这个时候就会出现脏读。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222971.png)
+![](images/QQ图片20200204191607.png)
 
 ## 17. Mybatis的注解开发  (了解 )
 
@@ -2166,15 +2166,15 @@ public interface UserMapper {
 
 ### 17.2. 属性名和列名不一致的情况
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222972.png)
+![](images/QQ图片20200204194032.png)
 
 ## 18. 探索驼峰命名的规则
 
 ### 18.1. 面临的问题
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222973.png)
+![](images/QQ图片20200204195823.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222974.png)
+![](images/QQ图片20200204200009.png)
 
 ### 18.2. 开启驼峰命名
 
@@ -2186,7 +2186,7 @@ public interface UserMapper {
 
 * 测试
 
- ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042222975.png)
+ ![](./images/QQ图片20200204200829.png)
 
 ## 19.提供mybatis常见配置文件
 

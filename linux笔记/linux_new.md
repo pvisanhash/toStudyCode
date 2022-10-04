@@ -38,87 +38,87 @@
 
 ### 5.1. 双击安装程序（然后等待）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218078.png)
+![](images/QQ图片20200601095322.png)
 
 ### 5.2. 点击下一步
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218080.png)
+![](images/QQ图片20200601095358.png)
 
 ### 5.3. 勾选同意下一步
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218081.png)
+![](images/QQ图片20200601095440.png)
 
 
 
 ### 5.4. 选择安装目录下一步
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218082.png)
+![](images/QQ图片20200601095537.png)
 
 ### 5.5. 不勾选下一步
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218083.png)
+![](images/QQ图片20200601095616.png)
 
 ### 5.6. 下一步
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218084.png)
+![](images/QQ图片20200601095644.png)
 
 ### 5.7. 安装
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218085.png)
+![](images/QQ图片20200601095725.png)
 
 ### 5.8. 等待安装成功
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218086.png)
+![](images/QQ图片20200601095818.png)
 
 
 
 ### 5.9. 点击许可证输入内容
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218087.png)
+![](images/QQ图片20200601100025.png)
 
 ### 5.10. 安装成功
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218088.png)
+![](images/QQ图片20200601100113.png)
 
 ## 6. centOS的安装
 
 ### 6.1. 新建虚拟机
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218089.png)
+![](images/QQ图片20200601101300.png)
 
 ### 6.2. 默认直接下一步
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218090.png)
+![](images/QQ图片20200601101358.png)
 
 ### 6.3. 创建空白虚拟光盘
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218091.png)
+![](images/QQ图片20200601101621.png)
 
 ### 6.4. 选择对应版本
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218092.png)
+![](images/QQ图片20200601101656.png)
 
 ### 6.5. 虚拟机版本以及位置
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218093.png)
+![](images/QQ图片20200601101735.png)
 
 ### 6.6. 处理器配置
 
 > 看自己是否是双核、多核  虚拟机处理器数量可以根据自己的机器配置来定
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218094.png)
+![](images/QQ图片20200601101939.png)
 
 ### 6.7. 设置内存 
 
 > 这个内存要看自己电脑的内存有多大
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218095.png)
+![](images/QQ图片20200601102029.png)
 
 
 
 ### 6.8.设置网络
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218096.png)
+![](images/QQ图片20200601102051.png)
 
 
 
@@ -134,11 +134,11 @@
 
 ### 6.9. 设置IO控制类型
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218097.png)
+![](images/QQ图片20200601102237.png)
 
 ### 6.10. 设置硬盘类型
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218098.png)
+![](images/QQ图片20200601102316.png)
 
 
 
@@ -154,83 +154,83 @@
 
 ### 6.11. 创建新的虚拟磁盘
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218099.png)
+![](images/QQ图片20200601102429.png)
 
 
 
 ### 6.12. 设置磁盘容量
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218100.png)
+![](images/QQ图片20200601102521.png)
 
 
 
 ### 6.13. 设置存储位置
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218101.png)
+![](images/QQ图片20200601102557.png)
 
 ### 6.14. 配置完成
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218102.png)
+![](images/QQ图片20200601102631.png)
 
 
 
 ### 6.15. 虚拟机设置
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218103.png)
+![](images/QQ图片20200601102649.png)
 
 ### 6.16. 配置镜像
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218104.png)
+![](images/QQ图片20200601102726.png)
 
 
 
 ### 6.17. 启动虚拟机
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218105.png)
+![](images/QQ图片20200601102815.png)
 
 ### 6.18. 安装centOS7
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218106.png)
+![](images/QQ图片20200601102832.png)
 
 
 
 ### 6.19. 选择语言
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218107.png)
+![](images/QQ图片20200601102901.png)
 
 
 
 ### 6.20. 其他配置(啥都不用做)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218108.png)
+![](images/QQ图片20200601102953.png)
 
 ### 6.21. 设置root密码
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218109.png)
+![](images/QQ图片20200601103038.png)
 
 
 
 ### 6.22. 输入自己的密码
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218110.png)
+![](images/QQ图片20200601103101.png)
 
 
 
 ### 6.23. 安装完成后重启
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218111.png)
+![](images/QQ图片20200601103219.png)
 
 
 
 ### 6.24. 进入centOS
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218112.png)
+![](images/QQ图片20200601103320.png)
 
 
 
 ### 6.25. 登录
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218113.png)
+![](images/QQ图片20200601103418.png)
 
 
 
@@ -260,7 +260,7 @@
 
   获得当前所在目录的绝对路径(和密码没有关系),
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218114.png)
+  ![](images/QQ图片20200601113414.png)
 
   
 
@@ -268,7 +268,7 @@
 
   **命令： ls 或者  ll**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218115.png)
+  ![](images/QQ图片20200601113520.png)
 
   
 
@@ -276,7 +276,7 @@
 
   **命令：cd + 路径（可以是相对路径 也可以是绝对路径）**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218116.png)
+  ![](images/QQ图片20200601113628.png)
 
   
 
@@ -284,13 +284,13 @@
 
   **语法一：创建一级目录： mkdir +文件名称**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218117.png)
+  ![](images/QQ图片20200601113759.png)
 
   
 
   **语法二：创建多级目录： mkdir  + 路径一/路径二/ 路径三  -p **
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218118.png)
+  ![](images/QQ图片20200601113820.png)
 
   
 
@@ -298,7 +298,7 @@
 
   **语法： touch 文件名称（要加后缀名）**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218119.png)
+  ![](images/QQ图片20200601113908.png)
 
   
 
@@ -308,7 +308,7 @@
 
   **命令: cp  要复制的文件    指定位置**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218120.png)
+  ![](images/QQ图片20200601114155.png)
 
 
 
@@ -316,7 +316,7 @@
 
 ​	**命令： cp  -r 要复制的文件夹   指定位置**
 
-  	![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218121.png)
+  	![](images/QQ图片20200601114258.png)
 
 
 
@@ -324,7 +324,7 @@
 
 **命令：\cp -r 要复制的文件  指定位置**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218122.png)
+![](images/QQ图片20200601114510.png)
 
 
 
@@ -332,13 +332,13 @@
 
   **语法一 ：重命名： mv  文件名  新名字**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218123.png)
+  ![](images/QQ图片20200601114945.png)
 
 
 
 ​	**语法二： 移动文件夹： mv 要移动的文件  目标位置**
 
-​	![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218124.png)
+​	![](images/QQ图片20200601115030.png)
 
 
 
@@ -346,25 +346,25 @@
 
   **语法一：  删除文件： rm  文件名(带后缀)**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218125.png)
+  ![](images/QQ图片20200601115356.png)
 
   
 
   **语法二： 删除文件（无提示） rm  -f  文件名**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218126.png)
+  ![](images/QQ图片20200601115508.png)
 
   
 
   **语法三： 删除文件夹  rm  -r  文件名**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218127.png)
+  ![](images/QQ图片20200601115601.png)
 
 
 
 ​	**语法四：删除文件夹无提示： rm -rf  文件夹名**
 
-​	![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218128.png)
+​	![](images/QQ图片20200601115635.png)
 
 
 
@@ -390,19 +390,19 @@
 
 #### 7.3.2. 各种操作
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218129.png)
+![](images/QQ图片20200601120822.png)
 
 ### 7.4. 日期相关（了解）
 
 * **date指令**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218130.png)
+  ![](images/QQ图片20200601121200.png)
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218131.png)
+  ![](images/QQ图片20200601121246.png)
 
 * **cal指令**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218132.png)
+  ![](images/QQ图片20200601121316.png)
 
 ### 7.5. 查询相关
 
@@ -418,17 +418,17 @@
 
   ​	-user 查询搜索范围内指定用户的问题
 
-  ​	-size 按照指定的文件大小搜索 ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218134.png)
+  ​	-size 按照指定的文件大小搜索 ![](images/QQ图片20200601122556.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218135.png)
+![](images/QQ图片20200601122627.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218136.png)
+![](images/QQ图片20200601122704.png)
 
 
 
 **这个大小 不一定只能用M 也可以用其他的大小单位 比如K**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218137.png)
+![](images/QQ图片20200601122800.png)
 
 * **grep 命令**
 
@@ -436,7 +436,7 @@
 
 ​    **语法一： 在文件中查找对应的内容**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218138.png)
+![](images/QQ图片20200601123400.png)
 
 ```properties
 n = line number = 行号
@@ -446,7 +446,7 @@ i = ignore case = 忽略大小写
 
 **语法二：管道使用**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218139.png)
+![](images/QQ图片20200601123505.png)
 
 
 
@@ -482,23 +482,23 @@ p = pid / programm
 
 **解包：tar xvf FileName.tar**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218140.png)
+![](images/QQ图片20200601133238.png)
 
 **打包：tar cvf FileName.tar DirName**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218141.png)
+![](images/QQ图片20200601133144.png)
 
 #### 7.6.2. gz格式
 
 **压缩: gzip用于压缩文件 把文件压缩层.gz格式**
 
-​	![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218142.png)
+​	![](images/QQ图片20200601124411.png)
 
 **注意使用gzip压缩文件时 不会保留原文件**
 
 **解压：gunzip 用于解压.gz格式的文件 **
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218143.png)
+![](images/QQ图片20200601124432.png)
 
 **使用gunzip解压.gz文件时 不会保留压缩包**
 
@@ -524,13 +524,13 @@ tar指令 是解压 还是压缩 是根据选项决定的
 
 ​		-C 表示解压到的目录 ---content
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218144.png)
+![](images/QQ图片20200601133508.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218145.png)
+![](images/QQ图片20200601133549.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218146.png)
+![](images/QQ图片20200601133614.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218147.png)
+![](images/QQ图片20200601133644.png)
 
 #### 7.7.4. zip格式
 
@@ -538,7 +538,7 @@ tar指令 是解压 还是压缩 是根据选项决定的
 
   **yum install -y  zip  unzip**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218148.png)
+![](images/QQ图片20200601135510.png)
 
 * **压缩**
 
@@ -546,7 +546,7 @@ tar指令 是解压 还是压缩 是根据选项决定的
 
    zip -r 压缩包名.zip  要压缩的文件夹  表示： 把整个文件夹压缩 
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218149.png)
+  ![](images/QQ图片20200601135821.png)
 
 * **解压**
 
@@ -554,7 +554,7 @@ tar指令 是解压 还是压缩 是根据选项决定的
 
    unzip  -d目录 压缩包  表示：把压缩包解压到指定目录
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218150.png)
+  ![](images/QQ图片20200601140021.png)
 
 ## 8. 网络相关
 
@@ -562,23 +562,23 @@ tar指令 是解压 还是压缩 是根据选项决定的
 
 **第一步：**cd /etc/sysconfig/network-scripts/
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218151.png)
+![](images/QQ图片20200601135019.png)
 
 **第二步：** 修改内容
 
-   ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218152.png)
+   ![](images/QQ图片20200601135207.png)
 
 
 
 **第三步：重启**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218153.png)
+![](images/QQ图片20200601135330.png)
 
 
 
 **第四步：重启后 查看ip**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218154.png)
+![](images/QQ图片20200601135412.png)
 
 ### 8.2. 防火墙相关
 
@@ -600,33 +600,33 @@ systemctl restart firewalld.service    # 重启防火墙
 
 ### 9.1. 解压压缩包
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218155.png)
+![](images/QQ截图20210427134828.png)
 
 ### 9.2. 进入解压目录
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218156.png)
+![](images/QQ截图20210427134928.png)
 
 **注意点：**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218157.png)
+![](images/QQ截图20210427135052.png)
 
 ### 9.3. 设置不更新 
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218158.png)
+![](images/QQ截图20210427135319.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218159.png)
+![](images/QQ截图20210427135413.png)
 
 ### 9.4. 连接linux
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218160.png)
+![](images/QQ图片20200601143447.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218161.png)
+![](images/QQ图片20200601143533.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218162.png)
+![](images/QQ图片20200601143556.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218163.png)
+![](images/QQ图片20200601143629.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218164.png)
+![](images/QQ图片20200601143655.png)
 
 ## 10. 宿主机和linux文件互通
 
@@ -640,13 +640,13 @@ systemctl restart firewalld.service    # 重启防火墙
 
 * **设置共享文件夹**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218165.png)
+![](images/QQ图片20200601150017.png)
 
 
 
 * **查找共享文件夹**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218166.png)
+  ![](images/QQ图片20200601150143.png)
 
 
 
@@ -654,7 +654,7 @@ systemctl restart firewalld.service    # 重启防火墙
 
 * **安装rz指令**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218167.png)
+  ![](images/QQ图片20200601150253.png)
 
 
 
@@ -757,9 +757,9 @@ source /etc/profile
 
   第五步： 使用本机的浏览器 去访问  
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218168.png)
+![](images/QQ图片20200601152627.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218169.png)
+![](images/QQ图片20200601153454.png)
 
 
 

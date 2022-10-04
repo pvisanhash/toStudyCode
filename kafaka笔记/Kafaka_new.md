@@ -10,7 +10,7 @@ Kafka 是一个分布式的基于发布/订阅模式的消息队列（Message Qu
 
 #### 1.2.1、传统消息队列的应用场景
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218865.png)
+![](./images/Snipaste_2021-10-02_06-01-44.png)
 
 使用消息队列的好处
 1）解耦
@@ -37,15 +37,15 @@ Kafka 是一个分布式的基于发布/订阅模式的消息队列（Message Qu
 
 1 ）点对点模式（一对一，消费者主动拉取数据，消息收到后队列的消息清除）消息生产者生产消息发送到Queue中，然后消息消费者从Queue中取出并且消费消息。消息被消费以后，queue 中不再有存储，所以消息消费者不可能消费到已经被消费的消息。Queue 支持存在多个消费者，但是对一个消息而言，只会有一个消费者可以消费
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218867.png)
+![](images/Snipaste_2021-10-02_06-07-17.png)
 
 2 ）发布/ 订阅模式（publish/subscribe）（一对多，消费者消费数据之后队列不会清除消息）消息生产者（发布）将消息发布到 topic 中，同时有多个消息消费者（订阅）消费该消息。和点对点方式不同，发布到 topic 的消息会被所有订阅者消费。消费者订阅又分为两种方式：队列push与消费者pull
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218868.png)
+![](images/Snipaste_2021-10-02_06-11-21.png)
 
 ### 1.3、Kafka基础架构
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218869.png)
+![](images/Snipaste_2021-10-02_06-14-10.png)
 
 1 ）Producer  ：消息生产者，就是向 kafka broker 发消息的客户端；
 
@@ -79,7 +79,7 @@ kafka			  kafka			kafka
 
 地址：http://kafka.apache.org/downloads.html
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218870.png)
+![](images/Snipaste_2021-10-02_06-29-19.png)
 
 #### 2.1.3 、集群部署
 
@@ -228,19 +228,19 @@ bin/kafka-topics.sh  --zookeeper hadoop102:2181 --create --replication-factor 3 
 
 A）下图设置topic-1的partions为3，会自动分配在不同的broker上，采用均匀分配策略，当broker和partions一样时，就均匀分布在不同的broker上。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218871.png)
+![](images/Snipaste_2021-10-10_13-26-04.png)
 
 B）比如partions 设置为20，replicationFactor设置为1. Broker为2.可以看出，分区会均匀在broker上进行分配。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218872.png)
+![](images/Snipaste_2021-10-10_13-52-05.png)
 
 C）比如partions 设置为10，replicationFactor设置为2. Broker为2.每个broker都有副本存在。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218873.png)
+![](images/Snipaste_2021-10-10_13-53-29.png)
 
 D）Kafka集群中有4个broker，某个主题中有3个分区，且副本因子（即副本个数）也为3，如此每个分区便有1个leader副本和2个follower副本。生产者和消费者只与leader副本进行交互，而follower副本只负责消息的同步，很多时候follower副本中的消息相对leader副本而言会有一定的滞后。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218874.png)
+![](images/Snipaste_2021-10-10_13-47-37.png)
 
 3）删除 topic
 
@@ -299,12 +299,12 @@ bin/kafka-topics.sh  --zookeeper hadoop102:2181 --alter --topic first --partitio
 
 ### 3.1、Kafka工作流程及文件存储机制
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218875.png)
+![](images/Snipaste_2021-10-02_11-26-20.png)
 
 Kafka 中消息是以 topic 进行分类的，生产者生产消息，消费者消费消息，都是面向 topic的。
 topic 是逻辑上的概念，而 partition 是物理上的概念，每个 partition 对应于一个 log （记录）文件，该 log（记录） 文件中存储的就是 producer 生产的消息数据。Producer 生产的数据会被不断追加到该log 文件末端，且每条数据都有自己的 offset。消费者组中的每个消费者，都会实时记录自己消费到了哪个 offset，以便出错恢复时，从上次的位置继续消费。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218876.png)
+![](images/Snipaste_2021-10-02_11-27-31.png)
 
 由于生产者生产的消息会不断追加到 log 文件末尾，为防止 log 文件过大导致数据定位效率低下，Kafka 采取了` 分片`和 `索引`机制，将每个 partition 分为多个 segment。每个 segment对应两个文件——`“.index”文件`和`“.log”文件`。这些文件位于一个文件夹下，该文件夹的命名规则为：topic 名称+分区序号。例如，first 这个 topic 有三个分区，则其对应的文件夹为 first-0,first-1,first-2。
 
@@ -321,7 +321,7 @@ topic 是逻辑上的概念，而 partition 是物理上的概念，每个 parti
 
 index 和 log 文件以当前 segment 的第一条消息的 offset 命名。下图为 index 文件和 log文件的结构示意图。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218877.png)
+![](images/Snipaste_2021-10-02_11-28-41.png)
 
 “.index”文件存储大量的索引信息，“.log”文件存储大量的数据，索引文件中的元数据指向对应数据文件中message 的物理偏移地址。
 
@@ -339,7 +339,7 @@ index 和 log 文件以当前 segment 的第一条消息的 offset 命名。下�
 2 ） 分区的原则
 我们需要将 producer 发送的数据封装成一个 ProducerRecord 对象。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218878.png)
+![](images/Snipaste_2021-10-02_11-59-00.png)
 
 （1）指明 partition 的情况下，直接将指明的值直接作为 partiton 值；如上图的前面4个构造法
 （2）没有指明 partition 值但有 key 的情况下，将 key 的 hash 值与 topic 的 partition数量进行取余得到partition 值；如上图倒数第2个构造法
@@ -351,7 +351,7 @@ index 和 log 文件以当前 segment 的第一条消息的 offset 命名。下�
 
 为保证 producer 发送的数据，能可靠的发送到指定的 topic，topic 的每个 partition 收到producer 发送的数据后，都需要向 producer 发送 ack（acknowledgement 确认），如果producer 收到 ack，就会进行下一轮的发送，否则重新发送数据。实际上，为了提高效率，是接连发送消息的，如果收到ack，就不会重发，如果未收到ack,就会重发。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218879.png)
+![](images/Snipaste_2021-10-02_12-24-24.png)
 
 1 ）副本数据同步策略
 
@@ -385,7 +385,7 @@ acks：
 0：producer 不等待 broker 的 ack，这一操作提供了一个最低的延迟，broker 一接收到还没有写入磁盘就已经返回，当 broker 故障时有可能丢失数据；
 1：producer 等待 broker 的 ack，partition 的 leader 落盘成功后返回 ack，如果在 follower同步成功之前 leader 故障，那么将会丢失数据；
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218880.png)
+![](images/Snipaste_2021-10-02_12-29-45.png)
 
 -1（all）：producer 等待 broker 的 ack，partition 的 leader 和 follower 全部落盘成功后才返回 ack。
 
@@ -393,11 +393,11 @@ acks：
 
 还有种极端情况就是ISR中只有一个leader，相当于第二种情况，也会数据丢失。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218881.png)
+![](images/Snipaste_2021-10-02_12-30-29.png)
 
 4 ） 故障 处理 细节
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218882.png)
+![](images/Snipaste_2021-10-02_12-31-06.png)
 
 ```properties
 HW = high watermark = 高水位
@@ -459,7 +459,7 @@ Kafka 有两种分配策略，一是 RoundRobin，一是 Range。
 
 1 ）RoundRobin轮询
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218883.png)
+![](images/Snipaste_2021-10-02_13-37-00.png)
 
 多个topic的分区组合起来，轮询的方式分配给消费者。这样有可能会出现consumer没有订阅该topic但被分配到该topic的某些分区。例如，2个topic,topic0有3个分区，topic1有4个分区，组合起来有7个分区，0%3 =0，分区0给消费者0,1给消费者1,以此类推。。。但cosumer0可能只订阅了topic0，但有可能分配到topic1的分区，所以出错。所以round robin的方式分配分区给消费者，要求conusmer组的consumber都订阅相同的topic。
 
@@ -467,7 +467,7 @@ Kafka 有两种分配策略，一是 RoundRobin，一是 Range。
 
 2 ）Range 范围 （默认的方式）
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218884.png)
+![](images/Snipaste_2021-10-02_13-37-36.png)
 
 Range范围指示了consumber只消费某些topic，如果consumer组多个消费者消费同一个topic，再按范围分，
 如consumber0,1,2订阅了topic0，topic0共有7个分区，则7/3 =2，则cosumber0消费partition0,1,2;consumer1消费partition3,4;consumber2消费partition5,6。一般前面的消费者能获得更多的分区，比如此例中cosumer0。
@@ -476,7 +476,7 @@ Range范围指示了consumber只消费某些topic，如果consumer组多个消�
 
 由于 consumer 在消费过程中可能会出现断电宕机等故障，consumer 恢复后，需要从故障前的位置的继续消费，所以 consumer 需要实时记录自己消费到了哪个 offset，以便故障恢复后继续消费。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218885.png)
+![](images/Snipaste_2021-10-02_13-38-56.png)
 
 Kafka 0.9 版本之前，consumer 默认将 offset 保存在 Zookeeper 中，从 0.9 版本开始，consumer 默认将 offset 保存在 Kafka 一个内置的 topic 中，该 topic 为__consumer_offsets。
 
@@ -567,7 +567,7 @@ Kafka 的 producer 生产数据，要写入到 log 文件中，写的过程是�
 
 2）零复制技术
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218886.png)
+![](images/Snipaste_2021-10-02_16-34-45.png)
 
 零拷贝技术：
 
@@ -583,7 +583,7 @@ Kafka 集群中有一个 broker 会被选举为 Controller（控制器），负�
 Controller 的管理工作都是依赖于 Zookeeper 的。
 以下为 partition 的 leader 选举过程：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218887.png)
+![](images/Snipaste_2021-10-02_16-35-47.png)
 
 /brokers/ids中的值由[0,1,2]变成[1,2]，KafkaController监听到，就会选举新的leader，并更新leader与ISR值
 
@@ -619,7 +619,7 @@ coordinator = 协调器
 
 Kafka 的 Producer 发送消息采用的是 `异步发送` 的方式。在消息发送的过程中，涉及到了两个线程 ——main（主）线程和 Sender（发送者）线程，以及一个线程共享变量 ——RecordAccumulator。main 线程将消息发送给 RecordAccumulator，Sender 线程不断从 RecordAccumulator 中拉取消息发送到 Kafka broker。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218888.png)
+![](images/Snipaste_2021-10-11_23-26-18.png)
 
 相关参数：
 batch.size ：只有数据积累到 batch.size 之后，sender 才会发送数据。
@@ -1103,7 +1103,7 @@ Producer 拦截器(interceptor)是在 Kafka 0.10 版本被引入的，主要用�
 
 实现一个简单的双 interceptor 组成的拦截链。第一个 interceptor 会在消息发送前将时间戳信息加到消息 value 的最前部；第二个 interceptor 会在消息发送后更新成功发送消息数或失败发送消息数。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218889.png)
+![](images/Snipaste_2021-10-12_23-56-56.png)
 
 2）案例实操
 （1）增加时间戳拦截器
@@ -1221,9 +1221,9 @@ public class InterceptorProducer {
 
 在 kafka 上启动消费者，然后运行客户端 java 程序。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218890.png)
+![](images/Snipaste_2021-10-12_23-54-30.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218891.png)
+![](images/Snipaste_2021-10-12_23-57-33.png)
 
 ## 5、Kafka 监控Eagle（后需补充）
 
@@ -1450,9 +1450,9 @@ bin/ke.sh start
 
 11.登录页面查看监控数据
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218892.png)
+![](images/Snipaste_2021-10-17_12-30-00.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042218893.png)
+![](images/Snipaste_2021-10-13_00-45-17.png)
 
 ## 7、Flume 对接 Kafka
 

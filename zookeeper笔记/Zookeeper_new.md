@@ -64,7 +64,7 @@ mkdir  zkdata
 vim /opt/zooKeeper/apache-zooKeeper-3.5.6-bin/conf/zoo.cfg
 ```
 
-![1577548250377](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259663.png)
+![1577548250377](./images/1577548250377.png)
 
 修改存储目录：dataDir=/opt/zookeeper/zkdata
 
@@ -76,7 +76,7 @@ cd /opt/zooKeeper/apache-zooKeeper-3.5.6-bin/bin/
 ./zkServer.sh  start
 ```
 
-![1577548052037](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259664.png)
+![1577548052037](./images/1577548052037.png)
 
 看到上图表示ZooKeeper成功启动
 
@@ -88,11 +88,11 @@ cd /opt/zooKeeper/apache-zooKeeper-3.5.6-bin/bin/
 
 zookeeper启动成功。standalone代表zk没有搭建集群，现在是单节点
 
-![1577548175232](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259665.png)
+![1577548175232](./images/1577548175232.png)
 
 zookeeper没有启动
 
-![1577548112773](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259666.png)
+![1577548112773](./images/1577548112773.png)
 
 如果没有启动到logs文件夹下，cat下是否有报错日志
 
@@ -100,7 +100,7 @@ zookeeper没有启动
 
 ### 3.1、Zookeeper的数据模型
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259667.png)
+![](./images/Snipaste_2021-09-24_01-35-50.png)
 
 ZooKeeper 是一个树形目录服务,其数据模型和Unix的文件系统目录树很类似，拥有一个层次化结构。
 
@@ -563,7 +563,7 @@ PathChildrenCacheEvent{
 
 那么就需要一种更加高级的锁机制，来处理种跨机器的进程之间的数据同步问题——这就是分布式锁。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259668.png)
+![](images/Snipaste_2021-09-28_06-03-07.png)
 
 #### 4.7.2、Zookeeper分布式锁的原理
 
@@ -581,7 +581,7 @@ PathChildrenCacheEvent{
 
 并注册监听。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259669.png)
+![](images/Snipaste_2021-09-28_06-09-56.png)
 
 #### 4.7.3、Curator简化zookeeper分布式锁
 
@@ -709,7 +709,7 @@ public class Ticket12306 implements Runnable {
 
 ​		服务器中存放的最大数据ID.值越大说明数据越新，在选举算法中数据越新权重越大。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259670.png)
+![](images/Snipaste_2021-09-28_07-42-18.png)
 
 在Leader选举的过程中，如果某台ZooKeeper获得了超过半数的选票，则此ZooKeeper就可以成为Leader了。
 
@@ -835,7 +835,7 @@ server.3=192.168.149.135:2888:3888
 /usr/local/zookeeper-cluster/zookeeper-3/bin/zkServer.sh start
 ```
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259671.jpg) 
+![img](images/wps11.jpg) 
 
 启动后我们查询一下每个实例的运行状态
 
@@ -853,11 +853,11 @@ Mode为follower表示是**跟随者**（从）
 
 再查询第二个服务Mod 为leader表示是**领导者**（主）
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259672.jpg) 
+![img](images/wps13.jpg) 
 
 查询第三个为跟随者（从）
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259673.jpg) 
+![img](images/wps14.jpg) 
 
 #### **5.2.5 模拟集群异常**
 
@@ -872,7 +872,7 @@ Mode为follower表示是**跟随者**（从）
 /usr/local/zookeeper-cluster/zookeeper-2/bin/zkServer.sh status
 ```
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259674.jpg) 
+![img](images/wps15.jpg) 
 
 由此得出结论，3个节点的集群，从服务器挂掉，集群正常（2号机主，1号机从）
 
@@ -884,7 +884,7 @@ Mode为follower表示是**跟随者**（从）
 /usr/local/zookeeper-cluster/zookeeper-2/bin/zkServer.sh status
 ```
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259675.jpg) 
+![img](images/wps16.jpg) 
 
 **由此得出结论，3个节点的集群，2个从服务器都挂掉，主服务器也无法运行。因为可运行的机器没有超过集群总数量的半数。**
 
@@ -898,7 +898,7 @@ Mode为follower表示是**跟随者**（从）
 /usr/local/zookeeper-cluster/zookeeper-2/bin/zkServer.sh status
 ```
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259676.jpg) 
+![img](images/wps17.jpg) 
 
 （4）我们把3号服务器也启动起来，把2号服务器停掉,停掉后观察1号和3号的状态。
 
@@ -910,7 +910,7 @@ Mode为follower表示是**跟随者**（从）
 /usr/local/zookeeper-cluster/zookeeper-3/bin/zkServer.sh status
 ```
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259677.jpg) 
+![img](images/wps18.jpg) 
 
 发现新的leader产生了~  
 
@@ -925,7 +925,7 @@ Mode为follower表示是**跟随者**（从）
 /usr/local/zookeeper-cluster/zookeeper-3/bin/zkServer.sh status
 ```
 
-![img](images/wps19.jpg)![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259678.jpg) 
+![img](images/wps19.jpg)![img](images/wps20.jpg) 
 
 我们会发现，2号服务器启动后依然是跟随者（从服务器），3号服务器依然是领导者（主服务器），没有撼动3号服务器的领导地位。
 
@@ -952,7 +952,7 @@ Observer 观察者：
 1. 处理客户端非事务请求，转发事务请求给Leader服务器
 2. **不参与Leader选择投票**
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259679.png)
+![](images/Snipaste_2021-09-28_07-35-43.png)
 
 ## 7.常见异常
 

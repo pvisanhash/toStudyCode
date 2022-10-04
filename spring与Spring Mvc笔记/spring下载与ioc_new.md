@@ -6,39 +6,39 @@
 
   进入spring官网，https://spring.io/
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223681.png)
+![](images/QQ图片20200221182114.png)
 
 * **第二步**
 
   点击github小猫图标
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223682.png)
+![](images/QQ图片20200221182259.png)
 
 * **第三步**
 
   点击Access to Binaries中的链接
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223683.png)
+  ![](images/QQ图片20200221182348.png)
 
 * **第四步**
 
   点击https://repo.spring.io
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223684.png)
+  ![](images/QQ图片20200221182443.png)
 
 * **第五步**
 
   选择artifatcs
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223685.png)
+  ![](images/QQ图片20200221182538.png)
 
 * **第六步**
 
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223686.png)
+  ![](images/QQ图片20200221182739.png)
 
 * **第七步**
 
- ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223687.png)
+ ![](images/QQ图片20200221182854.png)
 
 
 
@@ -50,12 +50,12 @@
   
   schema 协议，逻辑表
   
-  ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223688.png)
+  ![](images/QQ图片20200221182956.png)
 ## 2.Spring的概述
 
 ### 2.1. 什么是Spring
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223689.png)
+![](images/QQ图片20200205042807.png)
 
 ```properties
 EJB = enterprise java bean = 企业java bean
@@ -93,11 +93,11 @@ orm = object relation model = 对象关系模型
 
 ### 2.5. Spring的开发包介绍
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223690.png)
+![](images/QQ图片20200205043921.png)
 
 ### 2.6. Spring的体系结构图
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223691.png)
+![](images/QQ图片20200205045601.png)
 
 ```properties
 SpEL = spring expression language = spring 表达试语言
@@ -124,7 +124,7 @@ transaction = 事务
 
 #### 3.2.1. 创建普通的java工程
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223692.png)
+![](images/QQ图片20200205051152.png)
 
 #### 3.2.2. 导入jar包
 
@@ -134,7 +134,7 @@ transaction = 事务
 
 方式二：除了上述方式导jar包，也可以在project setting 中 选module 后选择dependencies点击+添加jar包
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223693.png)
+![](images/QQ图片20200205053108.png)
 
 ```properties
 beans,context,core,expression属于核心容器部分
@@ -199,7 +199,7 @@ public class IOCTest {
 
 例如：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223694.png)
+![](images/QQ图片20200205054537.png)
 
 #### 3.2.7. 问题解答
 
@@ -218,7 +218,7 @@ IOC实现主要是：xml 解析、工厂模式、反射
 
 IOC思想是基于IOC容器完成，IOC容器底层就是对象工厂
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223695.png)
+![](./images/Snipaste_2022-05-23_06-53-02.png)
 
 #### 3.3.2 相关接口实现
 
@@ -228,7 +228,7 @@ Spring提供IOC容器实现的两种方式（两个接口）：
 
 2.ApplicatonContext：BeanFactory接口的子接口，提供更多更强大的功能，一般由开发人员过行使用。加载配置文件时就会把配置文件中的对象进行创建。
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223697.png)
+![](./images/Snipaste_2022-05-23_07-07-20.png)
 
 ## 4.Spring的依赖注入
 
@@ -1069,11 +1069,11 @@ public class Employee {
 
 ### 9.1. 添加aop.jar
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223698.png)
+![](images/QQ图片20200205180252.png)
 
 ### 9.2. 配置包扫描
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223699.png)
+![](images/QQ图片20200205175024.png)
 
 ```xml
 <!--context名称空间会自动导入的-->
@@ -1257,7 +1257,7 @@ public class Employee {
 
 #### 11.2.3. @Value的其他用法
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042223700.png)
+![](images/QQ图片20200205190648.png)
 
 ## 12.此节易出现的异常
 

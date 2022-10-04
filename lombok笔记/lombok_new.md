@@ -904,7 +904,7 @@ public @interface Synchronized {
 
 ### 3.1、设置maven
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221702.png)
+![](images/Snipaste_2021-09-25_13-33-53.png)
 
 **阿里云maven仓库地址：**
 
@@ -916,5 +916,5 @@ https://maven.aliyun.com/repository/public
 
 在`pom文件`中的`dependency标签`的`groupId标签`处输入时，可按`ctrl+alt+space`进行提示
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221703.png)
+![](images/Snipaste_2021-09-25_13-37-11.png)
 
