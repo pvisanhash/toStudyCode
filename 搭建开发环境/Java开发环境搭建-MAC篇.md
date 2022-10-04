@@ -184,3 +184,16 @@ idea配置tomcat
 选择 preferences->build,execution,deployment->application servers-> 加号-> tomcat
 
 ![](./images/Snipaste_2022-06-04_00-36-17.png)
+
+
+
+## 8 安装NodeJS
+
+访问官网：https://nodejs.org/en/
+
+下载后长期支持版下一步安装
+
+安装完成后，打开终端，输入 npm -v 和 node -v两个命令,如出现版本信息，说明安装成功。
+
+打开Mac 终端，配置全局环境变量输入`vim .bash_profile`按i进入编辑状态，打开之后添加一行代码：`PATH=$PATH:/usr/local/bin/`并保存，重新打开终端，输入node，就会进入node环境。control+c 按两次退出node环境。
+
