@@ -3,6 +3,7 @@
   "strictLineBreaks": true,
   "showLineNumber": false,
   "newFileLocation": "folder",
-  "newFileFolderPath": "00inbox",
-  "attachmentFolderPath": "attachment"
+  "newFileFolderPath": "Note",
+  "attachmentFolderPath": "Attachment",
+  "alwaysUpdateLinks": true
 }

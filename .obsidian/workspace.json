@@ -13,8 +13,8 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/linux笔记/linux.md",
-                "mode": "preview",
+                "file": "Diary/2022-10-23 周日.md",
+                "mode": "source",
                 "source": false
               }
             }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/linux笔记/linux.md",
+                "file": "Diary/2022-10-23 周日.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/linux笔记/linux.md",
+                "file": "Diary/2022-10-23 周日.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/linux笔记/linux.md"
+                "file": "Diary/2022-10-23 周日.md"
               }
             }
           }
@@ -141,15 +141,15 @@
   },
   "active": "e2a2967b2532916e",
   "lastOpenFiles": [
-    "Note/Markdown笔记/Markdown语法学习.md",
-    "Template/Diary_Template.md",
-    "Template/Meeting_Template.md",
+    "Attachment/测试附件.md",
+    "README.md",
+    "Meeting/测试会议模板.md",
+    "Diary/2022-10-23 周日.md",
     "Template/MetaInfo_Yaml_Template.md",
-    "Note/显示器 Display Device.md",
-    "Note/相机 Camera.md",
-    "Note/Clash如何搭配Chrome插件Proxy Switch Omega进行代理.md",
-    "Note/Markdown语法学习.md",
-    "Note/Obsidian同步到Onedrive.md",
-    "曝光时间.md"
+    "Template/Meeting_Template.md",
+    "Template/Diary_Template.md",
+    "Note/linux笔记/linux.md",
+    "Note/Markdown笔记/Markdown语法学习.md",
+    "Note/显示器 Display Device.md"
   ]
 }
