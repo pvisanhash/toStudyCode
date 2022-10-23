@@ -11,7 +11,7 @@
             "id": "990f747d7716521f",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {}
             }
           }
@@ -44,7 +44,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "wps12",
+                "query": "wps",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -61,8 +61,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -132,7 +131,7 @@
   "ribbon": {
     "mostRecentAction": ""
   },
-  "active": "990f747d7716521f",
+  "active": "d1c4c2c2d63f464f",
   "lastOpenFiles": [
     "Note/zookeeper笔记/Zookeeper.md",
     "Note/git笔记/git.md",
