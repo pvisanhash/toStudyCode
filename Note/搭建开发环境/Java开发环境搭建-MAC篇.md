@@ -1,6 +1,20 @@
+---
+
+author: aitx
+
+title: Java开发环境搭建-MAC篇
+
+time: 2022-10-24 周一
+
+tags: 
+  - Java
+  - 开发环境
+  - MAC
+---
+
 # Java开发环境搭建-MAC篇
 
-## 1 安装JDK
+## 安装JDK
 
 下载zulu JDK : https://www.azul.com/downloads/?package=jdk
 
@@ -12,7 +26,7 @@
 /usr/libexec/java_home -V
 ```
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042216148.png)
+![JDK安装位置](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042216148.png)
 
 拷贝 JDK 地址，键入如下命令准备编辑环境变量：
 
@@ -39,7 +53,7 @@ source ~/.bash_profile
 source ~/.bash_profile
 ```
 
-## 2 安装HomeBrew
+## 安装HomeBrew
 
 打开HomeBrew官网：https://brew.sh/
 
@@ -80,7 +94,7 @@ sudo vim /etc/hosts
 
 3 ) 使用国内gitee源的命令进行安装
 
-## 3 安装Git
+## 安装Git
 
 可以通过homebrew安装Git
 
@@ -88,7 +102,7 @@ sudo vim /etc/hosts
 brew install git
 ```
 
-## 4 安装maven
+## 安装maven
 
 maven 官网下载 ：https://maven.apache.org/
 
@@ -110,11 +124,11 @@ source ~/.bash_profile
 
 后面配置文件，主要修改本地仓库、镜像、profile，详情见maven笔记
 
-## 5 安装 IDEA
+## 安装 IDEA
 
 安装IDEA 并 激活后 ，进行全局配置：文件encoding , annotation processing , git , maven
 
-## 6 安装mysql
+## 安装mysql
 
 打开官网，下载社区版https://www.mysql.com/cn/
 
@@ -138,7 +152,7 @@ export PATH=$PATH:/usr/local/mysql/bin
 source ~.bash_profile
 ```
 
-## 7  安装tomcat
+## 安装tomcat
 
 下载tomcat9
 
@@ -187,7 +201,7 @@ idea配置tomcat
 
 
 
-## 8 安装NodeJS
+## 安装NodeJS
 
 访问官网：https://nodejs.org/en/
 

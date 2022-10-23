@@ -847,7 +847,7 @@ server.3=192.168.149.135:2888:3888
 
 先查询第一个服务
 
-![img](images\wps12.jpg) 
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210240033902.jpg)
 
 Mode为follower表示是**跟随者**（从）
 
@@ -925,7 +925,9 @@ Mode为follower表示是**跟随者**（从）
 /usr/local/zookeeper-cluster/zookeeper-3/bin/zkServer.sh status
 ```
 
-![img](images/wps19.jpg)![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259678.jpg) 
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210240032960.jpg)
+
+![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042259678.jpg) 
 
 我们会发现，2号服务器启动后依然是跟随者（从服务器），3号服务器依然是领导者（主服务器），没有撼动3号服务器的领导地位。
 
