@@ -1,6 +1,6 @@
-# 监听器 Lisenner
+# 监听器 Listener
 
-监听器：监听对象，监听事件，触发行为
+监听器：监听对象（ServletContext），监听事件（ServletContextEvent），触发行为（实现的方法体）
 
 ## 按监听对象进行分类
 
