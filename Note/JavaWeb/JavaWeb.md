@@ -1,4 +1,4 @@
-# 监听器 Lisenter
+# 监听器 Lisenner
 
 监听器：监听对象，监听事件，触发行为
 
@@ -155,6 +155,12 @@ public interface HttpSessionBindingListener extends EventListener {
 
 - 实现相应的监听器接口中的方法
 - web.xml中注册
+
+```xml
+<listener>  
+    <listener-class>com.aitx.study.lisentner.MyServletContextListener</listener-class>  
+</listener>
+```
 
 ## Demo
 
