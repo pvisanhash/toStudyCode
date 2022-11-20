@@ -1,3 +1,277 @@
+# HTML
+
+hyper text markup language，超文本标识语言
+
+B/S开发，结构(HTML)-表现(CSS)-行为(JavaScript)，参考[w3school](https://www.w3school.com.cn/)
+
+## 常用标签
+
+`<p>`
+
+# CSS
+
+Cascading Style Sheetes，层叠样式表。
+
+# JavaScript
+
+脚本语言，弱类型语言。
+
+## 基本语法
+
+### 声明变量
+
+### 声明对象
+
+### 声明方法
+
+## 事件
+
+用户和浏览器交互的行为。
+
+# JQuery
+
+JQuery是JS库
+
+# XML
+
+可扩展标记语言(EXtensible Markup Language)
+
+# Tomcat
+
+## Tomcat目录结构
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211202121869.png)
+
+bin：可执行程序止录。startup.bat 启动；shutdown.bat 关闭
+conf：配置文件目录。server.xml 为tomcat集中配置的地方，比如配置端口；web.xml：为tomcat所有web项目都需要遵循的配置。
+lib：tomcat运行所需要的jar包
+logs：运行日志
+temp：临时文件
+webapps：集合了tomcat中所有运行的项目，每个项目就是一个文件夹
+work：存放运行期间编译的一些东西，比如jsp页面
+
+# Servlet
+
+用来接收请求，处理请求，完成响应的一段小程序。继承HttpServlet，重写doGet()，doPost()方法，后配置web.xml即可。
+
+```java
+<servlet>  
+    <servlet-name>uploadServlet</servlet-name>  
+    <servlet-class>com.aitx.study.servlet.UploadServlet</servlet-class>  
+</servlet>  
+<servlet-mapping>  
+    <servlet-name>uploadServlet</servlet-name>  
+    <url-pattern>/upload</url-pattern>  
+</servlet-mapping>
+```
+
+## ServletConfig
+
+作用：一个Servlet对应ServletConfig，封装Servlet的配置信息
+
+## ServletContext
+
+> 四大域对象：PageContext,ServletRequest,HttpSession,ServletContext
+> 域对象： 在域中可保存数据，跨页面获取到保存的数据，多个资源之间共享数据的。
+
+作用：
+- 域对象
+- 获取当前项目信息，一个项目对应一个ServletContext，只能是代表当前项目。
+
+```java
+servletContext.getRealPath("/");
+```
+
+## HttpServletRequest
+
+代表请求，每次请求的详细信息会被tomcat自动封装成一个request对象，我们以后要获取当前请求的一些信息，我们使用request对象即可。
+
+作用：
+- 获取请求参数`req.getParameter("xyz")`；
+- 作为域对象保存数据，同一次请求期间可以共享数据；
+- 获取HttpSession对象`req.getSession()`
+- 请求转发：`req.getRequestDispatcher("/xyz").forward(req,resp);`请求转发还是当前请求。
+
+## HttpServletResponse
+
+>请求数据 叫 请求报文
+>响应数据 叫 响应报文
+>
+>请求报文格式：
+>请求首行（Http协议等）
+>请求头
+>空行
+>请求体
+>
+>响应报文格式：
+>响应首行（Http协议等）
+>响应头
+>空行
+>响应体
+
+f12可查看请求的请求头，请求响应。
+
+作用：
+- 交给浏览器的数据；
+- 重定向：`resp.sendRedirect(req.getContextPath() + "/index.jsp");`注意这里/是以前台的路径为准，重定向是发起新请求。
+
+回归底层：服务器给浏览器输出字节流`resp.getOutputStream()`或字符流`resp.getWriter().write("abcde")`
+
+## 乱码
+
+通常，浏览器的编码为UTF-8，Tomcat服务器默认编码格式为ISO_8859_1 。参考：[[spring对web层的支持#9. 乱码问题]]
+
+### 请求乱码
+
+浏览器发送给服务器的数据，服务器收到解析出来乱码
+
+#### GET请求乱码：
+
+原因：
+
+所有的请求参数是带在URL地址上的：tomcat收到这个请求就会调用默认的编码格式ISO_8859_1 将其解码完成，并封装成reqeust对象。相当于明信片：数据与地址在一起。
+
+解决：
+
+通常可以在代码中加入以下的片断去处理：
+
+```java
+// 将文件流如何正确的交给浏览器？  
+String username = req.getParameter("username");  
+// 将字符串以utf-8解码  
+username = new String(username.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+```
+
+但最佳处理方式是去改tomcat配置文件：
+
+```java
+/**
+ 修改 tomcat中的 conf/server.xml
+ Connector标签中添加URIEncoding="UTF-8"
+ utf-8 = Unicode Transformation Format
+
+ 注意点：如果有 useBodyEncodingForURI="true"  请删除
+
+ 例如：
+     <Connector port="8080" protocol="HTTP/1.1"
+        connectionTimeout="20000"
+        redirectPort="8443"
+        disableUploadTimeout="true"
+        executor="tomcatThreadPool"
+        URIEncoding="UTF-8"/>
+ */
+```
+
+#### POST请求乱码
+
+原因：
+
+请求带来的数据都在请求体中放着，tomcat关不着急解析请求体，一旦调用`req.getParameter()`将整个请求体使用默认的编码格式全部解析完成。相当于信件：地址与内容分隔开。
+
+解决：
+
+通常，可以在调用获取参数前设置解码字符集
+
+```java
+// post请求需要在获取参数前设置解码字符集  
+req.setCharacterEncoding(StandardCharsets.UTF_8.name());  
+String xyz = req.getParameter("xyz");
+```
+
+更进阶的提供个MyCharacterEncodingFilter
+
+```java
+public class MyCharacterEncodingFilter implements Filter {  
+    @Override  
+    public void init(FilterConfig filterConfig) throws ServletException {  
+  
+    }  
+  
+    @Override  
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {  
+	    // 设置请求的编码字符集，解决post请求乱码
+        request.setCharacterEncoding("UTF-8");  
+        // 响应一般不设置，因为可能是图片格式，这样设置就有问题  
+        // response.setContentType("text/html;charset=utf-8");
+        chain.doFilter(request, response);  
+    }  
+  
+    @Override  
+    public void destroy() {  
+  
+    }  
+}
+```
+
+### 响应乱码
+
+服务器发送给浏览器的数据，浏览器收到解析出来乱码
+
+原因：
+
+`resp.getWriter().write("hello world")`直接写出去的数据，浏览器并不知道数据的内容类型及编码格式，浏览器用默认的格式打开（比如utf-8）
+
+解决：
+
+给浏览器的数据一定要说清楚这是什么格式的编码，告诉浏览器事情都放天响应头中。
+
+```java
+// 可以简写成这样，当然成可以放在响应头中
+resp.setContentType("text/html;charset=utf-8");
+```
+
+## 路径
+
+相对路径：
+	不以/开始的路径就是相对路径，相对于当前资源所在的路径为标准。推荐以后都不要用相对路径。
+	
+绝对路径：
+	以/开始的路径就是绝对路径
+
+服务器解析的路径：
+	`request.getRequestDispatcher("/abc").forward(request,response)`就是当前项目下的路径。
+	注意：`resp.sendRedirect("/index.jsp");`是浏览器要访问在的，所以不会加上项目名。
+
+浏览器解析的路径：
+	在前面拼上服务器地址（url加端口）是最终要去的路径，所以页面要写以/开始的路径要加上项目名。
+	只要是html标签（参考[w3school](https://www.w3school.com.cn/)）里面写的路径都是浏览器解析，除此之外都是服务器解析。
+	`<jsp:forwar>`等自定义标签目前都是服务器解析。
+
+# JSP
+
+Java Servlet Page。
+
+## 原理
+
+> 静态资源：除java代码外都是静态资源
+> 动态资源：Java代码（Jsp也是）
+
+比如浏览器请求访问`index.jsp`
+
+1 向服务发送请求`http://localhost:8080/MyWebApp/index.jsp`
+
+2  org.apache.jasper.servlet.JspServlet拦截到这个请求
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211210052389.png)
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211210052454.png)
+
+3 JspServlet找到index.jsp将其翻译成index_jsp.java，编译成index_jsp.class。只有第一次请求才编译，后面请求直接找到这个class。
+
+4 利用反射调用class中的方法
+
+5 将jsp文件中的数据写出去。
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211210058455.png)
+
+## 九大隐含对象
+
+
+
+## 常用标签
+
+
+
 # 监听器 Listener
 
 监听器：监听对象（ServletContext），监听事件（ServletContextEvent），触发行为（实现的方法体）
@@ -47,7 +321,7 @@ ServletContextAttributeListener，HttpSessionAttributeListener，ServletRequestA
 
 HttpSessionActivationListener，HttpSessionBindingListener
 
-## 常用方法
+## 常用方法 
 
 > 三个生命周期的监听器，用于各域创建或销毁时调用
 
@@ -641,4 +915,292 @@ public class I18nTest {
 	</fmt:message/>
 </h1>
 ```
+
+# 文件上传下载
+
+> 上传：浏览器将本地的文件上传到服务器上，交给服务器保存
+> 下载：把服务器保存的内容下载来本地
+
+##  上传
+
+> 1 上传必须是post类型的表单提交，get不能提交大量数据，即mehthod=post
+> 2 文件上传的表单要求enctype="multipart/form-data"，而不是默认的application/x-www-form-urlencoded
+
+### 多部件 Multipart
+
+什么是多部件？其实就是表单文件上传时每个表单项都是一个部件
+
+配置pom.xml
+
+```xml
+<dependency>  
+    <groupId>commons-fileupload</groupId>  
+    <artifactId>commons-fileupload</artifactId>  
+    <version>1.2.1</version>  
+</dependency>  
+  
+<dependency>  
+    <groupId>commons-io</groupId>  
+    <artifactId>commons-io</artifactId>  
+    <version>2.2</version>  
+</dependency>
+```
+
+新建upload.jsp
+
+```jsp
+<form action="upload" method="post" enctype="multipart/form-data">  
+    用户名： <input type="text" name="username" value=""><br/>  
+    头像： <input type="file" name="headerimg"><br/>  
+    <input type="submit" value="上传">  
+</form>
+```
+
+新建UploadServlet.java
+
+```java
+public class UploadServlet extends HttpServlet {  
+  
+    @Override  
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+        // 文件是以流的形式交给服务器的  
+        ServletInputStream inputStream = req.getInputStream();  
+        String s = IOUtils.toString(inputStream);  
+        System.out.println(s);  
+        resp.getWriter().write("ok!");  
+    }  
+}
+```
+
+配置web.xml
+
+```xml
+<servlet>  
+    <servlet-name>uploadServlet</servlet-name>  
+    <servlet-class>com.aitx.study.servlet.UploadServlet</servlet-class>  
+</servlet>  
+<servlet-mapping>  
+    <servlet-name>uploadServlet</servlet-name>  
+    <url-pattern>/upload</url-pattern>  
+</servlet-mapping>
+```
+
+界面显示为：
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211170154281.png)
+
+上传后，后台打印为：
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211170130344.png)
+
+注意：如果后台报java.lang.NoClassDefFoundError: org/apache/commons/io/IOUtils，则需要将依赖加入WEB-INF/lib目录下
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211170157664.png)
+
+通过以上测试可以得知：
+
+普通的表单上传来的数据：
+key=value&key=value
+代表`req.getParameter()`可以使用
+
+表单文件上传的数据：
+分隔符
+部件1头信息
+空行
+部件1的内容
+分隔符
+部件2头信息
+空行
+部件2的内容
+...
+`req.getParameter()`不可以使用
+所以，我们需要第三方jar包
+
+### 上传文件步骤
+
+- 导包
+- 配置
+- 调方法
+
+配置pom.xml：
+
+```java
+<dependency>  
+    <groupId>commons-fileupload</groupId>  
+    <artifactId>commons-fileupload</artifactId>  
+    <version>1.2.1</version>  
+</dependency>  
+  
+<dependency>  
+    <groupId>commons-io</groupId>  
+    <artifactId>commons-io</artifactId>  
+    <version>2.2</version>  
+</dependency>
+```
+
+新建UploadServlet2.java
+
+```java
+public class UploadServlet2 extends HttpServlet {  
+  
+    @Override  
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+        // 是否是多部件内容  
+        boolean isMultipart = ServletFileUpload.isMultipartContent(req);  
+        if (isMultipart) {  
+            // 创建文件工厂  
+            DiskFileItemFactory diskFileItemFactory = new DiskFileItemFactory();  
+            // 创建ServletFileUpload  
+            ServletFileUpload servletFileUpload = new ServletFileUpload(diskFileItemFactory);  
+            // 用创建ServletFileUpload解析请求，形式FileItem的list  
+            // 一个FileItem就是代表一个表单项的详细信息            try {  
+                List<FileItem> list = servletFileUpload.parseRequest(req);  
+                readFileItems(list, req);  
+                resp.getWriter().write("ok!!!");  
+            } catch (FileUploadException e) {  
+                e.printStackTrace();  
+            }  
+        }  
+    }  
+  
+    public void readFileItems(List<FileItem> items, HttpServletRequest req) throws IOException {  
+        // 获取tomcat服务器servletContext  
+        ServletContext servletContext = req.getServletContext();  
+        // 获取真实路径  
+        String realPath = servletContext.getRealPath("/text");  
+        for (FileItem item : items) {  
+            // 判断当前是普通表单项还是文件项，true代表就是普通的表单项  
+            // 比如type=text为普通项，type=file为文件项            if (item.isFormField()) {  
+                System.out.println("解析普通项");  
+                System.out.println("表单项key：" + item.getFieldName());  
+                System.out.println("表单项value：" + item.getString());  
+            } else {  
+                System.out.println("解析文件项");  
+                System.out.println("表单项key：" + item.getFieldName());  
+                System.out.println("上传的文件名：" + item.getName());  
+                System.out.println("上传的文件大小：" + item.getSize());  
+                InputStream inputStream = item.getInputStream();  
+                // 获取文件名,IE获取的名称是带路径的，其他浏览器就是文件名  
+                String name = item.getName();  
+                // 防止同名  
+                name = UUID.randomUUID().toString().replace("-", "") + name;  
+                File file = new File(realPath + File.separator + name);  
+                FileOutputStream outputStream = new FileOutputStream(file);  
+  
+                IOUtils.copy(inputStream, outputStream);  
+                // 关闭流  
+                outputStream.close();  
+                inputStream.close();  
+            }  
+        }  
+    }  
+}
+```
+
+配置web.xml：
+
+```xml
+<servlet>  
+    <servlet-name>uploadServlet2</servlet-name>  
+    <servlet-class>com.aitx.study.servlet.UploadServlet2</servlet-class>  
+</servlet>  
+<servlet-mapping>  
+    <servlet-name>uploadServlet2</servlet-name>  
+    <url-pattern>/upload2</url-pattern>  
+</servlet-mapping>
+```
+
+新建upload2.jsp：
+
+```jsp
+<form action="upload2" method="post" enctype="multipart/form-data">  
+    用户名： <input type="text" name="username" value=""><br/>  
+    头像： <input type="file" name="headerimg"><br/>  
+    <input type="submit" value="上传">  
+</form>
+```
+
+## 下载
+
+通常的下载方式，可以在前台代码中直接ref文件地址，这样用户点击文件，浏览器会尝试打开文件，不行的话才是下载，或者用户右键另存为也是下载。如果想要是下载，则可以通过Servlet处理请求的方式进行下载。
+
+pom.xml导包
+
+```xml
+<dependency>  
+    <groupId>commons-fileupload</groupId>  
+    <artifactId>commons-fileupload</artifactId>  
+    <version>1.2.1</version>  
+</dependency>  
+  
+<dependency>  
+    <groupId>commons-io</groupId>  
+    <artifactId>commons-io</artifactId>  
+    <version>2.2</version>  
+</dependency>
+```
+
+新建download.jsp
+
+```jsp
+<a href="/download?file=test.jpg">下载图片</a>
+```
+
+新建DownloadServlet.java
+
+```java
+public class DownloadServlet extends HttpServlet {  
+  
+    @Override  
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+        String file = req.getParameter("file");  
+        if ("zip".equals(file)) {  
+            // 将文件流如何正确的交给浏览器？  
+  
+        } else if ("jpg".equals(file)) {  
+            // 1 找到图片在服务中的真实位置  
+            ServletContext servletContext = getServletContext();  
+            String realPath = servletContext.getRealPath("/pics/test.jpg");  
+            // 2 获取要下载的文件的流  
+            FileInputStream fileInputStream = new FileInputStream(realPath);  
+            // 3 将这个输入流写给浏览器  
+            ServletOutputStream outputStream = resp.getOutputStream();  
+  
+            // 输入流写给输出流  
+            // 如果将流交给浏览器，浏览器认识的会直接打开，不认识的下载            
+            // IOUtils.copy(fileInputStream,outputStream);
+
+
+            // 所以在响应头中告诉浏览器是下载行为            
+            // 解决中文名乱码            
+            String filename = "test.jpg";  
+            filename = new String(filename.getBytes("GBK"), "ISO-8859-1");  
+            // 设置响应头  
+            resp.setHeader("Content-Disposition", "attachment;filename=" + filename);  
+            IOUtils.copy(fileInputStream, outputStream);  
+  
+            // 关闭流  
+            outputStream.close();  
+            fileInputStream.close();  
+  
+        } else {  
+            resp.getWriter().write("do not have");  
+        }  
+    }  
+}
+```
+
+配置web.xml
+
+```xml
+<servlet>  
+    <servlet-name>downloadServlet</servlet-name>  
+    <servlet-class>com.aitx.study.servlet.DownloadServlet</servlet-class>  
+</servlet>  
+<servlet-mapping>  
+    <servlet-name>downloadServlet</servlet-name>  
+    <url-pattern>/download</url-pattern>  
+</servlet-mapping>
+```
+
 
