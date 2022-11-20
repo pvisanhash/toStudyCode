@@ -51,7 +51,7 @@
                 "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
-                "collapseAll": false,
+                "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical"
               }
@@ -65,13 +65,11 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 316.5,
-    "collapsed": true
+    "width": 316.5
   },
   "right": {
     "id": "84a053aa9e51ce00",
@@ -142,7 +140,7 @@
   "ribbon": {
     "mostRecentAction": ""
   },
-  "active": "f83d4bcca120d958",
+  "active": "d1c4c2c2d63f464f",
   "lastOpenFiles": [
     "Note/spring与Spring Mvc笔记/spring对web层的支持.md",
     "Note/JavaWeb/JavaWeb.md",
