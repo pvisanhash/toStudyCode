@@ -134,13 +134,12 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "ribbon": {
     "mostRecentAction": ""
   },
-  "active": "d1c4c2c2d63f464f",
+  "active": "f83d4bcca120d958",
   "lastOpenFiles": [
     "Note/spring与Spring Mvc笔记/spring对web层的支持.md",
     "Note/JavaWeb/JavaWeb.md",

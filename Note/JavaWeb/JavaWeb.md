@@ -270,7 +270,259 @@ Java Servlet Page。
 
 ## 常用标签
 
+## JSTL
 
+Jsp Standard Tag Library，Jsp标准标签库。
+
+## EL
+
+Expression Laguage，表达式语言，用于简化Jsp页面取值操作的。EL只能取出11个对象中的值
+
+> 4个域对象：
+> 	pageScope
+> 	requestScope：${reqeuestScope.username} == request.getAttribute("username")，请求中包含请求域。
+> 	sessionScope：
+> 	applicationScope
+> 7个其他对象：
+> param：获取请求参数 ${param.usernmae} == request.getParameter("username")	 	
+> paramValues：获取请求参数(多选框) ${paramValues.hobby} == request.getParameters("hobby")	 	
+> header：请求头
+> headerValues：请求头对应的多个值
+> cookie：获取cookie
+> initParam：获取web.xml中配置的初始化参数
+
+
+其中，initParam获取web.xml中配置的初始化参数，比如：
+
+```xml
+<context-param>  
+    <param-name>username</param-name>  
+    <param-value>xiaoming</param-value>  
+</context-param>
+```
+
+# Cookie与Session
+
+## Cookie
+
+用cookie浏览器端保存少量数据的一种技术。
+
+特点：
+
+1. 少量
+2. 都是纯文本
+3. 保存的当前网站cookie，每次访问这个网站都会携带
+
+使用：
+
+ 服务器如何给浏览器发送保存Cookie
+
+```java
+public class CookieServlet extends HttpServlet {  
+  
+    @Override  
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+        // 创建Cookie对象  
+        Cookie cookie = new Cookie("username", "xiaoming");  
+        // 响应添加cookie  
+        resp.addCookie(cookie);  
+  
+        // 页面输出内容  
+        resp.getWriter().write("set cookie");  
+    }  
+}
+```
+
+web.xml中配置Servlet
+
+```xml
+<servlet>  
+    <servlet-name>cookieServlet</servlet-name>  
+    <servlet-class>com.aitx.study.servlet.CookieServlet</servlet-class>  
+</servlet>  
+<servlet-mapping>  
+    <servlet-name>cookieServlet</servlet-name>  
+    <url-pattern>/cookie</url-pattern>  
+</servlet-mapping>
+```
+
+访问CookieServlet,可以看到响应头中有设置Cookie
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211240340053.png)
+
+
+然后，在Application-Cookiek中可以看到Cookie已经有了
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211240340629.png)
+
+
+上面看到响应头中有`Set-Cookie`，所以我们可以直接在代码中设置响应头
+
+```java
+public class CookieServlet extends HttpServlet {  
+  
+    @Override  
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+        // 响应头添加cookie  
+        resp.setHeader("Set-Cookie","username=xiaoming");  
+        // 页面输出内容  
+        resp.getWriter().write("set cookie");  
+    }  
+}
+```
+
+一旦保存Cookie后，访问网站的各个请求的请求头中都会带上Cookie 
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211240348076.png)
+
+
+Cookie默认有效时间：
+
+默认是会话期间有效（浏览器只要不关，cookie就在；cookie存在浏览器的进程中，关闭浏览器会清空Cookie，但Session不会清空，Session只会过期失效或主动失效。）
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211240359603.png)
+
+Cookie手动设置的有效时间：
+
+```java
+// 设置最大有效时间，单位秒 
+// 正数是多少秒后失效
+// 负数表示Cookie就是会话Cookie，随浏览器同生共死
+// 0表示立即失效
+cookie.setMaxAge(100);
+```
+
+修改或删除Cookie
+
+```java
+@Override  
+protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+    // 修改或删除cookie，都是同名Cookie进行覆盖  
+    Cookie cookie = new Cookie("username", "newValue");  
+    // 这里删除，设置0秒过期  
+    cookie.setMaxAge(0);  
+    resp.addCookie(cookie);  
+    // 页面输出内容  
+    resp.getWriter().write("set cookie");  
+}
+```
+
+可以看到响应头中设置了新cookie值与过期时间为1970年
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211240410834.png)
+
+
+后台获取Cookie：
+
+```java
+// 只能获取所有cookie；可以遍历，注意判断cookies不能为null  
+Cookie[] cookies = req.getCookies();
+```
+
+## Session
+
+服务器端保存当前会话大量数据的一种技术（Cookie是浏览器端保存少量数据的一种技术），Seesion保存的数据是可以在同一个会话期间共享。
+
+使用：
+
+```java
+// 获取session  
+HttpSession session = req.getSession();  
+// session保存值  
+session.setAttribute("username","xiaoming");  
+// session获取值  
+session.getAttribute("username");
+```
+
+### 会话控制
+
+为什么在别的地方给session中保存的数据，在另外一个地方可以获取出来：
+
+> 会话控制：
+> 
+> 我们和服务器进行交互期间，可能需要何存一些数据，服务器就为每个会话专门创建一个map；这个 map用来保存数据；这个map我们就叫session；
+> 
+> 100个会话就有100个map；每次创建map的时候，这个map就有一个唯一标识：（JSESSIONID，会话ID）；
+> 
+> 利用浏览器每次访问都会带上所有的cookie ；
+> 
+> 服务器只需要创建一块能保存数据的map，给这个map一个唯一标识（JSESSIONID），创建好以后浏览器保存这个map的标识（Set-Cookie:JSESSIONID=xyz），以后浏览器访问就会带上这个map标识，服务器就按照标识找到这个map，取出这个map中的数据
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211240438576.png)
+
+特别地：
+
+Cookie失效：会话关闭（浏览器关闭），默认是Cookie清空；通过Cookie持久化技术可以继续找到之前的Session。
+
+Session失效：自动超时，手动失效。
+
+### 令牌机制
+
+F5刷新会将之前的请求再次发出去，表单会重复提交。
+
+原理：
+
+用户在访问页面时，服务器会给用户的请求中分配一个令牌（一组值），并且将此令牌拷贝一份放在Session中，在用户提交后，会将用户提交时所携带的令牌和session中的令牌进行比对，通过之后会将服务器中的令牌销毁(为session覆盖原来的令牌值)，到用户再次点击时（表单重复提交，传的值相同），再次比对令牌就会找不到服务器中的备份令牌，从而判断出此次请求为二次或多次提交，防止系统紊乱崩溃。
+
+应用场景：
+
+- 防止表单重复提交
+- 验证码验证
+
+新建TokenServlet.java
+
+```java
+public class TokenServlet extends HttpServlet {  
+  
+    @Override  
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+        HttpSession session = req.getSession();  
+        // 获取session中的token  
+        String sessionToken = (String) session.getAttribute("token");  
+        // 获取请求中的token  
+        String reqToken = req.getParameter("token");  
+        // 如果session的token与请求的token一致，则处理请求  
+        if (sessionToken.equals(reqToken)) {  
+            // 因为刷新(f5)是按原表单数据提交，所以页面带来的令牌值不会更新  
+            // 处理请求前，先替换session中的token值            session.setAttribute("token", UUID.randomUUID().toString().replace("-", ""));  
+            // 处理请求  
+            resp.getWriter().write("success");  
+        } else {  
+            // 令牌校验不过  
+            resp.getWriter().write("fail");  
+        }  
+  
+    }  
+}
+```
+
+配置web.xml
+
+```xml
+<servlet>  
+    <servlet-name>tokenServlet</servlet-name>  
+    <servlet-class>com.aitx.study.servlet.TokenServlet</servlet-class>  
+</servlet>  
+<servlet-mapping>  
+    <servlet-name>tokenServlet</servlet-name>  
+    <url-pattern>/token</url-pattern>  
+</servlet-mapping>
+```
+
+新建token.jsp
+
+```jsp
+<%  
+    String token = UUID.randomUUID().toString().replace("-","");  
+    session.setAttribute("token",token);  
+%>  
+  
+<form action="token" method="get">  
+    <input type="hidden" name="token" value="${sessionScope.token}">  
+    <input type="text" name="username" value="">  
+    <input type="submit">  
+</form>
+```
 
 # 监听器 Listener
 
