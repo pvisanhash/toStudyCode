@@ -36,6 +36,257 @@ JQuery是JS库
 
 可扩展标记语言(EXtensible Markup Language)
 
+# Json
+
+JavaScript Object Notation，js对象表示法，是一种轻量级的数据交换格式。
+
+## JS对象
+
+我们首先看下JS对象的基本用法
+
+```js
+{
+	key1:value1,
+	key2:value2
+}
+```
+
+其中，value可以有很多种类型：
+
+- 基本类型（字符串、数字、布尔值）
+- 对象
+- 数组
+
+比如定义一个学生：
+
+```js
+var student = 
+{
+	lastName:"张三",
+	age:18,
+	isGirl:false,
+	car:{
+		brand:"BMW",
+		price:30000
+	},
+	books:[
+		{
+			bookName:"西游记",
+			price:99.99
+		},
+		{
+			bookName:"红楼梦",
+			price:100
+		}
+	]
+}
+```
+
+并且，JS对象的key可以是字符串类型，这样就变成JSON对象（也是JS对象）
+
+```js
+var student2 = 
+{
+	"lastName":"张三",
+	"age":18,
+	"car":{
+		brand:"BMW",
+		price:30000
+	},
+	"books":[
+		{
+			"bookName":"西游记",
+			"price":99.99
+		},
+		{
+			"bookName":"红楼梦",
+			"price":100
+		}
+	],
+	"isGirl":false
+}
+```
+
+如果服务器返回给浏览器的数据是JS对象是这种样子的，浏览器使用JS解析就会很方便。JSON对象的要求与JS对象一样，只不过Key必须是字符串（JS对象的Key可以是字符串也可以不是）
+
+因为JSON对象进行网络传输，HTTP只能传输文本，所以一般要转成JSON对象的字符串，所以JSON也被为JS对象字符串表示法。
+
+```js
+<script type="text/javascript">
+	// 定义一个JSON对象（也是JS对象）
+    var student = {  
+        "lastName":"张三",  
+        "age":18  
+    }  
+    alert(typeof student); // object类型
+    // JSON.stringify()方法可以将json对象转化为json对象字符串  
+    var strJson = JSON.stringify(student);  
+    alert(typeof strJson); // string 类型
+    // JSON.parse()方法可以将json字符串转为json对象
+    var student2 = JSON.parse(strJson);  
+    alert(typeof student2);// object类型  
+</script>
+```
+
+# AJAX
+
+> AJAX：Asynchronous JavaSrcipt And XML，异步的JS与XML
+
+AJAX是一种无刷新页面与服务器的交互技术，页面不刷新就可以收到服务器响应的数据。
+
+原来的交互：
+
+1. 发送请求
+2. 服务器收到请求，调到对应的Servlet进行处理请求， Servlet处理完成会有响应信息生成
+3. 浏览器收到了服务器响应的数据，把之前的页面清除，展示新的数据。
+
+现在的交互：（XmlHttpRequest请求对象，AJAX基于此对象）
+
+1. XmlHttpRequest对象帮我们发送请求
+2. 服务器收到请求，调到对应的Servlet进行处理请求， Servlet处理完成会有响应信息生成
+3. XmlHttpRequest对象收数据（浏览器就感受不到这个数据了，XHR对象收到这个数据）
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211302356615.png)
+
+浏览器中可以看到XHR
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211302352861.png)
+
+原生AJAX的XMLHttpRequest异步请求方式：
+
+```js
+// 创建XMLHttpRequest对象  
+var xhr = new XMLHttpRequest();  
+// 建立连接，GET请求，URL为login，是否异步为true 
+xhr.open("GET", "login", true);  
+// 发送请求  
+xhr.send();  
+// 监听xhr的状态  
+xhr.onreadystatechange = function () {  
+    // readyState=4且status=200  
+    if (xhr.readyState == 4 && xhr.status == 200) {  
+        // responseText就是响应的内容  
+        document.getElementById("myDiv").innerHTML = xhr.responseText;  
+    }  
+}
+```
+
+因为原生的AJAX请求方式非常麻烦，使用JQuery包装后的ajax请求：
+
+这里使用`$.get()`方法演示
+
+webapp/js下导入jquery.js文件（JQuery下载参考 [JQuery官网](https://releases.jquery.com/)）
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202212010049316.png)
+
+新建ajax.jsp页面
+
+```jsp
+<html>  
+<head>  
+    <title>AJAX</title>  
+</head>
+<!--可以移到head标签中-->
+<script src="js/jquery.js"></script>  
+<body>  
+<a href="getInfo" id="aBtn">获取信息</a>  
+</body>  
+<script type="text/javascript">
+	// 给a标签绑定点击事件并阻止自动跳转，用jquery中ajax的方式异步请求
+    $("#aBtn").click(function () {  
+        var params = {  
+            lastname: "zhangsan"  
+        }  
+        // url,请求地址
+        // data,请求发送的数据，可以是k=v&k=v,也可以是js对象
+        // callback是回调函数
+        // type指定返回的类型,jquery可以自动转为指定的类型
+        $.get("getInfo", params, function (resp) {  
+            // resp代表服务器给我们的数据，如果服务器转发一个页面的数据，resp就代表整个页面  
+            alert(resp)  
+        });  
+        return false;    
+    });  
+</script>  
+</html>
+```
+
+新建GetInfoServlet.java
+
+```java
+public class GetInfoServlet extends HttpServlet {  
+  
+    @Override  
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {  
+        String lastname = req.getParameter("lastname");  
+        System.out.println("lastname = " + lastname);  
+        req.getRequestDispatcher("/ajax.jsp").forward(req, resp);  
+    }  
+}
+```
+
+可以看到因为Svelte中又将请求转发到ajax.jsp页面，所以ajax请求得到的响应为html页面数据，如果我们返回json数据，ajax得到的响应也就为json格式。
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202212010038896.png)
+
+
+AJAX改变了我们传统的交互方式：
+1. 发请求
+2. 服务器收到请求，处理请求经常要给页面携带数据。request.setAttribute("map",map)转发到页面。
+3. 浏览器收到页面数据，在页面上使用el表达式获取数据
+导致页面整个刷新，造成很大的服务器负担。
+
+只让服务器返回我们需要的部分数据即可，不用返回整个页面；xhr替定浏览器发送请求、接受响应，利用dom增删改的方式来改变页面效果。
+
+什么是ajax?
+xhr对象向服器发送请求，并收到响应数据，利用dom增删改的方式改变页面效果。异步无刷新的技术。
+
+>异步：不会阻塞浏览器。ajax请求相当于新开一个线程去处理。
+>同步：会阻塞浏览器，因为需要等到服务器整个处理完请求，完成响应以后才能做其他事情。
+
+相同的，我们也可以发post请求
+
+```js
+<script type="text/javascript">
+	// 给a标签绑定点击事件并阻止自动跳转，用jquery中ajax的方式异步请求
+    $("#aBtn").click(function () {  
+        var params = {  
+            lastname: "zhangsan"  
+        }  
+        // url,请求地址
+        // data,post请求发送的数据，可以是k=v&k=v,也可以是js对象
+        // callback是回调函数
+        // type指定返回的类型,jquery可以自动转为指定的类型
+        $.post("getInfo", params, function (resp) {  
+            // resp代表服务器给我们的数据，如果服务器转发一个页面的数据，resp就代表整个页面  
+            alert(resp)  
+        });  
+        return false;    
+    });  
+</script>  
+```
+
+也可以发`$.ajax`请求：
+
+```js
+// ajax请求的参数可以是一个对象  
+var options = {  
+    url: "getInfo", // 请求地址  
+    type: "GET", // 请求方式  
+    data: "lastname=zhangshan", // 请求数据  
+    success: function (resp) {  
+        alert("成功")  
+    }, // 成功后的回调函数  
+    dataType: "json", // 返回值类型  
+    async: true, // 是否异步  
+    error: function (xhr, textStatus) {  
+        alert(textStatus);  
+    }, // 失败后的回调函数  
+}  
+// 发送ajax请求,所有请求的属性都是可以通过个js对象定义的  
+$.ajax(options);
+```
+
 # Tomcat
 
 ## Tomcat目录结构
@@ -50,7 +301,7 @@ temp：临时文件
 webapps：集合了tomcat中所有运行的项目，每个项目就是一个文件夹
 work：存放运行期间编译的一些东西，比如jsp页面
 
-# Servlet
+# Servlet 服务器小程序
 
 用来接收请求，处理请求，完成响应的一段小程序。继承HttpServlet，重写doGet()，doPost()方法，后配置web.xml即可。
 
@@ -237,7 +488,7 @@ resp.setContentType("text/html;charset=utf-8");
 	只要是html标签（参考[w3school](https://www.w3school.com.cn/)）里面写的路径都是浏览器解析，除此之外都是服务器解析。
 	`<jsp:forwar>`等自定义标签目前都是服务器解析。
 
-# JSP
+# JSP页面
 
 Java Servlet Page。
 
@@ -483,7 +734,8 @@ public class TokenServlet extends HttpServlet {
         String reqToken = req.getParameter("token");  
         // 如果session的token与请求的token一致，则处理请求  
         if (sessionToken.equals(reqToken)) {  
-            // 因为刷新(f5)是按原表单数据提交，所以页面带来的令牌值不会更新  
+            // 因为刷新(f5)是按原表单数据提交，所以页面带来的令牌值不会更新
+            // 注意：刷新页面是会更新令牌的  
             // 处理请求前，先替换session中的token值            session.setAttribute("token", UUID.randomUUID().toString().replace("-", ""));  
             // 处理请求  
             resp.getWriter().write("success");  
@@ -524,15 +776,21 @@ public class TokenServlet extends HttpServlet {
 </form>
 ```
 
-# 监听器 Listener
+# Listener 监听器
 
 监听器：监听对象（ServletContext），监听事件（ServletContextEvent），触发行为（实现的方法体）
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211301316547.png)
 
 ## 按监听对象进行分类
 
 > 生命周期lifecycle：从创建到销毁的过程
 > 
 > 常用域对象pageContext，requst，session，application
+> 
+> ServletContext：
+> 1. 一个web项目对应一个ServletContext，它代表当前web项目的信息
+> 2. 还可以作为最大的域对象在整个项目运行期间共享数据
 
 - 监听ServletContext对象
 
@@ -680,7 +938,7 @@ public interface HttpSessionBindingListener extends EventListener {
 ## 如何使用监听器
 
 - 实现相应的监听器接口中的方法
-- web.xml中注册
+- web.xml中注册（session活化钝化监听器、session绑定解绑监听无需配置）
 
 ### Demo
 
@@ -1001,12 +1259,86 @@ index.jsp中修改如下：
 
 比如用户登录信息，在线人数信息记录。
 
+# Filter 过滤器
+
+## 使用步骤
+
+1. 实现Filter接口
+2. 去web.xml进行配置
+
+可以看到，三大组件基本都需要在web.xml中进行注册（除过Listener中session极活化钝化，session绑定解绑需要javaBean实现接口，不注册）
+
+实现接口：
+
+```java
+public class MyFirstFilter implements Filter {  
+      
+    @Override  
+    public void init(FilterConfig filterConfig) throws ServletException {  
+  
+    }  
+  
+    @Override  
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {  
+        chain.doFilter(request, response);  
+    }  
+  
+    @Override  
+    public void destroy() {  
+  
+    }  
+}
+```
+
+WEB-INF/web.xml配置：
+
+```xml
+<filter>  
+    <filter-name>myFirstFilter</filter-name>  
+    <filter-class>com.aitx.study.filter.MyFirstFilter</filter-class>  
+</filter>  
+<filter-mapping>  
+    <filter-name>myFirstFilter</filter-name>  
+    <url-pattern>/</url-pattern>  
+</filter-mapping>
+```
+
+其中`<url-pattern>`有以下几种写法：
+
+1. 精确匹配
+
+```url
+/pics/haha.img，/hello/login
+```
+
+2. 路径匹配（模糊匹配）
+
+```url
+/pics/* 拦截pics下的所有请求
+```
+
+3. 后缀匹配 （模糊匹配）
+
+```url
+*.jsp 拦截所有以.jsp结尾的请求
+```
+
+ 注意：`/pics/*.jsp`不能使用，即不是路径匹配，也不是后缀匹配，总之，不能两两组合使用
+
+## Filter原理
+
+Servlet前进行请求过滤。
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202211301312402.png)
+
 # 国际化
 
 国际化主要使用Locale，ResourceBundle类。通常国际化问题都是创建多个服务，而不是一个服务来完成国际化。
 
 > Locale，区域信息，比如zh_CN、en_US，即 语言代码_国家代码 形式
 > ResouceBundle，资源束，资源绑定
+> 
+> 通常，我们可以通过 请求头传参 或 请求数据传参 确定国际化
 
 ## Locale
 
@@ -1427,7 +1759,7 @@ public class DownloadServlet extends HttpServlet {
             // 解决中文名乱码            
             String filename = "test.jpg";  
             filename = new String(filename.getBytes("GBK"), "ISO-8859-1");  
-            // 设置响应头  
+            // 设置响应头，告诉浏览器是下载而不是打开文件  
             resp.setHeader("Content-Disposition", "attachment;filename=" + filename);  
             IOUtils.copy(fileInputStream, outputStream);  
   
