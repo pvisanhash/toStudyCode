@@ -4,16 +4,16 @@
     "type": "split",
     "children": [
       {
-        "id": "68bd39e87b76192b",
+        "id": "ace25c1db0ed9816",
         "type": "tabs",
         "children": [
           {
-            "id": "990f747d7716521f",
+            "id": "810250fe7ff39647",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/JavaWeb/JavaWeb.md",
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/JavaWeb/JavaWeb.md",
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/JavaWeb/JavaWeb.md",
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/JavaWeb/JavaWeb.md"
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md"
               }
             }
           }
@@ -134,22 +134,31 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 267.5
   },
-  "ribbon": {
-    "mostRecentAction": ""
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "random-note:开始漫游笔记": false,
+      "workspaces:管理工作区布局": false
+    }
   },
-  "active": "990f747d7716521f",
+  "active": "810250fe7ff39647",
   "lastOpenFiles": [
-    "Note/Markdown笔记/Markdown语法学习.md",
-    "Note/JavaWeb/JavaWeb.md",
-    "Note/spring与Spring Mvc笔记/spring对web层的支持.md",
-    "Note/spring与Spring Mvc笔记/spring的aop.md",
-    "Note/maven笔记/maven笔记.md",
-    "Note/mybatis笔记/mybatis.md",
     "Note/spring与Spring Mvc笔记/spring对持久层的支持.md",
+    "Note/算法学习/算法学习.md",
+    "Note/Markdown笔记/Markdown语法学习.md",
+    "Note/UML笔记/UML.md",
+    "Note/算法学习/reference/从头到尾彻底理解KMP.pdf",
     "Note/spring与Spring Mvc笔记/spring下载与ioc.md",
-    "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
-    "Note/ssm整合笔记/ssm整合之jar.md"
+    "Note/docker笔记/Docker.md",
+    "Note/JavaWeb笔记/JavaWeb.md",
+    "Note/spring与Spring Mvc笔记/spring的aop.md",
+    "Note/spring与Spring Mvc笔记/spring对web层的支持.md"
   ]
 }
