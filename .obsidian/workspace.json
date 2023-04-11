@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
+                "file": "Note/算法学习/算法学习.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
+                "file": "Note/算法学习/算法学习.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
+                "file": "Note/算法学习/算法学习.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md"
+                "file": "Note/算法学习/算法学习.md"
               }
             }
           }
@@ -150,6 +150,8 @@
   },
   "active": "810250fe7ff39647",
   "lastOpenFiles": [
+    "Note/设计模式/设计模式-day01.md",
+    "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
     "Note/spring与Spring Mvc笔记/spring对持久层的支持.md",
     "Note/算法学习/算法学习.md",
     "Note/Markdown笔记/Markdown语法学习.md",
@@ -157,8 +159,6 @@
     "Note/算法学习/reference/从头到尾彻底理解KMP.pdf",
     "Note/spring与Spring Mvc笔记/spring下载与ioc.md",
     "Note/docker笔记/Docker.md",
-    "Note/JavaWeb笔记/JavaWeb.md",
-    "Note/spring与Spring Mvc笔记/spring的aop.md",
-    "Note/spring与Spring Mvc笔记/spring对web层的支持.md"
+    "Note/JavaWeb笔记/JavaWeb.md"
   ]
 }
