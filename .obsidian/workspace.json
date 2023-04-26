@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/算法学习/算法学习.md",
+                "file": "Note/JUC并发编程/并发编程完整版-01.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/算法学习/算法学习.md",
+                "file": "Note/JUC并发编程/并发编程完整版-01.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/算法学习/算法学习.md",
+                "file": "Note/JUC并发编程/并发编程完整版-01.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/算法学习/算法学习.md"
+                "file": "Note/JUC并发编程/并发编程完整版-01.md"
               }
             }
           }
@@ -138,9 +138,9 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "canvas:新建白板": false,
       "switcher:打开快速切换": false,
       "graph:查看关系图谱": false,
-      "canvas:Create new canvas": false,
       "daily-notes:打开/创建今天的日记": false,
       "templates:插入模板": false,
       "command-palette:打开命令面板": false,
@@ -150,10 +150,13 @@
   },
   "active": "810250fe7ff39647",
   "lastOpenFiles": [
+    "未命名.canvas",
+    "README.md",
+    "Note/JUC并发编程/并发编程完整版-01.md",
+    "Note/算法学习/算法学习.md",
     "Note/设计模式/设计模式-day01.md",
     "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
     "Note/spring与Spring Mvc笔记/spring对持久层的支持.md",
-    "Note/算法学习/算法学习.md",
     "Note/Markdown笔记/Markdown语法学习.md",
     "Note/UML笔记/UML.md",
     "Note/算法学习/reference/从头到尾彻底理解KMP.pdf",
