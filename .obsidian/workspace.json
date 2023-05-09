@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "ace25c1db0ed9816",
+        "id": "1873630473ccfbe7",
         "type": "tabs",
         "children": [
           {
-            "id": "810250fe7ff39647",
+            "id": "4236a5a385a90c9a",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -148,9 +148,11 @@
       "workspaces:管理工作区布局": false
     }
   },
-  "active": "810250fe7ff39647",
+  "active": "4236a5a385a90c9a",
   "lastOpenFiles": [
+    "Note/().md",
     "Note/JUC并发编程/并发编程完整版-01.md",
+    "Note/Markdown笔记/Markdown语法学习.md",
     "Note/JUC并发编程/并发编程完整版-01_new.md",
     "未命名.canvas",
     "README.md",
@@ -158,7 +160,6 @@
     "Note/设计模式/设计模式-day01.md",
     "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
     "Note/spring与Spring Mvc笔记/spring对持久层的支持.md",
-    "Note/Markdown笔记/Markdown语法学习.md",
     "Note/UML笔记/UML.md",
     "Note/算法学习/reference/从头到尾彻底理解KMP.pdf",
     "Note/spring与Spring Mvc笔记/spring下载与ioc.md",
