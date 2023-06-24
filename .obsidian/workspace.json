@@ -4,16 +4,16 @@
     "type": "split",
     "children": [
       {
-        "id": "4fc83679177c812d",
+        "id": "d46ef92dc83bddfd",
         "type": "tabs",
         "children": [
           {
-            "id": "ffb642d3a00fa03e",
+            "id": "456dee6f6a089b5b",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/JUC并发编程/并发编程完整版-01.md",
+                "file": "Note/源码学习/Java相关源码学习.md",
                 "mode": "source",
                 "source": false
               }
@@ -93,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/JUC并发编程/并发编程完整版-01.md",
+                "file": "Note/源码学习/Java相关源码学习.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/JUC并发编程/并发编程完整版-01.md",
+                "file": "Note/源码学习/Java相关源码学习.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/JUC并发编程/并发编程完整版-01.md"
+                "file": "Note/源码学习/Java相关源码学习.md"
               }
             }
           }
@@ -156,10 +156,20 @@
       "workspaces:管理工作区布局": false
     }
   },
-  "active": "d1c4c2c2d63f464f",
+  "active": "456dee6f6a089b5b",
   "lastOpenFiles": [
+    "Note/docker笔记/Docker.md",
+    "Note/源码学习/Java相关源码学习.md",
+    "Note/git笔记/git.md",
     "Note/Markdown笔记/Markdown语法学习.md",
+    "Template/MetaInfo_Yaml_Template.md",
+    "Note/UML笔记/UML.md",
+    "Note/zookeeper笔记/Zookeeper.md",
+    "Template/Meeting_Template.md",
+    "Template/Diary_Template.md",
+    "Note/linux笔记/linux.md",
     "Note/JUC并发编程/并发编程完整版-01.md",
+    "Note/源码学习",
     "Note/未命名.md",
     "Note/JUC并发编程/Java并发编程思维导图.png",
     "Note/JUC并发编程/Java并发编程完整版.xmind",
@@ -172,10 +182,8 @@
     "Note/设计模式/设计模式-day01.md",
     "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
     "Note/spring与Spring Mvc笔记/spring对持久层的支持.md",
-    "Note/UML笔记/UML.md",
     "Note/算法学习/reference/从头到尾彻底理解KMP.pdf",
     "Note/spring与Spring Mvc笔记/spring下载与ioc.md",
-    "Note/docker笔记/Docker.md",
     "Note/JavaWeb笔记/JavaWeb.md"
   ]
 }
