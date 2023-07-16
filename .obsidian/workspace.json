@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/Mysql性能调优/002MySQL中的索引.md",
+                "file": "Note/Mysql性能调优/001数据库基础知识.md",
                 "mode": "source",
                 "source": false
               }
@@ -93,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/Mysql性能调优/002MySQL中的索引.md",
+                "file": "Note/Mysql性能调优/001数据库基础知识.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/Mysql性能调优/002MySQL中的索引.md",
+                "file": "Note/Mysql性能调优/001数据库基础知识.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/Mysql性能调优/002MySQL中的索引.md"
+                "file": "Note/Mysql性能调优/001数据库基础知识.md"
               }
             }
           }
@@ -158,13 +158,23 @@
   },
   "active": "d1c4c2c2d63f464f",
   "lastOpenFiles": [
+    "Note/Mysql性能调优/006MySQL8新特性.md",
+    "Note/Mysql性能调优/002MySQL中的索引.md",
+    "Note/Mysql性能调优/006MySQL8新特性~.md",
+    "Note/Mysql性能调优/006MySQL8新特性_new.md",
+    "Note/Mysql性能调优/MySQL8新特性.md",
+    "Note/Mysql性能调优/005MySQL中的锁_new.md",
+    "Note/Mysql性能调优/004事务和事务的隔离级别_new.md",
+    "Note/Mysql性能调优/005MySQL中的锁.md",
+    "Note/Mysql性能调优/004事务和事务的隔离级别.md",
+    "Note/Mysql性能调优/事务和事务的隔离级别.md",
+    "Note/Mysql性能调优/MySQL中的锁.md",
+    "Note/Mysql性能调优/003MySQL性能优化.md",
     "Note/Mysql性能调优/001数据库基础知识.md",
     "Note/JUC并发编程/并发编程完整版-01.md",
     "Note/Mysql性能调优/003MySQL性能优化_new.md",
     "Note/Mysql性能调优/002MySQL中的索引_new.md",
     "Note/Mysql性能调优/001数据库基础知识_new.md",
-    "Note/Mysql性能调优/003MySQL性能优化.md",
-    "Note/Mysql性能调优/002MySQL中的索引.md",
     "Note/Mysql性能调优",
     "Note/Mysql调优",
     "Note/untitled folder",
@@ -178,19 +188,9 @@
     "Note/zookeeper笔记/Zookeeper.md",
     "Template/Meeting_Template.md",
     "Template/Diary_Template.md",
-    "Note/linux笔记/linux.md",
     "Note/源码学习",
-    "Note/未命名.md",
     "Note/JUC并发编程/Java并发编程完整版.xmind",
-    "README.md",
-    "企德科入职关键记录.md",
-    "Note/().md",
-    "Note/JUC并发编程/并发编程完整版-01_new.md",
     "未命名.canvas",
-    "Note/算法学习/算法学习.md",
-    "Note/设计模式/设计模式-day01.md",
-    "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
-    "Note/spring与Spring Mvc笔记/spring对持久层的支持.md",
     "Note/算法学习/reference/从头到尾彻底理解KMP.pdf"
   ]
 }
