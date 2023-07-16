@@ -10,9 +10,9 @@
 
 对于**MySQL调优**，需要确认业务表结构设计是否合理，SQL语句优化是否足够，该添加的索引是否都添加了，是否可以剔除多余的索引等等
 
-比如**硬件和OS调优**，需要对硬件和OS有着非常深刻的了解，仅仅就磁盘一项来说，一般非DBA能想到的调整就是SSD盘比用机械硬盘更好。DBA级别考虑的至少包括了，使用什么样的磁盘阵列（RAID）级别、是否可以分散磁盘IO、是否使用裸设备存放数据，使用哪种文件系统（目前比较推荐的是XFS），操作系统的磁盘调度算法选择，是否需要调整操作系统文件管理方面比如atime属性等等。
+比如**硬件和OS调优**，需要对硬件和OS有着非常深刻的了解，仅仅就磁盘一项来说，一般非DBA能想到的调整就是SSD盘比用机械硬盘更好。DBA级别考虑的至少包括了，使用什么样的磁盘阵列（RAID = Redundant Arrays of Independent Disks）级别、是否可以分散磁盘IO、是否使用裸设备存放数据，使用哪种文件系统（目前比较推荐的是XFS），操作系统的磁盘调度算法选择，是否需要调整操作系统文件管理方面比如atime属性等等。
 
-所以本章我们重点关注MySQL方面的调优，特别是索引。SQL/索引调优要求对业务和数据流非常清楚。在阿里巴巴内部，有三分之二的DBA是业务DBA，从业务需求讨论到表结构审核、SQL语句审核、上线、索引更新、版本迭代升级，甚至哪些数据应该放到非关系型数据库中，哪些数据放到数据仓库、搜索引擎或者缓存中，都需要这些DBA跟踪和复审。他们甚至可以称为数据架构师（Data Architecher）。
+所以本章我们重点关注MySQL方面的调优，特别是索引。SQL索引调优要求对业务和数据流非常清楚。在阿里巴巴内部，有三分之二的DBA是业务DBA，从业务需求讨论到表结构审核、SQL语句审核、上线、索引更新、版本迭代升级，甚至哪些数据应该放到非关系型数据库中，哪些数据放到数据仓库、搜索引擎或者缓存中，都需要这些DBA跟踪和复审。他们甚至可以称为数据架构师（Data Architecher）。
 
 ### 1.3.2.查询性能优化
 
@@ -28,7 +28,7 @@
 
 1．确认应用程序是否在检索大量超过需要的数据。这通常意味着访问了太多的行，但有时候也可能是访问了太多的列。
 
-2．确认MySQL服务器层是否在分析大量超过需要的数据行。
+2．确认MySQL服务器层是否在存在大量超过需要的数据行。
 
 ##### **1.3.2.1.2请求了不需要的数据？**
 
@@ -46,11 +46,11 @@
 
 **总是取出全部列**
 
-每次看到SELECT*的时候都需要用怀疑的眼光审视，是不是真的需要返回全部的列？很可能不是必需的。取出全部列，会让优化器无法完成索引覆盖扫描这类优化,还会为服务器带来额外的I/O、内存和CPU的消耗。因此，一些DBA是严格禁止SELECT *的写法的，这样做有时候还能避免某些列被修改带来的问题。
+每次看到SELECT的时候都需要用怀疑的眼光审视，是不是真的需要返回全部的列？很可能不是必需的。取出全部列，会让优化器无法完成**索引覆盖扫描**这类优化,还会为服务器带来额外的I/O、内存和CPU的消耗。因此，一些DBA是严格禁止 `SELECT *` 的写法的，这样做有时候还能避免某些列被修改带来的问题。
 
-尤其是使用二级索引，使用*的方式会导致回表，导致性能低下。
+尤其是使用二级索引，使用 `select *` 的方式会导致回表，导致性能低下。
 
-什么时候可以使用SELECT*如果应用程序使用了某种缓存机制，或者有其他考虑，获取超过需要的数据也可能有其好处，但不要忘记这样做的代价是什么。获取并缓存所有的列的查询，相比多个独立的只获取部分列的查询可能就更有好处。
+什么时候可以使用 `SELECT *` ? 如果应用程序使用了某种缓存机制，或者有其他考虑，获取超过需要的数据也可能有其好处，但不要忘记这样做的代价是什么。获取并缓存所有的列的查询，相比多个独立的只获取部分列的查询可能就更有好处。
 
 **重复查询相同的数据**
 
@@ -76,7 +76,7 @@
 
 分析查询时，查看该查询扫描的行数是非常有帮助的。这在一定程度上能够说明该查询找到需要的数据的效率高不高。
 
-理想情况下扫描的行数和返回的行数应该是相同的。但实际情况中这种“美事”并不多。例如在做一个关联查询时，服务器必须要扫描多行才能生成结果集中的一行。扫描的行数对返回的行数的比率通常很小，一般在1:1和10:1之间，不过有时候这个值也可能非常非常大。
+理想情况下扫描的行数和返回的行数应该是相同的。但实际情况中这种“美事”并不多。例如在做一个关联查询时，服务器必须要扫描多行才能生成结果集中的一行。扫描的行数对返回的行数的比率通常很大，一般在1:1和10:1之间，不过有时候这个值也可能非常非常大。
 
 **扫描的行数和访问类型**
 
@@ -90,7 +90,9 @@
 
 1、在索引中使用WHERE条件来过滤不匹配的记录。这是在存储引擎层完成的。
 
-select .... from where a>100 and a &#x3c;200
+```mysql
+select column_name from table_name where a > 100 and a < 200
+```
 
 2、使用覆盖索引扫描来返回记录，直接从索引中过滤不需要的记录并返回命中的结果。这是在 MySQL服务器层完成的，但无须再回表查询记录。
 
@@ -112,98 +114,103 @@ select .... from where a>100 and a &#x3c;200
 
 我们已经知道慢查询日志可以帮助定位可能存在问题的SQL语句，从而进行SQL语句层面的优化。但是默认值为关闭的，需要我们手动开启。
 
-```
+```mysql
 show VARIABLES like 'slow_query_log';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117686.png)
 
-```
-set GLOBAL slow_query_log=1;
+```mysql
+-- 开启1，关闭0
+set GLOBAL slow_query_log = 1;
 ```
 
-开启1，关闭0
 
 但是多慢算慢？MySQL中可以设定一个阈值，将运行时间超过该值的所有SQL语句都记录到慢查询日志中。long_query_time参数就是这个阈值。默认值为10，代表10秒。
 
-```
+```mysql
 show VARIABLES like '%long_query_time%';
 ```
 
 当然也可以设置
 
-```
+```mysql
+-- 默认10秒，这里为了演示方便设置为0
 set global long_query_time=0;
 ```
 
-默认10秒，这里为了演示方便设置为0
-
 同时对于运行的SQL语句没有使用索引，则MySQL数据库也可以将这条SQL语句记录到慢查询日志文件，控制参数是：
 
-```
+```mysql
+-- 开启1，关闭0（默认）
 show VARIABLES like '%log_queries_not_using_indexes%';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117687.png)
 
-开启1，关闭0（默认）
-
-![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117688.png)
-
-```
+```mysql
+-- 查看慢查询日志名称
 show VARIABLES like '%slow_query_log_file%';
 ```
 
+![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117688.png)
+
 ##### 小结
 
-l  slow_query_log 启动停止慢查询日志
+- slow_query_log 启动停止慢查询日志
 
-l  slow_query_log_file 指定慢查询日志得存储路径及文件（默认和数据文件放一起）
+- slow_query_log_file 指定慢查询日志得存储路径及文件（默认和数据文件放一起）
 
-l  long_query_time 指定记录慢查询日志SQL执行时间得伐值（单位：秒，默认10秒）
+- long_query_time 指定记录慢查询日志SQL执行时间得阈值（单位：秒，默认10秒）
 
-l  log_queries_not_using_indexes  是否记录未使用索引的SQL
+- log_queries_not_using_indexes  是否记录未使用索引的SQL
 
-l  log_output 日志存放的地方可以是[TABLE][FILE][FILE,TABLE]
+- log_output 日志存放的地方可以是[TABLE][FILE][FILE,TABLE]
 
 ### 1.3.4.Explain执行计划
 
 #### 1.3.4.1.什么是执行计划
 
-有了慢查询语句后，就要对语句进行分析。一条查询语句在经过MySQL查询优化器的各种基于成本和规则的优化会后生成一个所谓的执行计划，这个执行计划展示了接下来具体执行查询的方式，比如多表连接的顺序是什么，对于每个表采用什么访问方法来具体执行查询等等。EXPLAIN语句来帮助我们查看某个查询语句的具体执行计划，我们需要搞懂EPLATNEXPLAIN的各个输出项都是干嘛使的，从而可以有针对性的提升我们查询语句的性能。
+有了慢查询语句后，就要对语句进行分析。一条查询语句在经过MySQL查询优化器的各种基于成本和规则的优化会后生成一个所谓的执行计划，这个执行计划展示了接下来具体执行查询的方式，比如多表连接的顺序是什么，对于每个表采用什么访问方法来具体执行查询等等。EXPLAIN语句来帮助我们查看某个查询语句的具体执行计划，我们需要搞懂EXPLAIN的各个输出项都是干嘛使的，从而可以有针对性的提升我们优化查询语句的性能。
 
 通过使用EXPLAIN关键字可以模拟优化器执行SQL查询语句，从而知道MySQL是如何处理你的SQL语句的。分析查询语句或是表结构的性能瓶颈，总的来说通过EXPLAIN我们可以：
 
-l  表的读取顺序
+- 表的读取顺序
 
-l  数据读取操作的操作类型
+- 数据读取操作的操作类型
 
-l  哪些索引可以使用
+- 哪些索引可以使用
 
-l  哪些索引被实际使用
+- 哪些索引被实际使用
 
-l  表之间的引用
+- 表之间的引用
 
-l  每张表有多少行被优化器查询
+- 每张表有多少行被优化器查询
 
 #### 1.3.4.2.执行计划的语法
 
-执行计划的语法其实非常简单： 在SQL查询的前面加上EXPLAIN关键字就行。比如：EXPLAIN select * from table1
+执行计划的语法其实非常简单： 在SQL查询的前面加上EXPLAIN关键字就行。比如：
+
+```mysql
+EXPLAIN select * from table1
+```
 
 重点的就是EXPLAIN后面你要分析的SQL语句
 
-除了以SELECT开头的查询语句，其余的DELETE、INSERT、REPLACE以及UPOATE语句前边都可以加上EXPLAIN，用来查看这些语句的执行计划，不过我们这里对SELECT语句更感兴趣，所以后边只会以SELECT语句为例来描述EsxPLAIN语句的用法。
+除了以SELECT开头的查询语句，其余的DELETE、INSERT、REPLACE以及UPOATE语句前边都可以加上EXPLAIN，用来查看这些语句的执行计划，不过我们这里对SELECT语句更感兴趣，所以后边只会以SELECT语句为例来描述EXPLAIN语句的用法。
 
 #### 1.3.4.3.执行计划详解
 
 为了让大家先有一个感性的认识，我们把EXPLAIN语句输出的各个列的作用先大致罗列一下:
 
-**explain
-select * from order_exp;**
+```mysql
+explain
+select * from order_exp;
+```
 
-**id** **： ****在一个大的查询语句中每个SELECT****关键字都对应一个唯一的id**
+**id** ： **在一个大的查询语句中每个SELECT关键字都对应一个唯一的id**
 
-**select_type** **： SELECT****关键字对应的那个查询的类型**
+**select_type** **： SELECT关键字对应的那个查询的类型**
 
 **table** **：表名**
 
@@ -231,9 +238,9 @@ select * from order_exp;**
 
 稍微复杂一点的连接查询中也只有一个SELECT关键字，比如:
 
-```sql
-SELECT *FROM s1
-INNER J0IN s2 ON s1.id = s2.id
+```mysql
+SELECT * FROM s1
+INNER JOIN s2 ON s1.id = s2.id
 WHERE s1.order_status = 0 ;
 ```
 
@@ -243,8 +250,8 @@ WHERE s1.order_status = 0 ;
 
 比如下边这个查询语句中就包含2个SELECT关键字:
 
-```
-SELECT* FROM s1 WHERE id IN ( SELECT * FROM s2);
+```mysql
+SELECT * FROM s1 WHERE id IN ( SELECT id FROM s2);
 ```
 
 2、查询中包含UNION语句的情况
@@ -268,28 +275,30 @@ EXPLAIN SELECT * FROM s1 WHERE order_no = 'a';
 
 ###### 连接查询
 
-对于连接查询来说，一个SELEOT关键字后边的FROM子句中可以跟随多个表，所以在连接查询的执行计划中，每个表都会对应一条记录，但是这些记录的id值都是相同的，比如:
+对于连接查询来说，一个SELECT关键字后边的FROM子句中可以跟随多个表，所以在连接查询的执行计划中，每个表都会对应一条记录，但是这些记录的id值都是相同的，比如:
 
-```
-EXPLAIN SELECT * FROM s1 WHERE order_no = 'a';
+```mysql
+SELECT * FROM s1
+INNER JOIN s2 ON s1.id = s2.id
+WHERE s1.order_status = 0 ;
 ```
 
-可以看到，上述连接查询中参与连接的s1和s2表分别对应一条记录，但是这两条记录对应的id值都是1。这里需要大家记住的是，在连接查询的执行计划中，每个表都会对应一条记录，这些记录的id列的值是相同的。
+![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117689.png)
+
+可以看到，上述连接查询中参与连接的s1和s2表分别对应一条记录，但是这两条记录对应的id值都是1。这里需要大家记住的是，**在连接查询的执行计划中，每个表都会对应一条记录，这些记录的id列的值是相同的。**
 
 ###### 包含子查询
 
 对于包含子查询的查询语句来说，就可能涉及多个SELECT关键字，所以在包含子查询的查询语句的执行计划中，每个SELECT关键字都会对应一个唯一的id值，比如这样:
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE id IN (SELECT id FROM s2) OR order_no = 'a';
 ```
 
-![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117689.png)
-
 但是这里大家需要特别注意，查询优化器可能对涉及子查询的查询语句进行重写，从而转换为连接查询。所以如果我们想知道查询优化器对某个包含子查询的语句是否进行了重写，直接查看执行计划就好了，比如说:
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE id IN (SELECT id FROM s2 WHERE order_no = 'a');
 ```
@@ -302,7 +311,7 @@ SELECT * FROM s1 WHERE id IN (SELECT id FROM s2 WHERE order_no = 'a');
 
 对于包含UNION子句的查询语句来说，每个SELECT关键字对应一个id值也是没错的，不过还是有点儿特别的东西，比方说下边这个查询:
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 UNION SELECT * FROM s2;
 ```
@@ -310,10 +319,10 @@ SELECT * FROM s1 UNION SELECT * FROM s2;
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117691.png)
 
 这个语句的执行计划的第三条记录为什么这样？UNION
-子句会把多个查询的结果集合并起来并对结果集中的记录进行去重，怎么去重呢? MySQL使用的是内部的临时表。正如上边的查询计划中所示，UNION 子句是为了把id为1的查询和id为2的查询的结果集合并起来并去重，所以在内部创建了一个名为&#x3c;union1，2>的临时表（就是执行计划第三条记录的table列的名称)，id为NULL表明这个临时表是为了合并两个查询的结果集而创建的。
+子句会把多个查询的结果集合并起来并对结果集中的记录进行去重，怎么去重呢? MySQL使用的是内部的临时表。正如上边的查询计划中所示，UNION 子句是为了把id为1的查询和id为2的查询的结果集合并起来并去重，所以在内部创建了一个名为`<union1,2>`的临时表（就是执行计划第三条记录的table列的名称)，id为NULL表明这个临时表是为了合并两个查询的结果集而创建的。(可以将这个临时表理解为Java中new的Set集合)
 
 跟UNION 对比起来，UNION
-ALL就不需要为最终的结果集进行去重，它只是单纯的把多个查询的结果集中的记录合并成一个并返回给用户，所以也就不需要使用临时表。所以在包含UNION ALL子句的查询的执行计划中，就没有那个id为NULL的记录，如下所示:
+ALL就不需要为最终的结果集进行去重，它只是单纯的把多个查询的结果集中的记录合并成一个并返回给用户，所以也就不需要使用临时表(可以将这个临时表理解为Java中集合list1直接将list2的元素全部添加了)。所以在包含UNION ALL子句的查询的执行计划中，就没有那个id为NULL的记录，如下所示:
 
 ```
 EXPLAIN
@@ -324,7 +333,7 @@ SELECT * FROM s1 UNION ALL SELECT * FROM s2;
 
 ##### table
 
-不论我们的查询语句有多复杂，里边包含了多少个表，到最后也是需要对每个表进行单表访问的，MySQL规定EXPLAIN语句输出的每条记录都对应着某个单表的访问方法，该条记录的table列代表着该表的表名。
+不论我们的查询语句有多复杂，里边包含了多少个表，到最后也是需要对每个表进行单表访问的，MySQL规定EXPLAIN语句输出的每条记录都对应着**某个单表**的访问方法，该条记录的table列代表着该表的表名。
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117693.png)
 
@@ -348,13 +357,13 @@ SELECT * FROM s1 UNION ALL SELECT * FROM s2;
 
 当表中只有一条记录并且该表使用的存储引擎的统计数据是精确的，比如MyISAM、Memory，那么对该表的访问方法就是system。
 
-```
+```mysql
 explain select * from test_myisam;
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117695.png)
 
-当然，如果改成使用InnoDB存储引擎，试试看执行计划的type列的值是什么。
+当然，如果改成使用InnoDB存储引擎，可以看执行计划的type列的值为ALL。
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117696.png)
 
@@ -364,7 +373,7 @@ explain select * from test_myisam;
 
 例如将主键置于where列表中
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE id = 716;
 ```
@@ -373,7 +382,7 @@ SELECT * FROM s1 WHERE id = 716;
 
 B+树叶子节点中的记录是按照索引列排序的，对于的聚簇索引来说，它对应的B+树叶子节点中的记录就是按照id列排序的。B+树矮胖，所以这样根据主键值定位一条记录的速度很快。类似的，我们根据唯一二级索引列来定位一条记录的速度也很快的，比如下边这个查询：
 
-```
+```mysql
 SELECT * FROM
 order_exp WHERE insert_time=’’ and order_status=’’ and expire_time=’’ ;
 ```
@@ -384,7 +393,7 @@ MySQL把这种通过主键或者唯一二级索引列来定位一条记录的访
 
 不过这种const访问方法只能在主键列或者唯一二级索引列和一个常数进行等值比较时才有效，如果主键或者唯一二级索引是由多个列构成的话，组成索引的每一个列都是与常数进行等值比较时，这个const访问方法才有效。
 
-对于唯一二级索引来说，查询该列为NULL值的情况比较特殊，因为唯一二级索引列并不限制 NULL 值的数量，所以上述语句可能访问到多条记录，也就是说is null不可以使用const访问方法来执行。
+对于**唯一**二级索引(就是unique唯一键)来说，查询该列为NULL值的情况比较特殊，因为唯一二级索引列并不限制 NULL 值的数量，所以上述语句可能访问到多条记录，也就是说is null不可以使用const访问方法来执行。
 
 ###### eq_ref
 
@@ -394,7 +403,7 @@ MySQL把这种通过主键或者唯一二级索引列来定位一条记录的访
 
 比方说:
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 INNER JOIN s2 ON s1.id = s2.id;
 ```
@@ -403,13 +412,15 @@ SELECT * FROM s1 INNER JOIN s2 ON s1.id = s2.id;
 
 从执行计划的结果中可以看出，MySQL打算将s2作为驱动表，s1作为被驱动表，重点关注s1的访问方法是eq_ref，表明在访问s1表的时候可以通过主键的等值匹配来进行访问。
 
+这里其实判断哪个是驱动表,哪个是被驱动表的方法,就是通过explain执行计划来看,type=All的为驱动表,代表是将s2的所有记录拿出来作为条件让s1来过滤,s1就是被驱动表.
+
 ###### ref
 
 当通过普通的二级索引列与常量进行等值匹配时来查询某个表，那么对该表的访问方法就可能是ref。
 
 本质上也是一种索引访问，它返回所有匹配某个单独值的行，然而，它可能会找到多个符合条件的行，所以他属于查找和扫描的混合体
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE order_no = 'a';
 ```
@@ -420,15 +431,15 @@ SELECT * FROM s1 WHERE order_no = 'a';
 
 由于普通二级索引并不限制索引列值的唯一性，所以可能找到多条对应的记录，也就是说使用二级索引来执行查询的代价取决于等值匹配到的二级索引记录条数。如果匹配的记录较少，则回表的代价还是比较低的，所以MySQL可能选择使用索引而不是全表扫描的方式来执行查询。这种搜索条件为二级索引列与常数等值比较，采用二级索引来执行查询的访问方法称为：ref。
 
-对于普通的二级索引来说，通过索引列进行等值比较后可能匹配到多条连续的记录，而不是像主键或者唯一二级索引那样最多只能匹配1条记录，所以这种ref访问方法比const要差些，但是在二级索引等值比较时匹配的记录数较少时的效率还是很高的（如果匹配的二级索引记录太多那么回表的成本就太大了）。
+对于普通的二级索引来说，通过索引列进行等值比较后可能匹配到多条连续的记录，而不是像主键或者唯一二级索引那样最多只能匹配1条记录，所以这种ref访问方法比const要差些，但是在二级索引等值比较时匹配的记录数较少时的效率还是很高的（如果匹配的二级索引记录太多那么回表的成本就太大了,可能就不走索引处理了）。
 
 ###### range
 
-如果使用索引获取某些范围区间的记录，那么就可能使用到range访问方法，一般就是在你的where语句中出现了between、&#x3c;、>、in等的查询。
+如果使用索引获取某些范围区间的记录，那么就可能使用到range访问方法，一般就是在你的where语句中出现了 `between,<,>,in` 的查询.
 
 这种范围扫描索引扫描比全表扫描要好，因为它只需要开始于索引的某一点，而结束语另一点，不用扫描全部索引。
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE order_no IN ('a', 'b', 'c');
 
@@ -446,7 +457,7 @@ SELECT * FROM s1 WHERE order_no > 'a' AND order_no < 'b';
 
 当我们可以使用索引覆盖，但需要扫描全部的索引记录时，该表的访问方法就是index。
 
-```
+```mysql
 EXPLAIN
 SELECT insert_time FROM s1 WHERE expire_time = '2021-03-22 18:36:47';
 ```
@@ -457,7 +468,7 @@ SELECT insert_time FROM s1 WHERE expire_time = '2021-03-22 18:36:47';
 
 最熟悉的全表扫描，将遍历全表以找到匹配的行
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1;
 ```
@@ -468,23 +479,23 @@ SELECT * FROM s1;
 
 在EXPLAIN 语句输出的执行计划中,possible_keys列表示在某个查询语句中，对某个表执行单表查询时可能用到的索引有哪些，key列表示实际用到的索引有哪些，如果为NULL，则没有使用索引。比方说下边这个查询:。
 
-```
+```mysql
 EXPLAIN SELECT order_note FROM s1 WHERE
 insert_time = '2021-03-22 18:36:47';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117703.png)
 
-上述执行计划的possible keys列的值表示该查询可能使用到u_idx_day_status,idx_insert_time两个索引，然后key列的值是u_idx_day_status，表示经过查询优化器计算使用不同索引的成本后，最后决定使用u_idx_day_status来执行查询比较划算。
+上述执行计划的possible keys列的值表示该查询可能使用到`u_idx_day_status,idx_insert_time`两个索引，然后key列的值是u_idx_day_status，表示经过查询优化器计算使用不同索引的成本后，最后决定使用u_idx_day_status来执行查询比较划算。(这里也可以看到一般二级索引最多只能用1个)
 
 ##### key_len
 
-key_len列表示当优化器决定使用某个索引执行查询时，该索引记录的最大长度，计算方式是这样的：
+key_len列表示当优化器决定使用某个索引执行查询时，该索引列记录的字节最大长度，计算方式是这样的：
 
 对于使用固定长度类型的索引列来说，它实际占用的存储空间的最大长度就是该固定值，对于指定字符集的变长类型的索引列来说，比如某个索引列的类型是VARCHAR(100)，使用的字符集是utf8，那么该列实际占用的最大存储空间就是100 x 3 = 300个字节。
 
-1.索引字段，非NOT NULL，加1个字节。  
-2.定长字段：tinyiny占1个字节、int占4个字节、bitint占8个字节、date占3个字节、datetime占5个字节，char(n)占n个字符。  
+1.索引字段，默认NULL，加1个字节。  
+2.定长字段：tinyiny占1个字节、int占4个字节、bigint占8个字节、date占3个字节、datetime占5个字节，char(n)占n个字符。  
 3.变长字段：varchar(n)占n个字符+2个字节。
 
 4.不同的字符集，一个字符占用的字节数不同：
@@ -494,14 +505,13 @@ key_len列表示当优化器决定使用某个索引执行查询时，该索引�
 - utf8编码，每个字符占用三个字节
 - utf8mb4编码，每个字符占用四个字节
 
-
 如果该索引列可以存储NULL值，则key_len比不可以存储NULL值时多1个字节。
 
 对于变长字段来说，都会有2个字节的空间来存储该变长列的实际长度。
 
 ⽐如下边这个查询：
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE id = 718;
 ```
@@ -512,14 +522,14 @@ SELECT * FROM s1 WHERE id = 718;
 
 对于可变长度的索引列来说，比如下边这个查询:
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE order_no = 'a';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117705.png)
 
-由于order_no列的类型是VARCHAR(50)，所以该列实际最多占用的存储空间就是50*3字节，又因为该列是可变长度列，所以key_len需要加2，所以最后ken_len的值就是152。
+由于order_no列的类型是VARCHAR(50)，所以该列实际最多占用的存储空间就是`50*3`字节，又因为该列是可变长度列，所以key_len需要加2，所以最后ken_len的值就是152。
 
 MySQL在执行计划中输出key_len列主要是为了让我们区分某个使用联合索引的查询具体用了几个索引列(复合索引有最左前缀的特性，如果复合索引能全部使用上，则是复合索引字段的索引长度之和，这也可以用来判定复合索引是否部分使用，还是全部使用)，而不是为了准确的说明针对某个具体存储引擎存储变长字段的实际长度占用的空间到底是占用1个字节还是2个字节。
 
@@ -527,7 +537,7 @@ MySQL在执行计划中输出key_len列主要是为了让我们区分某个使�
 
 如果查询优化器决定使用全表扫描的方式对某个表执行查询时，执行计划的rows列就代表预计需要扫描的行数，如果使用索引来执行查询时，执行计划的rows列就代表预计扫描的索引记录行数。比如下边两个个查询:
 
-```
+```mysql
 EXPLAIN
 SELECT * FROM s1 WHERE order_no > 'z';
 
@@ -537,22 +547,22 @@ SELECT * FROM s1 WHERE order_no > 'a';
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117706.png)
 
-我们看到执行计划的rows列的值是分别是1和10573，这意味着查询优化器在经过分析使用idx_order_no进行查询的成本之后，觉得满足order_no> ' a '这个条件的记录只有1条，觉得满足order_no> ' a '这个条件的记录有10573条。
+我们看到执行计划的rows列的值是分别是1和10573，这意味着查询优化器在经过分析使用idx_order_no进行查询的成本之后，觉得满足`order_no> 'z'`这个条件的记录只有1条，觉得满足`order_no> 'a'`这个条件的记录有10573条。
 
 ##### filtered
 
 查询优化器预测有多少条记录满⾜其余的搜索条件，什么意思呢？看具体的语句：
 
-```
+```mysql
 EXPLAIN SELECT *
 FROM s1 WHERE id > 5890 AND order_note = 'a';
 ```
 
-从执行计划的key列中可以看出来，该查询使用 PRIMARY索引来执行查询，从rows列可以看出满足id > 5890的记录有5286条。执行计划的filtered列就代表查询优化器预测在这5286条记录中，有多少条记录满足其余的搜索条件，也就是order_note = 'a'这个条件的百分比。此处filtered列的值是10.0，说明查询优化器预测在5286条记录中有10.00%的记录满足order_note = 'a'这个条件。
+从执行计划的key列中可以看出来，该查询使用 PRIMARY索引来执行查询，从rows列可以看出满足`id > 5890`的记录有5286条。执行计划的filtered列就代表查询优化器预测在这5286条记录中，有多少条记录满足其余的搜索条件，也就是`order_note = 'a'`这个条件的百分比。此处filtered列的值是10.0，说明查询优化器预测在5286条记录中有10.00%的记录满足`order_note = 'a'`这个条件。
 
 对于单表查询来说，这个filtered列的值没什么意义，我们更关注在连接查询中驱动表对应的执行计划记录的filtered值，比方说下边这个查询:
 
-```
+```mysql
 EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.order_no = s2.order_no WHERE s1.order_note > '你好，李焕英';
 ```
 
@@ -573,7 +583,7 @@ EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.order_no = s2.order_no WHERE s1.ord
 
 1.如果是查询语句（select语句），首先会查询缓存是否已有相应结果，有则返回结果，无则进行下一步（如果不是查询语句，同样调到下一步）
 
-2.解析查询，创建一个内部数据结构（解析树），这个解析树主要用来SQL语句的语义与语法解析；
+2.解析查询，创建一个内部数据结构（解析树），这个解析树主要用来对SQL语句的语义与语法进行解析；
 
 3.优化：优化SQL语句，例如重写查询，决定表的读取顺序，以及选择需要的索引等。这一阶段用户是可以查询的，查询服务器优化器是如何进行优化的，便于用户重构查询和修改相关配置，达到最优化。这一阶段还涉及到存储引擎，优化器会询问存储引擎，比如某个操作的开销信息、是否对特定索引有查询优化等。
 
@@ -585,10 +595,10 @@ EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.order_no = s2.order_no WHERE s1.ord
 
 例如，我们假设id上有主键索引，但是下面这个查询无法使用主键索引:
 
-```
+```mysql
 EXPLAIN SELECT * FROM order_exp WHERE id + 1 = 17;
 ```
-
+![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117709.png)
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117709.png)
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117710.png)

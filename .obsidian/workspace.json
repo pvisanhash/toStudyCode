@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/Mysql性能调优/001数据库基础知识.md",
+                "file": "Note/Mysql性能调优/003MySQL性能优化.md",
                 "mode": "source",
                 "source": false
               }
@@ -93,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/Mysql性能调优/001数据库基础知识.md",
+                "file": "Note/Mysql性能调优/003MySQL性能优化.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/Mysql性能调优/001数据库基础知识.md",
+                "file": "Note/Mysql性能调优/003MySQL性能优化.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/Mysql性能调优/001数据库基础知识.md"
+                "file": "Note/Mysql性能调优/003MySQL性能优化.md"
               }
             }
           }
@@ -158,8 +158,13 @@
   },
   "active": "d1c4c2c2d63f464f",
   "lastOpenFiles": [
-    "Note/Mysql性能调优/006MySQL8新特性.md",
     "Note/Mysql性能调优/002MySQL中的索引.md",
+    "Note/Mysql性能调优/003MySQL性能优化.md",
+    "Note/maven笔记/maven笔记.md",
+    "Note/Markdown笔记/Markdown语法学习.md",
+    "Note/Mysql性能调优/001数据库基础知识.md",
+    "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
+    "Note/Mysql性能调优/006MySQL8新特性.md",
     "Note/Mysql性能调优/006MySQL8新特性~.md",
     "Note/Mysql性能调优/006MySQL8新特性_new.md",
     "Note/Mysql性能调优/MySQL8新特性.md",
@@ -169,8 +174,6 @@
     "Note/Mysql性能调优/004事务和事务的隔离级别.md",
     "Note/Mysql性能调优/事务和事务的隔离级别.md",
     "Note/Mysql性能调优/MySQL中的锁.md",
-    "Note/Mysql性能调优/003MySQL性能优化.md",
-    "Note/Mysql性能调优/001数据库基础知识.md",
     "Note/JUC并发编程/并发编程完整版-01.md",
     "Note/Mysql性能调优/003MySQL性能优化_new.md",
     "Note/Mysql性能调优/002MySQL中的索引_new.md",
@@ -182,12 +185,9 @@
     "Note/JUC并发编程/Java并发编程思维导图.png",
     "Note/docker笔记/Docker.md",
     "Note/git笔记/git.md",
-    "Note/Markdown笔记/Markdown语法学习.md",
     "Template/MetaInfo_Yaml_Template.md",
     "Note/UML笔记/UML.md",
     "Note/zookeeper笔记/Zookeeper.md",
-    "Template/Meeting_Template.md",
-    "Template/Diary_Template.md",
     "Note/源码学习",
     "Note/JUC并发编程/Java并发编程完整版.xmind",
     "未命名.canvas",
