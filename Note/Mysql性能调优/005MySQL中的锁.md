@@ -2,7 +2,9 @@
 
 InnoDB中锁非常多，总的来说，可以如下分类：
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307161240710.png)![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307161238283.png)
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307161240710.png)
+
+![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307161238283.png)
 
 这些锁都是做什么的？具体含义是什么？我们现在来一一学习。
 

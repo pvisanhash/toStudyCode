@@ -401,6 +401,14 @@ MySQL把这种通过主键或者唯一二级索引列来定位一条记录的访
 
 (***驱动表与被驱动表：*** *A**表和B**表join**连接查询，如果通过A**表的结果集作为循环基础数据，然后一条一条地通过该结果集中的数据作为过滤条件到B**表中查询数据，然后合并结果。那么我们称A**表为驱动表，B**表为被驱动表*)
 
+驱动表的定义:
+- 多表关联查询时,第一个被处理的表就是驱动表,使用驱动表去关联其他表.
+- 驱动表的确定非常的关键,会直接影响多表关联的顺序,也决定后续关联查询的性能
+
+驱动表的选择要遵循一个规则:
+- 在对最终的结果集没有影响的前提下,优先选择结果集最小的那张表作为驱动表,即小表驱动大表(虽然时间复杂度一样,但小表数据更小,一般情况下更省内存空间)
+- 在驱动表中用来进行 join 的字段一定要建立索引. 这样可以从 `匹配次数 = 外层表行数 * 内层表行数` , 变成 `匹配次数 = 外层表的行数 * 内层表索引的高度` ，极大的提升了 join的性能。
+
 比方说:
 
 ```mysql
@@ -412,7 +420,7 @@ SELECT * FROM s1 INNER JOIN s2 ON s1.id = s2.id;
 
 从执行计划的结果中可以看出，MySQL打算将s2作为驱动表，s1作为被驱动表，重点关注s1的访问方法是eq_ref，表明在访问s1表的时候可以通过主键的等值匹配来进行访问。
 
-这里其实判断哪个是驱动表,哪个是被驱动表的方法,就是通过explain执行计划来看,type=All的为驱动表,代表是将s2的所有记录拿出来作为条件让s1来过滤,s1就是被驱动表.
+这里其实判断哪个是驱动表,哪个是被驱动表的方法,就是通过explain执行计划来看,一般情况下type=All的为驱动表,代表是将s2的所有记录拿出来作为条件让s1来过滤,s1就是被驱动表.
 
 ###### ref
 
@@ -587,21 +595,22 @@ EXPLAIN SELECT * FROM s1 INNER JOIN s2 ON s1.order_no = s2.order_no WHERE s1.ord
 
 3.优化：优化SQL语句，例如重写查询，决定表的读取顺序，以及选择需要的索引等。这一阶段用户是可以查询的，查询服务器优化器是如何进行优化的，便于用户重构查询和修改相关配置，达到最优化。这一阶段还涉及到存储引擎，优化器会询问存储引擎，比如某个操作的开销信息、是否对特定索引有查询优化等。
 
+从上面可以看到,SQL会先看缓存中是否有数据,如果缓存中有数据就直接返回结果;如果缓存中没有数据,先进行解析查询,分析出语义才进行优化,最后就是执行优化过的SQL,返回结果.
+
 ### 1.3.6.高性能的索引使用策略
 
 #### 1.3.6.1.不在索引列上做任何操作
 
-我们通常会看到一些查询不当地使用索引，或者使得MySQL无法使用已有的索引。如果查询中的列不是独立的，则 MySQL就不会使用索引。“独立的列”是指索引列不能是表达式的一部分，也不能是函数的参数。
+我们通常会看到一些查询不当地使用索引，或者使得MySQL无法使用已有的索引。如果查询中的列不是独立的，则 MySQL就不会使用索引。“独立的列”是指**索引列**不能是表达式的一部分，也不能是函数的参数。
 
 例如，我们假设id上有主键索引，但是下面这个查询无法使用主键索引:
 
 ```mysql
 EXPLAIN SELECT * FROM order_exp WHERE id + 1 = 17;
 ```
-![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117709.png)
+
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117709.png)
 
-![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117710.png)
 
 凭肉眼很容易看出 WHERE中的表达式其实等价于id= 16，但是MySQL无法自动解析这个方程式。这完全是用户行为。我们应该养成简化WHERE条件的习惯，始终将索引列单独放在比较符号的一侧。
 
@@ -609,35 +618,44 @@ EXPLAIN SELECT * FROM order_exp WHERE id + 1 = 17;
 
 在索引列上使用函数，也是无法利用索引的。
 
-```
+```mysql
+-- 查询前一年的记录
 EXPLAIN SELECT * from order_exp WHERE YEAR(insert_time)=YEAR(DATE_SUB(NOW(),INTERVAL 1 YEAR));
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117711.png)
 
-```
+
+```mysql
+-- 如果不用函数,可能会使用索引的列就会有值,但还没用上索引
 EXPLAIN SELECT * from order_exp WHERE insert_time BETWEEN str_to_date('01/01/2021', '%m/%d/%Y') and str_to_date('12/31/2021', '%m/%d/%Y');
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117712.png)
 
+如果我们要用上索引,将查询的`*`改成索引列的字段就行,如下图如示.
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307182321231.png)
+
+
 #### 1.3.6.2.尽量全值匹配
 
-建立了联合索引列后，如果我们的搜索条件中的列和索引列一致的话，这种情况就称为全值匹配，比方说下边这个查找语句：
+建立了联合索引列后，如果我们的**搜索条件中的列**和**索引列**一致的话，这种情况就称为全值匹配，比方说下边这个查找语句：
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117714.png)
 
-```
+```mysql
  EXPLAIN select * from order_exp where insert_time='2021-03-22 18:34:55' and order_status=0 and expire_time='2021-03-22 18:35:14';
 ```
 
-我们建立的u_idx_day_statusr索引包含的3个列在这个查询语句中都展现出来了，联合索引中的三个列都可能被用到。
+我们建立的u_idx_day_statusr索引(唯一索引)包含的3个列在这个查询语句中都展现出来了，联合索引中的三个列都可能被用到。
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117715.png)
 
 有的同学也许有个疑问，WHERE子句中的几个搜索条件的顺序对查询结果有啥影响么？也就是说如果我们调换 `insert_time`, `order_status`, `expire_time`这几个搜索列的顺序对查询的执行过程有影响么？比方说写成下边这样：
 
-```
+```mysql
+-- 这里虽然查询字段为`*`,但联合索引的列全部覆盖了,也是用到了索引
 EXPLAIN select * from order_exp where  order_status=0 and insert_time='2021-03-22 18:34:55'  and expire_time='2021-03-22 18:35:14';
 ```
 
@@ -649,19 +667,21 @@ EXPLAIN select * from order_exp where  order_status=0 and insert_time='2021-03-2
 
 #### 1.3.6.3.最佳左前缀法则
 
-建立了联合索引列，如果搜索条件不够全值匹配怎么办？在我们的搜索语句中也可以不用包含全部联合索引中的列，但要遵守最左前缀法则。指的是查询从索引的最左前列开始并且不跳过索引中的列。
+建立了联合索引列，如果搜索条件不够全值匹配怎么办？在我们的搜索语句中也可以不用包含全部联合索引中的列，但要遵守**最左前缀法则**。指的是查询从索引的最左前列开始并且不跳过索引中的列。
 
 搜索条件中必须出现左边的列才可以使用到这个B+树索引
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117717.png)
 
-```
+```mysql
+-- 索引用到最左边的两个列
 EXPLAIN select * from order_exp where insert_time='2021-03-22 18:23:42' and order_status=1;
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117718.png)
 
-```
+```mysql
+-- 索引用到左边的列
 EXPLAIN select * from order_exp where insert_time='2021-03-22 18:23:42' ;
 ```
 
@@ -669,13 +689,14 @@ EXPLAIN select * from order_exp where insert_time='2021-03-22 18:23:42' ;
 
 搜索条件中没有出现左边的列不可以使用到这个B+树索引
 
-```
+```mysql
+-- 没有从最左边开始,所以过引用不到,其实就是B+树第一个字段就是全表扫
 EXPLAIN SELECT * FROM order_exp WHERE order_status=1;
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117720.png)
 
-```
+```mysql
 EXPLAIN Select * from s1 where order_status=1 and expire_time='2021-03-22 18:35:14';
 ```
 
@@ -687,15 +708,17 @@ EXPLAIN Select * from s1 where order_status=1 and expire_time='2021-03-22 18:35:
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117723.png)
 
-因为B+树的数据页和记录先是按照insert_time列的值排序的，在insert_time列的值相同的情况下才使用order_status列进行排序，也就是说insert_time列的值不同的记录中order_status的值可能是无序的。而现在你跳过insert_time列直接根据order_status的值去查找，怎么可能呢？expire_time也是一样的道理，那如果我就想在只使用expire_time的值去通过B+树索引进行查找咋办呢？这好办，你再对expire_time列建一个B+树索引就行了。
+因为B+树的数据页和记录先是按照insert_time列的值排序的，在insert_time列的值相同的情况下才使用order_status列进行排序，也就是说insert_time列的值不同的记录中order_status的值可能是无序的。而现在你跳过insert_time列直接根据order_status的值去查找，怎么可能有索引呢？expire_time也是一样的道理，那如果我就想在只使用expire_time的值去通过B+树索引进行查找咋办呢？这好办，你再对expire_time列建一个B+树索引就行了。
 
 但是需要特别注意的一点是，如果我们想使用联合索引中尽可能多的列，搜索条件中的各个列必须是联合索引中从最左边连续的列。比方说联合索引u_idx_day_status中列的定义顺序是 `insert_time`, `order_status`, `expire_time`，如果我们的搜索条件中只有insert_time和expire_time，而没有中间的order_status，
 
-```
+```mysql
+-- 索引只会只用到最左边的开始连续的列
 EXPLAIN select * from order_exp where insert_time='2021-03-22 18:23:42' and expire_time='2021-03-22 18:35:14';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117724.png)
+
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117725.png)
 
@@ -709,8 +732,9 @@ EXPLAIN select * from order_exp where insert_time='2021-03-22 18:23:42' and expi
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117726.png)
 
-```
-EXPLAIN select * from order_exp_cut where insert_time>'2021-03-22 18:23:42' and insert_time<'2021-03-22 18:35:00';
+```mysql
+-- 最左边的列是范围的,也能用到索引
+EXPLAIN select * from order_exp_cut where insert_time > '2021-03-22 18:23:42' and insert_time < '2021-03-22 18:35:00';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117727.png)
@@ -725,7 +749,7 @@ EXPLAIN select * from order_exp_cut where insert_time>'2021-03-22 18:23:42' and 
 
 但是如果对多个列同时进行范围查找的话，只有对索引最左边的那个列进行范围查找的时候才能用到B+树索引：
 
-```
+```mysql
 select * from order_exp_cut where insert_time>'2021-03-22 18:23:42' and insert_time<'2021-03-22 18:35:00' and order_status > -1;
 ```
 
@@ -741,7 +765,7 @@ select * from order_exp_cut where insert_time>'2021-03-22 18:23:42' and insert_t
 
 **所以对于一个联合索引来说，虽然对多个列都进行范围查找时只能用到最左边那个索引列，但是如果左边的列是精确查找，则右边的列可以进行范围查找：**
 
-```
+```mysql
 EXPLAIN select * from order_exp_cut
 where insert_time='2021-03-22 18:34:55' and order_status=0 and expire_time>'2021-03-22
 18:23:57' and expire_time<'2021-03-22 18:35:00' ;
@@ -751,7 +775,8 @@ where insert_time='2021-03-22 18:34:55' and order_status=0 and expire_time>'2021
 
 **而中间有范围查询会导致后面的列全部失效，无法充分利用这个联合索引：**
 
-```
+```mysql
+-- 两个列用到了索引
 EXPLAIN select * from order_exp_cut
 where insert_time='2021-03-22 18:23:42' and order_status>-1 and expire_time='2021-03-22
 18:35:14';
@@ -769,19 +794,19 @@ where insert_time='2021-03-22 18:23:42' and order_status>-1 and expire_time='202
 
 由于InnoDB的聚簇索引，覆盖索引对InnoDB表特别有用。InnoDB的二级索引在叶子节点中保存了行的主键值，所以如果二级主键能够覆盖查询，则可以避免对主键索引的二次查询。
 
-尽量使用覆盖索引(只访问索引的查询(索引列和查询列一致))，不是必要的情况下减少select*，除非是需要将表中的全部列检索后，进行缓存。
+尽量使用覆盖索引(只访问索引的查询,索引列和查询列一致)，不是必要的情况下减少 `select *`，除非是需要将表中的全部列检索后，进行缓存。
 
-```
+```mysql
 EXPLAIN  select * from
-order_exp_cut where insert_time='2021-03-22 18:34:55' and order_status=0 and
-expire_time='2021-03-22 18:35:04' ;
+order_exp_cut where insert_time='2021-03-22 18:34:55' and order_status = 0 and
+expire_time = '2021-03-22 18:35:04' ;
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117731.png)
 
-使用具体名称取代*
+使用具体名称取代 `*` ,Extra使用了索引.
 
-```
+```mysql
 EXPLAIN  select expire_time,id from
 order_exp_cut where insert_time='2021-03-22 18:34:55' and order_status=0 and
 expire_time='2021-03-22 18:35:04' ;
@@ -791,13 +816,15 @@ expire_time='2021-03-22 18:35:04' ;
 
 **解释一下Extra中的Using index**
 
-当我们的查询列表以及搜索条件中只包含属于某个索引的列，也就是在可以**使用索引覆盖的情况**下，在Extra列将会提示该额外信息。以上的查询中只需要用到u_idx_day_status而不需要回表操作：
+当我们的**查询列表**以及**搜索条件**中只包含属于某个索引的列，也就是在可以**使用索引覆盖的情况**下，在Extra列将会提示该额外信息。以上的查询中只需要用到u_idx_day_status而不需要**回表**操作：
 
 #### 1.3.6.6.不等于要慎用
 
-mysql 在使用不等于(!= 或者&#x3c;>)的时候无法使用索引会导致全表扫描
+mysql 在使用不等于(`!=`或者`<>`)的时候无法使用索引会导致全表扫描
 
-```
+可以想像,需要确认每个数据是不是不满足
+
+```mysql
 EXPLAIN  SELECT * FROM order_exp WHERE order_no <> 'DD00_6S';
 ```
 
@@ -806,7 +833,7 @@ EXPLAIN  SELECT * FROM order_exp WHERE order_no <> 'DD00_6S';
 **解释一下Extra中的Using where**
 当我们使用全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时，在Extra列中会提示上述额外信息。
 
-#### 1.3.6.7.Null/Not 有影响
+#### 1.3.6.7. Null/Not 有影响
 
 需要注意null/not null对索引的可能影响
 
@@ -814,12 +841,16 @@ EXPLAIN  SELECT * FROM order_exp WHERE order_no <> 'DD00_6S';
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117734.png)
 
-```
+```mysql
 explain SELECT * FROM order_exp WHERE order_no is null;
 explain SELECT * FROM order_exp WHERE order_no is not null;
 ```
 
+由于表字段不为null,但查询时要查为null,肯定无任何数据,自然不会用到索引,并且会提示不可能的where条件.
+
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117735.png)
+
+由于字段不为null,查询条件也不null,相当于没有where条件,查全部数据,自然是全表扫描
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117736.png)
 
@@ -827,7 +858,7 @@ explain SELECT * FROM order_exp WHERE order_no is not null;
 
 **表order_exp_cut的order_no为索引列，同时允许为null，**
 
-```
+```mysql
 explain SELECT * FROM order_exp_cut WHERE order_no is null;
 explain SELECT * FROM order_exp_cut WHERE order_no is not null;
 ```
@@ -840,9 +871,12 @@ is null会走ref类型的索引访问，is not null;依然是全表扫描。所�
 
 is not null容易导致索引失效，is null则会区分被检索的列是否为null，如果是null则会走ref类型的索引访问，如果不为null，也是全表扫描。
 
+也可以看到正常情况下,not非这种一般不走索引,具体还是需要结合explain来查看.
+
 **但是当联合索引上使用时覆盖索引时，情况会有一些不同(order_exp_cut表的order_no可为空)：**
 
-```
+```mysql
+-- 表字段不可为null的情况
 explain SELECT order_status,expire_time FROM order_exp WHERE insert_time is null;
 explain SELECT order_status,expire_time FROM order_exp WHERE insert_time is not null;
 ```
@@ -851,7 +885,10 @@ explain SELECT order_status,expire_time FROM order_exp WHERE insert_time is not 
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117740.png)
 
-```
+在联合索引,表字段不可为null情况下,`is null, is not null`都用到了索引.表字段不为`null`,但`is null`还用到索引,虽然有点反常识,但还是以`explain`执行计划为准.`is not null`肯定是全部数据,但也走了索引,并且key_len更长,一般情况下key_len长用到的字段多,但也看到rows有很多数据.
+
+```mysql
+-- 表字段为null的情况
 explain SELECT order_status,expire_time FROM order_exp_cut WHERE insert_time is null;
 explain SELECT order_status,expire_time FROM order_exp_cut WHERE insert_time is not null;
 ```
@@ -860,33 +897,39 @@ explain SELECT order_status,expire_time FROM order_exp_cut WHERE insert_time is 
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117742.png)
 
-根据system>const>eq_ref>ref>range>index>ALL 的原则，看起来在联合索引中，is not null的表现会更好（如果列可为null的话），但是key_len的长度增加了1。所以总的来说，在设计表时列尽可能的不要声明为null。
+表字段为null且为联合索引情况下,`is null`用到的索引`type == ref` 比 `is not null` 的`type == range`好,
+如果跟表字段不为null比较的话,`is not null`的类型为range虽然比index好,但key_len更小,所以表字段非null更好.
+
+**所以总的来说，在设计表时列尽可能的不要声明为null。**
 
 #### 1.3.6.8.Like查询要当心
 
 like以通配符开头('%abc...')，mysql索引失效会变成全表扫描的操作
 
-```
+```mysql
 explain SELECT * FROM order_exp WHERE order_no like '%_6S';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117743.png)
 
-此时如果使用覆盖索引可以改善这个问题
+此时如果使用覆盖索引可以改善这个问题(减少回表操作)
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117744.png)
 
-```
+```mysql
 explain SELECT order_status,expire_time FROM order_exp_cut WHERE insert_time like '%18:35:09';
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117745.png)
 
+思考:回表操作为什么不好?
+回答:回表操作,根据聚集索引查相关的列数据,此过程查询次数过多,并且如果太多的情况下可能直接扫描表.
+
 #### 1.3.6.9.字符类型加引号
 
 字符串不加单引号索引失效
 
-```
+```mysql
 explain SELECT * FROM order_exp WHERE order_no = 6;
 explain SELECT * FROM order_exp WHERE order_no = '6';
 ```
@@ -895,32 +938,43 @@ explain SELECT * FROM order_exp WHERE order_no = '6';
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117747.png)
 
-MySQL的查询优化器，会自动的进行类型转换，比如上个语句里会尝试将order_no转换为数字后和6进行比较，自然造成索引失效。
+MySQL的查询优化器，会自动的进行类型转换，比如上个语句里会尝试将order_no转换为数字后和6进行比较，自然造成索引失效。这里不是转换值,而是相当于直接给列加了个函数,自然索引失败.
 
 #### 1.3.6.10.使用or关键字时要注意
 
-```
+```mysql
+-- 第一个会用上索引
 explain SELECT * FROM order_exp WHERE order_no = 'DD00_6S' OR order_no = 'DD00_9S';
+-- 第二个不会用上索引
 explain SELECT * FROM order_exp WHERE expire_time= '2021-03-22 18:35:09'  OR order_note = 'abc';
 ```
 
-![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117748.png)
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307190059935.png)
+表现是不一样的，第一个SQL的or是相同列,是索引列,这里相当于产生两个扫描区间，可以使用上索引。
 
-表现是不一样的，第一个SQL的or是相同列，相当于产生两个扫描区间，可以使用上索引。
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307190057179.png)
 
-第二个SQL中or是不同列，并且order_note不是索引。所以只能全表扫描
+
+第二个SQL中or是不同列，expire_time是索引列但order_note不是索引,用or反而导致一个索引没用上,所以只能全表扫描
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307190058692.png)
+
+
+![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307190100294.png)
 
 当然如果两个条件都是索引列，情况会有变化：
 
-```
+```mysql
 explain  SELECT * FROM order_exp WHERE expire_time= '2021-03-22 18:35:09'  OR order_no = 'DD00_6S';
 ```
 
+都是索引列,两个索引或关系,所以二级索引一般是最多1个
+
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117749.png)
 
-这也给了我们提示，如果我们将 SQL改成union all
+这也给了我们提示，如果不能给字段加索引,我们可以将 SQL改成union all
 
-```
+```mysql
 explain SELECT * FROM order_exp WHERE expire_time= '2021-03-22 18:35:09' 
 					union all SELECT * FROM order_exp WHERE order_note = 'abc';
 ```
@@ -929,7 +983,8 @@ explain SELECT * FROM order_exp WHERE expire_time= '2021-03-22 18:35:09'
 
 当然使用覆盖扫描也可以改善这个问题：
 
-```
+```mysql
+-- 覆盖索引也能解决问题
 explain SELECT order_status,id FROM order_exp_cut WHERE insert_time='2021-03-22 18:34:55' or expire_time='2021-03-22 18:28:28';
 ```
 
@@ -937,7 +992,7 @@ explain SELECT order_status,id FROM order_exp_cut WHERE insert_time='2021-03-22 
 
 #### 1.3.6.11.使用索引扫描来做排序和分组
 
-MySQL有两种方式可以生成有序的结果﹔通过排序操作﹔或者按索引顺序扫描施﹔如果EXPLAIN出来的type列的值为“index”，则说明MySQL使用了索引扫描来做排序。
+MySQL有两种方式可以生成有序的结果﹔通过排序操作﹔或者按索引顺序扫描﹔如果EXPLAIN出来的type列的值为“index”，则说明MySQL使用了索引扫描来做排序。
 
 扫描索引本身是很快的，因为只需要从一条索引记录移动到紧接着的下一条记录。但如果索引不能覆盖查询所需的全部列，那就不得不每扫描一条索引记录就都回表查询一次对应的行。这基本上都是随机I/O，因此按索引顺序读取数据的速度通常要比顺序地全表扫描慢，尤其是在IO密集型的工作负载时。
 
@@ -951,11 +1006,11 @@ MySQL可以使用同一个索引既满足排序，又用于查找行。因此，
 
 对于使用联合索引进行排序的场景，我们要求各个排序列的排序顺序是一致的，也就是要么各个列都是ASC规则排序，要么都是DESC规则排序。
 
-**排序列包含非同一个索引的列**
+**排序列包含非同一个索引的列** :
 
 用来排序的多个列不是一个索引里的，这种情况也不能使用索引进行排序
 
-```
+```mysql
 explain
 SELECT * FROM order_exp order by
 order_no,insert_time;
@@ -963,13 +1018,15 @@ order_no,insert_time;
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117753.png)
 
+可以想像需要在两个B+树转移数据才能完成按索引列的排序,显然不可能两个B+树转移数据进行排序.
+
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117754.png)
 
 #### 1.3.6.13.尽可能按主键顺序插入行
 
 最好避免随机的（不连续且值的分布范围非常大）聚簇索引，特别是对于I/O密集型的应用。例如，从性能的角度考虑，使用UUID来作为聚簇索引则会很糟糕，它使得聚簇索引的插入变得完全随机，这是最坏的情况，使得数据没有任何聚集特性。
 
-最简单的方法是使用AUTO_INCREMENT自增列。这样可以保证数据行是按顺序写入，对于根据主键做关联操作的性能也会更好。
+最简单的方法是使用**AUTO_INCREMENT**自增列。这样可以保证数据行是按顺序写入，对于根据主键做关联操作的性能也会更好。
 
 注意到向UUID主键插入行不仅花费的时间更长，而且索引占用的空间也更大。这一方面是由于主键字段更长﹔另一方面毫无疑问是由于页分裂和碎片导致的。
 
@@ -981,26 +1038,26 @@ order_no,insert_time;
 
 因为写入是乱序的，InnoDB不得不频繁地做页分裂操作，以便为新的行分配空间。页分裂会导致移动大量数据，一次插入最少需要修改三个页而不是一个页。
 
-所以使用InnoDB时应该尽可能地按主键顺序插入数据，并且尽可能地使用单调增加的聚簇键的值来插入新行。
+**所以使用InnoDB时应该尽可能地按主键顺序插入数据，并且尽可能地使用单调增加的聚簇键的值来插入新行。**
 
 #### 1.3.6.14.优化Count查询
 
-首先要注意，COUNT()是一个特殊的函数，有两种非常不同的作用:它可以统计某个列值的数量，也可以统计行数。
+首先要注意，`COUNT()`是一个特殊的函数，有两种非常不同的作用:它可以统计某个列值的数量，也可以统计行数。
 
 在统计列值时要求列值是非空的（不统计NULL)。
 
-COUNT()的另一个作用是统计结果集的行数。常用的就是就是当我们使用COUNT(*)。实际上，它会忽略所有的列而直接统计所有的行数。
+`COUNT()`的另一个作用是统计结果集的行数。常用的就是就是当我们使用`COUNT(*)`或`count(1)`。实际上，它会忽略所有的列而直接统计所有的行数。
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117755.png)
 
-```
+```mysql
 select count(*) from test;
 select count(c1) from test;
 ```
 
 ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100146712.png)![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117756.png)
 
-通常来说，COUNT()都需要扫描大量的行（意味着要访问大量数据）才能获得精确的结果，因此是很难优化的。在MySQL层面能做的基本只有索引覆盖扫描了。如果这还不够,就需要考虑修改应用的架构，可以用估算值取代精确值，可以增加汇总表，或者增加类似Redis这样的外部缓存系统。
+通常来说，`COUNT()`都需要扫描大量的行（意味着要访问大量数据）才能获得精确的结果，因此是很难优化的。在MySQL层面能做的基本只有索引覆盖扫描了。如果这还不够,就需要考虑修改应用的架构，可以用估算值取代精确值，可以增加汇总表，或者增加类似Redis这样的外部缓存系统。
 
 #### 1.3.6.15.优化limit分页
 
@@ -1008,7 +1065,8 @@ select count(c1) from test;
 
 一个非常常见又令人头疼的问题就是，在偏移量非常大的时候，例如可能是
 
-```
+```mysql
+-- 虽然是分页了,但需要查10010条数据
 select * from order_exp limit 10000,10;
 ```
 
@@ -1020,20 +1078,21 @@ select * from order_exp limit 10000,10;
 
 会先查询翻页中需要的N条数据的主键值，然后根据主键值回表查询所需要的N条数据，在此过程中查询N条数据的主键id在索引中完成，所以效率会高一些。
 
-```
+```mysql
+-- 使用子查询或关联查询解决
 EXPLAIN SELECT * FROM (select id from order_exp limit 10000,10) b,order_exp
 					a where a.id = b.id;
 ```
 
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117758.png)
 
-从执行计划中可以看出，首先执行子查询中的order_exp表，根据主键做索引全表扫描，然后与a表通过id做主键关联查询，相比传统写法中的全表扫描效率会高一些。
+从执行计划中可以看出，首先执行子查询中的order_exp表(id == 2的)，根据主键做索引全表扫描，然后与a表通过id做主键关联查询，相比传统写法中的全表扫描效率会高一些。
 
 从两种写法上能看出性能有一定的差距，虽然并不明显，但是随着数据量的增大，两者执行的效率便会体现出来。
 
 上面的写法虽然可以达到一定程度的优化，但还是存在性能问题。最佳的方式是在业务上进行配合修改为以下语句：
 
-```
+```mysql
 EXPLAIN select * from order_exp where id > 67 order by id limit 10;
 ```
 
@@ -1045,8 +1104,7 @@ EXPLAIN select * from order_exp where id > 67 order by id limit 10;
 
 对于Null到底算什么，存在着分歧：
 
-1、有的认为NULL值代表一个未确定的值，MySQL认为任何和NULL值做比较的表达式的值都为NULL，包括select
-null=null和select null!=null;
+1、有的认为NULL值代表一个未确定的值，MySQL认为任何和NULL值做比较的表达式的值都为NULL，包括`select null=null`和`select null!=null`;
 
 ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100147887.png)![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202307100117760.png)
 
