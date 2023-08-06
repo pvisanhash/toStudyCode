@@ -738,6 +738,13 @@ git merge [远程库地址别名/远程分支名]
   ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248278.png)
 
 
+### 13.5. 多台电脑同步github SSH Key认证信息
+
+1. 复制生成的私钥与公钥
+2. 将新电脑生成新的私钥与公钥
+3. 将复制的私钥与公钥覆盖新电脑生成的
+4. 查看新电脑的私钥与公钥的文件权限是否正确,id_rsa是600，id_rsa.pub是644
+
 
 ## 14. 和Idea集成git
 

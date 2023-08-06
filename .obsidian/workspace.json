@@ -11,14 +11,11 @@
             "id": "f39f6618dddcfbe4",
             "type": "leaf",
             "state": {
-              "type": "canvas",
+              "type": "markdown",
               "state": {
-                "file": "未命名.canvas",
-                "viewState": {
-                  "x": 0,
-                  "y": 0,
-                  "zoom": 0
-                }
+                "file": "Note/git笔记/git.md",
+                "mode": "source",
+                "source": false
               }
             }
           }
@@ -76,8 +73,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -97,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "未命名.canvas",
+                "file": "Note/git笔记/git.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -114,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "未命名.canvas",
+                "file": "Note/git笔记/git.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -137,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "未命名.canvas"
+                "file": "Note/git笔记/git.md"
               }
             }
           }
@@ -162,8 +158,10 @@
   },
   "active": "f39f6618dddcfbe4",
   "lastOpenFiles": [
-    "Note/Mysql性能调优/003MySQL性能优化.md",
+    "Note/git笔记/git实战-命令行.md",
+    "Note/git笔记/git.md",
     "未命名.canvas",
+    "Note/Mysql性能调优/003MySQL性能优化.md",
     "Note/Mysql性能调优/010MySQL的执行原理-2_new.md",
     "Note/Mysql性能调优/009MySQL的执行原理-1_new.md",
     "Note/Mysql性能调优/008MySQL中的系统库_new.md",
@@ -187,7 +185,6 @@
     "Note/Mysql性能调优/004事务和事务的隔离级别_new.md",
     "Note/Mysql性能调优/事务和事务的隔离级别.md",
     "Note/Mysql性能调优/MySQL中的锁.md",
-    "Note/JUC并发编程/并发编程完整版-01.md",
     "Note/Mysql性能调优",
     "Note/Mysql调优",
     "Note/untitled folder",
