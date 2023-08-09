@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/git笔记/git.md",
+                "file": "Note/Markdown笔记/Markdown语法学习.md",
                 "mode": "source",
                 "source": false
               }
@@ -93,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/git笔记/git.md",
+                "file": "Note/Markdown笔记/Markdown语法学习.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/git笔记/git.md",
+                "file": "Note/Markdown笔记/Markdown语法学习.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/git笔记/git.md"
+                "file": "Note/Markdown笔记/Markdown语法学习.md"
               }
             }
           }
@@ -158,8 +158,12 @@
   },
   "active": "f39f6618dddcfbe4",
   "lastOpenFiles": [
-    "Note/git笔记/git实战-命令行.md",
+    "Note/linux笔记/Ref/linux-study-path-image.png",
+    "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
+    "Note/linux笔记/Ref",
+    "Note/linux笔记/untitled folder",
     "Note/git笔记/git.md",
+    "Note/git笔记/git实战-命令行.md",
     "未命名.canvas",
     "Note/Mysql性能调优/003MySQL性能优化.md",
     "Note/Mysql性能调优/010MySQL的执行原理-2_new.md",
@@ -184,7 +188,6 @@
     "Note/Mysql性能调优/005MySQL中的锁_new.md",
     "Note/Mysql性能调优/004事务和事务的隔离级别_new.md",
     "Note/Mysql性能调优/事务和事务的隔离级别.md",
-    "Note/Mysql性能调优/MySQL中的锁.md",
     "Note/Mysql性能调优",
     "Note/Mysql调优",
     "Note/untitled folder",
