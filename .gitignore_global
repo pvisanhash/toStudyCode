@@ -25,4 +25,5 @@ hs_err_pid*
 # hidden file
 */.DS_Store
 .DS_Store
-.canvas
+# 不知哪里冒出的文件
+*.canvas
