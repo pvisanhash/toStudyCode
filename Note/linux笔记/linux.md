@@ -2,6 +2,12 @@
 
 # Linux
 
+
+
+![Linux学习路径图](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202308092253781.png)
+
+
+
 ## 1. linux的读法
 
 * **里纽克斯**
