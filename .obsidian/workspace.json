@@ -11,11 +11,9 @@
             "id": "f39f6618dddcfbe4",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "pdf",
               "state": {
-                "file": "Note/Markdown笔记/Markdown语法学习.md",
-                "mode": "source",
-                "source": false
+                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf"
               }
             }
           }
@@ -93,7 +91,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/Markdown笔记/Markdown语法学习.md",
+                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +108,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/Markdown笔记/Markdown语法学习.md",
+                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +131,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/Markdown笔记/Markdown语法学习.md"
+                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf"
               }
             }
           }
@@ -158,6 +156,8 @@
   },
   "active": "f39f6618dddcfbe4",
   "lastOpenFiles": [
+    "Note/linux笔记/linux笔记.md",
+    "Note/Markdown笔记/Markdown语法学习.md",
     "Note/linux笔记/Ref/linux-study-path-image.png",
     "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
     "Note/linux笔记/Ref",
@@ -179,7 +179,6 @@
     "Note/Mysql性能调优/004事务和事务的隔离级别.md",
     "Note/Mysql性能调优/005MySQL中的锁.md",
     "Note/maven笔记/maven笔记.md",
-    "Note/Markdown笔记/Markdown语法学习.md",
     "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
     "Note/Mysql性能调优/006MySQL8新特性.md",
     "Note/Mysql性能调优/006MySQL8新特性~.md",
