@@ -11,9 +11,11 @@
             "id": "f39f6618dddcfbe4",
             "type": "leaf",
             "state": {
-              "type": "pdf",
+              "type": "markdown",
               "state": {
-                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf"
+                "file": "Note/Vim笔记/Vim.md",
+                "mode": "source",
+                "source": false
               }
             }
           }
@@ -91,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
+                "file": "Note/Vim笔记/Vim.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -108,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
+                "file": "Note/Vim笔记/Vim.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -131,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf"
+                "file": "Note/Vim笔记/Vim.md"
               }
             }
           }
@@ -154,12 +156,15 @@
       "workspaces:管理工作区布局": false
     }
   },
-  "active": "f39f6618dddcfbe4",
+  "active": "d1c4c2c2d63f464f",
   "lastOpenFiles": [
+    "Note/Vim笔记",
+    "Note/linux笔记/linux.md",
+    "Note/Vim笔记/Vim.md",
+    "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
     "Note/linux笔记/linux笔记.md",
     "Note/Markdown笔记/Markdown语法学习.md",
     "Note/linux笔记/Ref/linux-study-path-image.png",
-    "Note/linux笔记/Ref/详解 Linux 帮助命令 - 知乎.pdf",
     "Note/linux笔记/Ref",
     "Note/linux笔记/untitled folder",
     "Note/git笔记/git.md",
@@ -184,9 +189,6 @@
     "Note/Mysql性能调优/006MySQL8新特性~.md",
     "Note/Mysql性能调优/006MySQL8新特性_new.md",
     "Note/Mysql性能调优/MySQL8新特性.md",
-    "Note/Mysql性能调优/005MySQL中的锁_new.md",
-    "Note/Mysql性能调优/004事务和事务的隔离级别_new.md",
-    "Note/Mysql性能调优/事务和事务的隔离级别.md",
     "Note/Mysql性能调优",
     "Note/Mysql调优",
     "Note/untitled folder",
