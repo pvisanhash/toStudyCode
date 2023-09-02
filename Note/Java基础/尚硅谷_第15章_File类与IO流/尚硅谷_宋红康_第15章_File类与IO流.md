@@ -25,7 +25,7 @@
 
 ### 1.2 构造器
 
-* `public File(String pathname) ` ：以pathname为路径创建File对象，可以是绝对路径或者相对路径，如果pathname是相对路径，则默认的当前路径在系统属性user.dir中存储。
+* `public File(String pathname) ` ：以pathname为路径创建File对象，可以是绝对路径或者相对路径，如果pathname是相对路径，则默认的当前路径在系统属性user.dir中存储(通过`System.getProperty("user.dir")`获取)。
 * `public File(String parent, String child) ` ：以parent为父路径，child为子路径创建File对象。
 * `public File(File parent, String child)` ：根据一个父File对象和子文件路径创建File对象
 
@@ -164,6 +164,7 @@ public class FileInfoMethod {
 文件长度:636字节
 文件最后修改时间：2022-07-23T22:01:32.065
 
+## 注意这里目录也有长度了,因为File对象映射到真实的文件或目录就会使用它的属性
 目录构造路径:d:\aaa
 目录名称:aaa
 目录长度:4096字节
@@ -240,11 +241,11 @@ d:\aaa 文件?:false
 d:\aaa 目录?:true
 ```
 
-> 如果文件或目录不存在，那么exists()、isFile()和isDirectory()都是返回true
+> 如果文件或目录不存在，那么exists()、isFile()和isDirectory()都是返回false
 
 #### 5、创建、删除功能
 
-- `public boolean createNewFile()` ：创建文件。若文件存在，则不创建，返回false。
+- `public boolean createNewFile()` ：创建文件。若文件已存在，则不创建，返回false。
 - `public boolean mkdir()` ：创建文件目录。如果此文件目录存在，就不创建了。如果此文件目录的上层目录不存在，也不创建。
 - `public boolean mkdirs()` ：创建文件目录。如果上层文件目录不存在，一并创建。
 - `public boolean delete()` ：删除文件或者文件夹
@@ -480,11 +481,14 @@ public class ListFilesTest {
   - **输出流** ：把数据从`内存` 中写出到`其他设备`上的流。
     - 以OutputStream、Writer结尾
 
-- 按操作数据单位的不同分为：**字节流（8bit）**和**字符流（16bit）**。
+- 按操作数据单位的不同分为：**字节流（8bit）** 和 **字符流（16bit）**。
   - **字节流** ：以字节为单位，读写数据的流。
     - 以InputStream、OutputStream结尾
   - **字符流** ：以字符为单位，读写数据的流。
     - 以Reader、Writer结尾
+
+思考: 为什么字符流的字符统一为16bit?
+答:因为java统一使用unicode码作为字符集,统一设定char为2个字符
 
 - 根据IO流的角色不同分为：**节点流**和**处理流**。
   - **节点流**：直接从数据源或目的地读写数据
@@ -514,6 +518,7 @@ public class ListFilesTest {
 
 **常用的节点流：** 　
 
+注意这里说的是节点流
 * 文件流： FileInputStream、FileOutputStrean、FileReader、FileWriter 
 * 字节/字符数组流： ByteArrayInputStream、ByteArrayOutputStream、CharArrayReader、CharArrayWriter 
   * 对数组进行处理的节点流（对应的不再是文件，而是内存中的一个数组）。
@@ -527,7 +532,7 @@ public class ListFilesTest {
 * 对象流：ObjectInputStream、ObjectOutputStream
   * 作用：提供直接读写Java对象功能
 
-## 3. 节点流之一：FileReader\FileWriter
+## 3. 节点流之一：FileReader\\FileWriter
 
 ### 3.1 Reader与Writer
 
@@ -560,7 +565,7 @@ Java提供一些字符流类，以字符为单位读写数据，专门用于处�
 - `public void flush() `：刷新该流的缓冲。  
 - `public void close()` ：关闭此流。
 
-> 注意：当完成流的操作时，必须调用close()方法，释放系统资源，否则会造成内存泄漏。
+> 注意：当完成流的操作时，必须调用close()方法，释放系统资源，否则会造成内存泄漏。该方法同时也会将内存中的数据写出到文件中.
 
 ### 3.2 FileReader 与 FileWriter
 
@@ -571,7 +576,7 @@ Java提供一些字符流类，以字符为单位读写数据，专门用于处�
 - `FileReader(File file)`： 创建一个新的 FileReader ，给定要读取的File对象。   
 - `FileReader(String fileName)`： 创建一个新的 FileReader ，给定要读取的文件的名称。  
 
-**举例：**读取hello.txt文件中的字符数据，并显示在控制台上
+**举例：** 读取hello.txt文件中的字符数据，并显示在控制台上
 
 ```java
 /**
@@ -805,7 +810,7 @@ public class FWWrite {
 
 ### 3.3  关于flush（刷新）
 
-因为内置缓冲区的原因，如果FileWriter不关闭输出流，无法写出字符到文件中。但是关闭的流对象，是无法继续写出数据的。如果我们既想写出数据，又想继续使用流，就需要`flush()` 方法了。
+因为内置缓冲区的原因，如果FileWriter不关闭输出流，无法写出字符到文件中。但是关闭的流对象是无法继续写出数据的。如果我们既想写出数据，又想继续使用流，就需要`flush()` 方法了。
 
 - `flush()` ：刷新缓冲区，流对象可以继续使用。
 - `close() `：先刷新缓冲区，然后通知系统释放资源。流对象不可以再被使用了。
@@ -836,7 +841,7 @@ public class FWWriteFlush {
 }
 ```
 
-## 4. 节点流之二：FileInputStream\FileOutputStream
+## 4. 节点流之二：FileInputStream\\FileOutputStream
 
 如果我们读取或写出的数据是非文本文件，则Reader、Writer就无能为力了，必须使用字节流。
 
@@ -864,7 +869,6 @@ public class FWWriteFlush {
 - `public void close()` ：关闭此输出流并释放与此流相关联的任何系统资源。  
 
 > 说明：close()方法，当完成流的操作时，必须调用此方法，释放系统资源。
->
 
 ### 4.2 FileInputStream 与 FileOutputStream
 
@@ -1890,7 +1894,7 @@ ObjectInputStream ois = new ObjectInputStream(fis);
 
 ### 7.4 如何实现序列化机制
 
-如果需要让某个对象支持序列化机制，则必须让对象所属的类及其属性是可序列化的，为了让某个类是可序列化的，该类必须实现`java.io.Serializable ` 接口。`Serializable` 是一个`标记接口`，不实现此接口的类将不会使任何状态序列化或反序列化，会抛出`NotSerializableException` 。
+如果需要让某个对象支持序列化机制，则必须让对象所属的类及其属性是可序列化的，为了让某个类是可序列化的，该类必须实现`java.io.Serializable ` 接口。`Serializable` 是一个`标记接口`，不实现此接口的类将不会使任何状态序列化或反序列化，并会抛出`NotSerializableException` 。
 
 * 如果对象的某个属性也是引用数据类型，那么如果该属性也要序列化的话，也要实现`Serializable` 接口
 * 该类的所有属性必须是可序列化的。如果有一个属性不需要可序列化的，则该属性必须注明是瞬态的，使用`transient` 关键字修饰。
@@ -2327,7 +2331,7 @@ public class MyInput {
   - PrintStream(File file) ：创建具有指定文件且不带自动行刷新的新打印流。 
   - PrintStream(File file, String csn)：创建具有指定文件名称和字符集且不带自动行刷新的新打印流。 
   - PrintStream(OutputStream out) ：创建新的打印流。 
-  - PrintStream(OutputStream out, boolean autoFlush)：创建新的打印流。 autoFlush如果为 true，则每当写入 byte 数组、调用其中一个 println 方法或写入换行符或字节 ('\n') 时都会刷新输出缓冲区。
+  - PrintStream(OutputStream out, boolean autoFlush)：创建新的打印流。 autoFlush如果为 true，则每当写入 byte 数组、调用其中一个 println 方法或写入换行符或字节 (`\n`) 时都会刷新输出缓冲区。
   - PrintStream(OutputStream out, boolean autoFlush, String encoding) ：创建新的打印流。 
   - PrintStream(String fileName)：创建具有指定文件名称且不带自动行刷新的新打印流。 
   - PrintStream(String fileName, String csn) ：创建具有指定文件名称和字符集且不带自动行刷新的新打印流。
@@ -2355,6 +2359,8 @@ public class TestPrintStream {
 
 - 代码举例2
 
+相当于将sout输出重定向到文件了.
+
 ```java
 PrintStream ps = null;
 try {
@@ -2362,6 +2368,7 @@ try {
     // 创建打印输出流,设置为自动刷新模式(写入换行符或字节 '\n' 时都会刷新输出缓冲区)
     ps = new PrintStream(fos, true);
     if (ps != null) {// 把标准输出流(控制台输出)改成文件
+		// 重新设置系统输出流,相当于标准输出流重定向到本地文件
         System.setOut(ps);
     }
     for (int i = 0; i <= 255; i++) { // 输出ASCII字符
