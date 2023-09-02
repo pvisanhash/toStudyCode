@@ -28,4 +28,4 @@ hs_err_pid*
 # 不知哪里冒出的文件
 *.canvas
 # obsidian目录
-.obsidian
+.obsidian/*

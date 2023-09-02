@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
+                "file": "Note/git笔记/git.md",
                 "mode": "source",
                 "source": false
               }
@@ -48,7 +48,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "ignore",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": true,
@@ -73,7 +73,8 @@
               "state": {}
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -93,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
+                "file": "Note/git笔记/git.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +111,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
+                "file": "Note/git笔记/git.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +134,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md"
+                "file": "Note/git笔记/git.md"
               }
             }
           }
@@ -156,10 +157,10 @@
       "workspaces:Manage workspace layouts": false
     }
   },
-  "active": "f39f6618dddcfbe4",
+  "active": "83776c1483856c91",
   "lastOpenFiles": [
-    "Note/Java基础/尚硅谷_第16章_网络编程/尚硅谷_宋红康_第16章_网络编程.md",
     "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
+    "Note/Java基础/尚硅谷_第16章_网络编程/尚硅谷_宋红康_第16章_网络编程.md",
     "Note/Vim笔记/Vim.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（下）.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（上）.md",
