@@ -2154,11 +2154,11 @@ public class Employee implements Serializable {
 
 ### 8.1 标准输入、输出流
 
-- System.in和System.out分别代表了系统标准的输入和输出设备
+- System.in和System.out分别代表了系统标准输入流和系统标准输出流
 - 默认输入设备是：键盘，输出设备是：显示器
 - System.in的类型是InputStream
 - System.out的类型是PrintStream，其是OutputStream的子类FilterOutputStream 的子类
-- 重定向：通过System类的setIn，setOut方法对默认设备进行改变。
+- 重定向：通过`System类`的`setIn，setOut方法`对默认设备进行改变。
   - public static void setIn(InputStream in)
   - public static void setOut(PrintStream out)
 
@@ -2310,8 +2310,6 @@ public class MyInput {
 ### 8.2 打印流
 
 - 实现将基本数据类型的数据格式转化为字符串输出。
-
-
 - 打印流：`PrintStream`和`PrintWriter`
   - 提供了一系列重载的print()和println()方法，用于多种数据类型的输出
 
@@ -2321,7 +2319,7 @@ public class MyInput {
 
   - PrintStream和PrintWriter的输出不会抛出IOException异常
 
-  - PrintStream和PrintWriter有自动flush功能
+  - PrintStream和PrintWriter可以有自动flush功能
 
   - PrintStream 打印的所有字符都使用平台的默认字符编码转换为字节。在需要写入字符而不是写入字节的情况下，应该使用 PrintWriter 类。
 
@@ -2338,7 +2336,6 @@ public class MyInput {
 
 - 代码举例1
 
-
 ```java
 package com.atguigu.systemio;
 
@@ -2348,6 +2345,7 @@ import java.io.PrintStream;
 public class TestPrintStream {
     public static void main(String[] args) throws FileNotFoundException {
         PrintStream ps = new PrintStream("io.txt");
+        // 这里相当于将内存的数据转成字节流输出到文件中了
         ps.println("hello");
         ps.println(1);
         ps.println(1.5);
@@ -2359,7 +2357,7 @@ public class TestPrintStream {
 
 - 代码举例2
 
-相当于将sout输出重定向到文件了.
+以下方法相当于将sout输出重定向到文件了.
 
 ```java
 PrintStream ps = null;
@@ -2399,7 +2397,7 @@ public class Logger {
      */
     public static void log(String msg) {
         try {
-            // 指向一个日志文件
+            // 指向一个日志文件,FileOutputStream以append的方式写入数据
             PrintStream out = new PrintStream(new FileOutputStream("log.txt", true));
             // 改变输出方向
             System.setOut(out);
@@ -2463,7 +2461,9 @@ public class TestScanner {
             }
             ps.println(str);
         }
+        // 注意scanner也要关闭
         input.close();
+        // 关闭打印流
         ps.close();
     }
     
