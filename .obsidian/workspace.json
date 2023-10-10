@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
+                "file": "Note/Mysql性能调优/001数据库基础知识.md",
                 "mode": "source",
                 "source": false
               }
@@ -93,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
+                "file": "Note/Mysql性能调优/001数据库基础知识.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
+                "file": "Note/Mysql性能调优/001数据库基础知识.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md"
+                "file": "Note/Mysql性能调优/001数据库基础知识.md"
               }
             }
           }
@@ -142,26 +142,38 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 267.5
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:Open quick switcher": false,
-      "graph:Open graph view": false,
-      "canvas:Create new canvas": false,
-      "daily-notes:Open today's daily note": false,
-      "templates:Insert template": false,
-      "command-palette:Open command palette": false,
-      "random-note:Open random note": false,
-      "workspaces:Manage workspace layouts": false
+      "canvas:新建白板": false,
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "random-note:开始漫游笔记": false,
+      "workspaces:管理工作区布局": false
     }
   },
-  "active": "f39f6618dddcfbe4",
+  "active": "d1c4c2c2d63f464f",
   "lastOpenFiles": [
+    "Note/Mysql性能调优/004事务和事务的隔离级别.md",
+    "Note/Mysql性能调优/006MySQL8新特性.md",
+    "Note/Mysql性能调优/009MySQL的执行原理-1.md",
+    "Note/Mysql性能调优/008MySQL中的系统库.md",
+    "Note/Mysql性能调优/007MySQL体系架构.md",
+    "Note/Mysql性能调优/003MySQL性能优化.md",
+    "Note/Mysql性能调优/001数据库基础知识.md",
+    "Note/源码学习/Java相关源码学习.md",
+    "Note/zookeeper笔记/Zookeeper.md",
+    "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
     "Note/Vim笔记/Vim.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（下）.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（上）.md",
     "Note/Java基础/尚硅谷_第17章_反射机制/尚硅谷_宋红康_第17章_反射机制.md",
+    "Note/Java基础/尚硅谷_第16章_网络编程/尚硅谷_宋红康_第16章_网络编程.md",
+    "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
     "Note/Java基础/尚硅谷_第14章_数据结构与集合源码/尚硅谷_宋红康_第14章_数据结构与集合源码.md",
     "Note/Java基础/尚硅谷_第13章_泛型/尚硅谷_宋红康_第13章_泛型.md",
     "Note/Java基础/尚硅谷_第12章_集合框架/尚硅谷_宋红康_第12章_集合框架.md",
@@ -173,11 +185,6 @@
     "Note/Java基础/尚硅谷_第08章_面向对象编程（高级）/尚硅谷_宋红康_第08章_面向对象编程（高级）.md",
     "Note/Java基础/尚硅谷_第05章_数组/尚硅谷_宋红康_第05章_数组.md",
     "Note/Java基础/尚硅谷_第06章_面向对象编程（基础）/尚硅谷_宋红康_第06章_面向对象编程（基础）.pdf",
-    "Note/Java基础/尚硅谷_第04章_IDEA的安装与使用/尚硅谷_宋红康_第04章_IDEA的安装与使用（下）.md",
-    "Note/Java基础/尚硅谷_第04章_IDEA的安装与使用/尚硅谷_宋红康_第04章_IDEA的安装与使用（上）.md",
-    "Note/Java基础/尚硅谷_第04章_IDEA的安装与使用/尚硅谷_宋红康_IntelliJ IDEA 常用快捷键一览表.md",
-    "Note/Java基础/尚硅谷_第02章_变量与运算符/尚硅谷_宋红康_第02章_变量与运算符.md",
-    "Note/Java基础/尚硅谷_第01章_Java语言概述/尚硅谷_宋红康_第01章_Java语言概述.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性",
     "Note/Java基础/尚硅谷_第17章_反射机制",
     "Note/Java基础/尚硅谷_第16章_网络编程",
@@ -187,10 +194,6 @@
     "Note/Java基础/尚硅谷_第12章_集合框架",
     "Note/Java基础/尚硅谷_第11章_常用类和基础API",
     "Note/Java基础/尚硅谷_第10章_多线程",
-    "Note/UML笔记/UML.md",
-    "Note/linux笔记/linux.md",
-    "Note/linux笔记/linux笔记.md",
-    "Note/Markdown笔记/Markdown语法学习.md",
     "Note/linux笔记/Ref/linux-study-path-image.png",
     "未命名.canvas",
     "Note/JUC并发编程/Java并发编程思维导图.png"
