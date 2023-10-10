@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Note/Vim笔记/Vim.md",
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
                 "mode": "source",
                 "source": false
               }
@@ -93,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Note/Vim笔记/Vim.md",
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Note/Vim笔记/Vim.md",
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Note/Vim笔记/Vim.md"
+                "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md"
               }
             }
           }
@@ -158,6 +158,7 @@
   },
   "active": "f39f6618dddcfbe4",
   "lastOpenFiles": [
+    "Note/Vim笔记/Vim.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（下）.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（上）.md",
     "Note/Java基础/尚硅谷_第17章_反射机制/尚硅谷_宋红康_第17章_反射机制.md",
@@ -189,7 +190,6 @@
     "Note/Java基础/尚硅谷_第11章_常用类和基础API",
     "Note/Java基础/尚硅谷_第10章_多线程",
     "Note/UML笔记/UML.md",
-    "Note/Vim笔记/Vim.md",
     "Note/linux笔记/linux.md",
     "Note/linux笔记/linux笔记.md",
     "Note/Markdown笔记/Markdown语法学习.md",

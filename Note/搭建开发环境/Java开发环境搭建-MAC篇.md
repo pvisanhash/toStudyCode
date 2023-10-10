@@ -128,6 +128,26 @@ source ~/.bash_profile
 
 安装IDEA 并 激活后 ，进行全局配置：文件encoding , annotation processing , git , maven
 
+### 激活Idea
+
+### 无限重置试用期方法
+
+[参考链接](https://youwu.today/blog/jetbrains-evaluate-reset/#%E8%AF%95%E7%94%A8%E8%BF%87%E6%9C%9F%E4%BF%AE%E5%A4%8D---202122-%E7%89%88%E6%9C%AC%E4%B9%8B%E5%89%8D)
+
+针对Idea版本为2021.2.2及之前的版本,我们可以使用`IDE Eval Reset`插件无限重置为30天试用
+
+如果超过30天没有打开Idea我们可以通过如下的方法进入Idea,试用授权文件位于程序配置目录下的 _eval_ 文件夹.程序配置目录如下:
+
+```properties
+windows：`%userprofile%/AppData/Roaming/JetBrains/产品名版本号`
+
+macos: `~/Library/ApplicationSupport/JetBrains/产品名版本号`
+
+linux: `~/.config/JetBrains/产品名版本号`
+```
+
+将程序配置路径下的 _eval_ 文件夹 重命名或者删除后，重启程序即可。
+
 ## 安装mysql
 
 打开官网，下载社区版https://www.mysql.com/cn/
