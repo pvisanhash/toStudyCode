@@ -13,11 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-<<<<<<< HEAD
                 "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
-=======
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
->>>>>>> 720c681d95725775c3317bbd56fb92a3d3c71377
                 "mode": "source",
                 "source": false
               }
@@ -97,11 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-<<<<<<< HEAD
                 "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
-=======
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
->>>>>>> 720c681d95725775c3317bbd56fb92a3d3c71377
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,11 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-<<<<<<< HEAD
                 "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md",
-=======
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
->>>>>>> 720c681d95725775c3317bbd56fb92a3d3c71377
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -145,11 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-<<<<<<< HEAD
                 "file": "Note/搭建开发环境/Java开发环境搭建-MAC篇.md"
-=======
-                "file": "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md"
->>>>>>> 720c681d95725775c3317bbd56fb92a3d3c71377
               }
             }
           }
@@ -174,12 +158,6 @@
   },
   "active": "f39f6618dddcfbe4",
   "lastOpenFiles": [
-<<<<<<< HEAD
-=======
-    "Note/git笔记/git.md",
-    "Note/Java基础/尚硅谷_第15章_File类与IO流/尚硅谷_宋红康_第15章_File类与IO流.md",
-    "Note/Java基础/尚硅谷_第16章_网络编程/尚硅谷_宋红康_第16章_网络编程.md",
->>>>>>> 720c681d95725775c3317bbd56fb92a3d3c71377
     "Note/Vim笔记/Vim.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（下）.md",
     "Note/Java基础/尚硅谷_第18章_JDK8-17新特性/尚硅谷_宋红康_第18章_JDK8-17新特性（上）.md",
