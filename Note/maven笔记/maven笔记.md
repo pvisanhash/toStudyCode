@@ -1024,11 +1024,11 @@ archetype = 原型，骨架
 
 ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221815.png)
 
-这里改成了 E:\javamaven\src\main\webapp\WEB-INF\web.xml ,即在src/main下创建webapp文件夹
+这里改成了 `E:\javamaven\src\main\webapp\WEB-INF\web.xml` ,即在`src/main`下创建`webapp文件夹`
 
 ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221816.png)
 
-这里是： E:\javamaven\src\main\webapp\，即src/main/webapp是web根目录
+这里是： `E:\javamaven\src\main\webapp\`，即`src/main/webapp`是web根目录
 
 ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042221817.png)
 

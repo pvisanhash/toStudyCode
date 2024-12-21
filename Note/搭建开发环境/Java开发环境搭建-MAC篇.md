@@ -141,7 +141,7 @@ source ~/.bash_profile
 ```properties
 windows：`%userprofile%/AppData/Roaming/JetBrains/产品名版本号`
 
-macos: `~/Library/ApplicationSupport/JetBrains/产品名版本号`
+macos: `~/Library/Application Support/JetBrains/产品名版本号`
 
 linux: `~/.config/JetBrains/产品名版本号`
 ```
