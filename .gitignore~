@@ -30,5 +30,3 @@ hs_err_pid*
 # obsidian目录
 /.obsidian/
 /.idea/
-# obsidian布布局
-.base
