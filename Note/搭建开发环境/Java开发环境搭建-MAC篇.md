@@ -63,7 +63,19 @@ source ~/.bash_profile
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-如果遇到网络原因安装失败可以通过如下的方法解决
+安装成功后查看homebrew版本
+
+```bash
+brew --version
+```
+
+更新homebrew
+
+```bash
+brew update
+```
+
+如果遇到网络原因安装失败可以通过如下的方法解决(可以考虑将clash打开global代理)
 
 1 )只是单次在终端使用代理键入以下命令，关闭终端会话则清理代理
 
@@ -93,6 +105,70 @@ sudo vim /etc/hosts
 199.232.28.133  raw.githubusercontent.com
 
 3 ) 使用国内gitee源的命令进行安装
+
+## 安装Python3
+
+安装homebrew时会默认安装python3
+
+> Homebrew Python 就是 CPython，只是通过 Homebrew 包管理器来安装和管理，更方便 macOS 开发者使用
+
+安装完毕查看python3版本
+
+```bash
+python3 --version
+```
+
+查看python3包管理工具pip3版本
+
+```bash
+pip3 --version
+```
+
+配置环境变量 vim ~/.bash_profile
+
+```bash
+export PATH="/usr/local/bin:$PATH"
+```
+
+刷新配置环境变量
+
+```bash
+source ~.bash_profile
+```
+
+
+更新版本
+
+```bash
+brew upgrade python
+pip3 install --upgrade pip
+```
+
+## 安装Pycharm
+
+
+如果显示pycharm已损坏,通过如下的方式来修复
+
+先确定你的电脑任何来源是否已经打开(系统偏好设置-安全与隐私-安全性-任何来源)
+如果没有，先开任何来源，方法如下：
+复制指令到终端粘贴回车运行
+
+```bash
+sudo spctl --master-disable
+```
+
+再到(系统偏好设置-安全与隐私-安全性-任何来源)看看如何已经开启任何来源。
+再修复一下就好了，修复方法如下：
+
+复制指令(这条命令是用来 **移除 macOS 的隔离属性**，特别是针对从非 App Store 下载的应用程序。)
+
+```
+sudo xattr -r -d com.apple.quarantine
+```
+
+粘贴到终端，手打一个空格，把已损坏的PyCharm拖动到空格后面，回车，输入电脑开机密码，再次回车。
+
+右键打开软件，已经可以了，一定要注意，右键打开。
 
 ## 安装Git
 
