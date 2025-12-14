@@ -75,6 +75,12 @@ brew --version
 brew update
 ```
 
+更新某个组件
+
+```bash
+brew upgrade xxx
+```
+
 如果遇到网络原因安装失败可以通过如下的方法解决(可以考虑将clash打开global代理)
 
 1 )只是单次在终端使用代理键入以下命令，关闭终端会话则清理代理
