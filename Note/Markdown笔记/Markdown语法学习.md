@@ -1,17 +1,11 @@
-
 ---
-
 author: aitx
-
 title: Markdown语法学习
-
 time: 2022-10-09 周日
-
-tags: 
+tags:
   - Markdown
   - 学习
   - 编程
-
 ---
 
 # MarkDown语法
