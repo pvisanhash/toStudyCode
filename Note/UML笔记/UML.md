@@ -1,5 +1,7 @@
 Unified Modeling Language，UML统一建模语言，是用来设计软件的可视化建模语言。
 
+>UML相关知识: [UML](https://www.fynote.com/d/2979 "UML")
+
 # 类图 Class Diagram
 
 ## 单个类的表示
