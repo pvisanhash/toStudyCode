@@ -483,6 +483,8 @@ linux: `~/.config/JetBrains/产品名版本号`
 
 ## 安装mysql
 
+### 使用官网包安装
+
 打开官网，下载社区版https://www.mysql.com/cn/
 
 选择对应的版本，比如mac arm版本，根据提示安装
@@ -503,6 +505,47 @@ export PATH=$PATH:/usr/local/mysql/bin
 
 ```bash
 source ~.bash_profile
+```
+
+### 使用Homebrew（推荐）
+
+1. 安装Homebrew（如果尚未安装）
+
+```bash
+
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+2. 安装MySQL
+
+```bash
+# 更新Homebrew
+brew update
+
+# 安装MySQL（默认为ARM版本）
+brew install mysql
+
+# 或者安装指定版本（如MySQL 8.0）
+brew install mysql@8.0
+```
+
+3. 更新Homebrew
+
+```bash
+# 启动MySQL服务(推荐)
+brew services start mysql
+
+# 或者手动启动（不注册为服务）
+mysql.server start
+```
+
+4. 重设密码
+
+```bash
+ALTER USER 'root'@'localhost'
+IDENTIFIED BY '你的新密码';
+
+FLUSH PRIVILEGES;
 ```
 
 ## 安装tomcat
@@ -563,4 +606,48 @@ idea配置tomcat
 安装完成后，打开终端，输入 npm -v 和 node -v两个命令,如出现版本信息，说明安装成功。
 
 打开Mac 终端，配置全局环境变量输入`vim .bash_profile`按i进入编辑状态，打开之后添加一行代码：`PATH=$PATH:/usr/local/bin/`并保存，重新打开终端，输入node，就会进入node环境。control+c 按两次退出node环境。
+
+## 安装redis
+
+### 通过homebrew方式安装
+
+前置检查
+
+```bash
+brew -v
+uname -m
+```
+
+安装redis
+
+```bash
+brew update
+brew install redis
+```
+
+启动redis
+
+```bash
+# 方式一:后台启动(推荐)
+brew services start redis
+# 方式二:前台启动
+redis-server /opt/homebrew/etc/redis.conf
+
+```
+
+验证redis是否启动成功,如果返回```PONG```就说明成功
+
+```bash
+redis-cli ping
+```
+
+卸载redis方法
+
+```bash
+brew services stop redis
+brew uninstall redis
+rm -rf /opt/homebrew/var/db/redis
+rm -rf /opt/homebrew/etc/redis.conf
+
+```
 
