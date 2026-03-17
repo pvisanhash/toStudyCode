@@ -10,7 +10,7 @@ tags:
 
 ## redis的学习网站：
 
-1. redis.cn
+1. [redis.cn](https://www.redis.net.cn/tutorial/3501.html 这是redis中文学习网站)
 2. redis.io
 3. db-engines.com
 

@@ -435,6 +435,31 @@ sudo xattr -r -d com.apple.quarantine
 brew install git
 ```
 
+如下的常用git设置
+
+要设置你的代理软件的本地监听ip端口
+
+```bash
+git config --global http.proxy http://127.0.0.1:7890
+git config --global https.proxy https://127.0.0.1:7890
+
+#如果只是单次在终端使用代理键入以下命令，关闭终端会话则清理代理
+export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890
+```
+
+有时候需要关闭ssl验证
+
+```bash
+git config --global http.sslVerify false
+```
+
+Git默认对大小写不敏感，也就是说，将一个文件名某个字母做了大小写转换的修改Git是忽略这个改动的，导致在同步代码时候会出现错误，所以建议把Git设置成大小写敏感
+
+```bash
+#如果需要全局配置，加 --global
+git config --global core.ignorecase false
+```
+
 ## 安装maven
 
 maven 官网下载 ：https://maven.apache.org/
