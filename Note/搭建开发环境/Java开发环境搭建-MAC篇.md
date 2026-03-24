@@ -445,6 +445,9 @@ git config --global https.proxy https://127.0.0.1:7890
 
 #如果只是单次在终端使用代理键入以下命令，关闭终端会话则清理代理
 export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890
+
+#设置默认主分支
+git config --global init.defaultBranch main
 ```
 
 有时候需要关闭ssl验证
@@ -624,6 +627,62 @@ idea配置tomcat
 
 ## 安装NodeJS
 
+### 推荐方案（首选）：用 nvm 管理 Node.js
+
+> 参考https://nodejs.org/en/download
+
+#### 1. 安装 nvm
+
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+```
+
+如果你是 zsh，再执行：
+
+```
+source ~/.zshrc
+```
+
+如果没生效，把下面这段加到 `~/.zshrc`：
+
+```
+export NVM_DIR="$HOME/.nvm"  
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+```
+
+然后再执行一次：
+
+```
+source ~/.zshrc
+```
+
+#### 2. 安装 Node LTS
+
+```
+nvm install --lts  
+nvm alias default lts/*
+```
+
+#### 3. 验证
+
+```
+which node  
+node -v  
+npm -v
+```
+
+这时 `which node` 应该类似：
+
+```
+/Users/你的用户名/.nvm/versions/node/v20.x.x/bin/node
+```
+
+---
+
+## 你现在最适合的处理方式
+
+### 安装包安装(不推荐)
+
 访问官网：https://nodejs.org/en/
 
 下载后长期支持版下一步安装
@@ -676,3 +735,10 @@ rm -rf /opt/homebrew/etc/redis.conf
 
 ```
 
+## 安装OpenClaw
+
+### 通过一键命令安装(推荐)
+
+> 链接: https://openclaw.ai/
+
+前提是需要安装nodejs(包括nvm npm pnpm)
