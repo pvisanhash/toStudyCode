@@ -491,7 +491,7 @@ source ~/.bash_profile
 
 ### 激活Idea
 
-### 无限重置试用期方法
+#### 无限重置试用期方法
 
 [参考链接](https://youwu.today/blog/jetbrains-evaluate-reset/#%E8%AF%95%E7%94%A8%E8%BF%87%E6%9C%9F%E4%BF%AE%E5%A4%8D---202122-%E7%89%88%E6%9C%AC%E4%B9%8B%E5%89%8D)
 
@@ -508,6 +508,12 @@ linux: `~/.config/JetBrains/产品名版本号`
 ```
 
 将程序配置路径下的 _eval_ 文件夹 重命名或者删除后，重启程序即可。
+
+
+### 常用插件
+
+- jclasslib
+
 
 ## 安装mysql
 
@@ -739,6 +745,73 @@ rm -rf /opt/homebrew/etc/redis.conf
 
 ### 通过一键命令安装(推荐)
 
+本质也是通过npm(pnpm)安装
+
 > 链接: https://openclaw.ai/
 
 前提是需要安装nodejs(包括nvm npm pnpm)
+
+### 常用命令
+
+快速设置(运行入门程序)
+
+```
+openclaw onboard
+```
+
+状态查看
+
+```
+openclaw gateway status
+```
+
+打开仪表盘
+
+```
+openclaw dashboard
+```
+
+打开TUI界面
+
+```
+openclaw tui
+```
+
+配置
+
+```
+openclaw configure
+```
+
+
+## 安装codex
+
+> 链接:
+> 1) 官网 https://openai.com/zh-Hans-CN/codex/
+> 2) 快速开始  https://developers.openai.com/codex/quickstart
+
+推荐通过APP方式或CLI方式安装,如果通过CLI方式安装建议通过homebrew安装,其次才是npm安装
+
+
+### cc-switch插件
+
+安装
+
+```
+brew tap farion1231/ccswitch
+brew install --cask cc-switch
+```
+
+更新
+
+```
+brew upgrade --cask cc-switch
+```
+
+如果后面要卸载
+
+```
+brew uninstall --cask cc-switch
+brew untap farion1231/ccswitch
+```
+
