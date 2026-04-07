@@ -14,7 +14,318 @@ tags:
 
 # Java开发环境搭建-MAC篇
 
+## 安装SDKMAN
+
+链接:https://sdkman.io/install/
+
+ 🎯 一句话结论
+
+> 👉 用 SDKMAN! 统一管理 =  
+> **所有开发工具（JDK / Maven / Gradle / Tomcat 等）都通过 SDKMAN 安装 + 用 `.sdkmanrc` 做项目级版本锁定**
+
+---
+
+🧠 一、SDKMAN 能管理什么？
+
+👉 本质：**JVM 生态工具管理器**
+
+常见你应该纳入统一管理的：
+
+* JDK（最核心）
+* Apache Maven
+* Gradle
+* Apache Tomcat
+* Kotlin
+* Groovy
+
+---
+
+🥇 二、统一管理的核心原则（非常重要）
+
+👉 记住这三条：
+
+---
+
+✅ 原则1：**不要手动安装**
+
+❌ 不用：
+
+* pkg
+* tar.gz
+* Homebrew
+
+👉 全部用 SDKMAN：
+
+```
+sdk install java  
+sdk install maven  
+sdk install gradle  
+sdk install tomcat
+```
+---
+
+✅ 原则2：**不要手动配置环境变量**
+
+❌ 不要写：
+
+```
+export JAVA_HOME=xxx  
+export MAVEN_HOME=xxx  
+export PATH=xxx
+```
+👉 全部交给 SDKMAN
+
+---
+
+✅ 原则3：**用项目锁版本（关键）**
+
+👉 `.sdkmanrc` 是灵魂
+
+---
+
+🥈 三、如何实现“统一管理”（核心步骤）
+
+---
+
+ 1️⃣ 安装所有工具
+
+```
+sdk install java 21-tem  
+sdk install java 17-tem  
+
+sdk install maven  
+sdk install gradle  
+sdk install tomcat
+```
+
+---
+
+2️⃣ 设置全局默认版本
+
+```
+sdk default java 21-tem  
+sdk default maven 3.9.9
+```
+
+---
+
+3️⃣ 项目级锁定（最关键）
+
+进入项目：
+
+```
+touch .sdkmanrc
+```
+
+写入：
+
+```
+java=17-tem  
+maven=3.9.9  
+tomcat=10.1.24
+```
+
+---
+
+4️⃣ 启用自动切换
+
+```
+sdk env
+```
+
+👉 进入项目自动切版本
+
+---
+
+🧪 四、效果是什么？
+
+👉 不同项目自动切环境：
+
+项目A（老系统）
+
+```
+java=8-tem  
+maven=3.6.3
+```
+
+---
+
+项目B（新系统）
+
+```
+java=21-tem  
+maven=3.9.9
+```
+
+---
+
+👉 进入目录：
+
+```
+cd projectA  
+sdk env   # 自动变 Java 8  
+
+cd projectB  
+sdk env   # 自动变 Java 21
+```
+
+---
+
+🧠 五、进阶玩法（高级工程师必备）
+
+---
+
+✔ 自动加载（无需手动 sdk env）
+
+```
+sdk install autoenv
+```
+
+或在 `.zshrc`：
+
+```
+sdk env install
+```
+
+👉 进入目录自动切换（无感知）
+
+---
+
+✔ 查看当前环境
+
+```
+sdk current
+```
+
+---
+
+✔ 查看所有版本
+
+```
+sdk list java  
+sdk list maven
+```
+
+---
+
+✔ 快速切换
+
+```
+sdk use java 17-tem
+```
+
+---
+
+🚨 六、统一管理常见坑
+
+---
+
+❌ 坑1：系统还有旧工具
+
+```
+which mvn  
+which java
+```
+
+👉 不是 `.sdkman` 路径 → 有污染
+
+---
+
+❌ 坑2：PATH 被手动修改
+
+👉 会覆盖 SDKMAN
+
+---
+
+❌ 坑3：IDEA 用错版本
+
+在 IntelliJ IDEA：
+
+* JDK 指向 `.sdkman`
+* Maven 指向 `.sdkman`
+
+---
+
+❌ 坑4：忘记 sdk env
+
+👉 项目不会自动切换
+
+---
+
+🧠 七、底层原理（你可以理解一下）
+
+SDKMAN 实际做了三件事：
+
+1. 所有工具放在：
+
+```
+~/.sdkman/candidates/
+```
+
+2. 用 `current` 软链接切换版本：
+
+```
+java/current → java/17-tem
+```
+
+3. 修改 PATH：
+
+```
+~/.sdkman/candidates/java/current/bin
+```
+
+---
+
+🚀 八、工程级最终形态（推荐你达到）
+
+👉 你的开发环境应该是：
+
+* ❌ 没有手动 JAVA_HOME
+* ❌ 没有 Maven_HOME
+* ❌ 没有 brew 安装的 Java/Maven
+* ✅ 全部在 `.sdkman/candidates`
+
+---
+
+💡 一句话总结
+
+> 👉 **SDKMAN 统一管理 = 工具全部用它安装 + 环境变量不手写 + 项目用 `.sdkmanrc` 控版本**
+
+---
+
 ## 安装JDK
+
+### SDKMAN安装(推荐)
+
+1️⃣ 安装
+
+```
+curl -s "https://get.sdkman.io" | bash  
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+```
+
+2️⃣ 安装 JDK（建议多版本）
+
+```
+sdk install java 21-tem   # 主力版本  
+sdk install java 17-tem   # LTS兼容  
+sdk install java 8-tem    # 老项目
+```
+
+
+ 3️⃣ 设置默认版本
+
+```
+sdk default java 21-tem
+```
+
+4️⃣ 验证
+
+```
+java -version
+```
+
+### 安装包安装
 
 下载zulu JDK : https://www.azul.com/downloads/?package=jdk
 
@@ -465,6 +776,50 @@ git config --global core.ignorecase false
 
 ## 安装maven
 
+### SDKMAN安装(推荐)
+
+安装 Maven
+
+```
+sdk install maven
+```
+👉 自动帮你配好 `M2_HOME`、PATH，比 Homebrew 干净很多
+
+设置默认
+
+```
+sdk default maven 3.9.9
+```
+
+验证
+
+```
+mvn -v
+```
+
+⚠️ 国内环境优化（关键）
+
+编辑：
+
+```
+~/.m2/settings.xml
+```
+
+加入阿里云镜像：
+
+```
+<mirrors>  
+  <mirror>  
+    <id>aliyun</id>  
+    <mirrorOf>*</mirrorOf>  
+    <name>Aliyun Maven</name>  
+    <url>https://maven.aliyun.com/repository/public</url>  
+  </mirror>  
+</mirrors>
+```
+
+### 安装包安装
+
 maven 官网下载 ：https://maven.apache.org/
 
 将下载的zip包解压抽取后，放到/usr/local/目录下
@@ -583,6 +938,17 @@ FLUSH PRIVILEGES;
 ```
 
 ## 安装tomcat
+
+👉 **现代 Java 架构 = Spring Boot + 内嵌 Tomcat + 容器化（Docker）  
+👉 外部 Tomcat = 历史产物（除非维护老系统）**
+
+所以外部安装tomcat是针对老系统
+
+### SDKMAN安装(推荐)
+
+
+
+### 安装包安装
 
 下载tomcat9
 
