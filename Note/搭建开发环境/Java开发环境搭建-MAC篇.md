@@ -14,6 +14,34 @@ tags:
 
 # Java开发环境搭建-MAC篇
 
+## 安装tldr
+
+**tldr** 的全称是：**Too Long; Didn't Read**（太长不看）
+
+安装
+
+```
+brew install tldr
+```
+
+使用
+
+```
+tldr tar  
+tldr git  
+tldr docker
+```
+
+👉 输出的是“常用命令示例”，而不是冗长文档
+
+---
+
+更新缓存（建议执行一次）
+
+```
+tldr --update
+```
+
 ## 安装SDKMAN
 
 链接:https://sdkman.io/install/
