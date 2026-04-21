@@ -159,7 +159,7 @@ centos       latest    5d0da3dc9764   4 months ago   231MB
 - 联合文件系统是实现联合挂载技术的文件系统
 - 联合挂载技术可以实现在一个挂载点同时挂载多个文件系统，将挂载点的原目录与被挂载内容进行整合，使得最终可见的文件系统包含整合之后的各层文件和目录
 
-
+Docker 联合文件系统 = 多层只读镜像 + 一层容器可写层，通过 Overlay 技术叠加成一个统一文件系统
 
 ### 2.2.2 图解
 
@@ -802,6 +802,11 @@ REPOSITORY   TAG       IMAGE ID       CREATED              SIZE
 centos7      v1        3639f9a13231   17 seconds ago       231MB
 ~~~
 
+
+总结:
+commit 是容器变镜像（保留层）  
+save/load 是镜像打包迁移（完整还原）  
+export/import 是容器文件系统快照（扁平化）
 
 
 通过docker save与docker load及docker export与docker import分享容器镜像都是非常麻烦的，有没有更方便的方式分享容器镜像呢？

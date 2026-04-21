@@ -338,6 +338,12 @@ centos:latest 使用centos最新版本容器镜像
 bash 在容器中执行的命令
 ~~~
 
+`-i -t`一般联合使用:
+
+| 参数   | 类比      |
+| ---- | ------- |
+| `-i` | 打开键盘输入  |
+| `-t` | 给你一个显示器 |
 
 
 ~~~powershell
@@ -467,7 +473,7 @@ docker ps --all 可以查看正在运行的和停止运行的容器
 
 ~~~powershell
 操作说明
-在上述提示符处按住ctrl键，再按p键与q键，可以退出交互式的容器，容器会处于运行状态。
+在上述提示符处按住ctrl键，再按p键与q键，可以退出交互式的容器，容器会处于运行状态。(记忆技巧: pause + quit)
 ~~~
 
 
@@ -669,6 +675,9 @@ root  69040   69020      0      18:37       pts/0           00:00:00            
 ~~~powershell
 命令解释
 docker top 查看container内进程信息，指在docker host上查看，与docker exec -it c2 ps -ef不同。
+
+`docker top` 看的是“宿主机眼中的容器”  
+`docker exec ps` 看的是“容器自己眼中的世界”
 ~~~
 
 

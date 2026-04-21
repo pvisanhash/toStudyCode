@@ -1209,3 +1209,23 @@ brew uninstall --cask cc-switch
 brew untap farion1231/ccswitch
 ```
 
+## 安装Docker
+
+### OrbStack(推荐)
+
+```
+brew install --cask orbstack
+```
+
+### Docker Desktop(官方)
+
+```
+brew install --cask docker
+```
+
+### Colima(极客)
+
+```
+brew install colima docker
+colima start
+```
