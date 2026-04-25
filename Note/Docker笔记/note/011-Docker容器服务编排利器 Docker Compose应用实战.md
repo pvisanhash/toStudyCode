@@ -10,12 +10,12 @@
 
 那么复杂的架构就会需要很多的容器,并且需要它们之间有关联(容器之间的依赖和连接)就更复杂了。
 
-这个复杂的问题需要解决,这就涉及到了**==容器编排==**的问题了。
+这个复杂的问题需要解决,这就涉及到了**容器编排**的问题了。
 
 - Compose
   - 编排
     - 是对多个容器进行启动和管理的方法
-    - 例如：LNMT，先启动MySQL,再启动Tomcat，最后启动Nginx
+    - 例如：LNMT，先启动MySQL,再启动Tomcat，最后启动Nginx (L=Linux)
 - 服务架构的演进
   - 单体服务架构
   - 分布式服务架构
@@ -39,16 +39,11 @@
 - 网址
   - https://docs.docker.com/compose/
 
-
-
-![image-20220215214445753](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/20260109234357936.png)
-
-
-
 - yaml格式
   - https://yaml.org/
 
 
+![image-20220215214445753](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/20260109234357936.png)
 
 # 三、Docker Compose应用最佳实践步骤
 
@@ -58,6 +53,29 @@
 - 服务 (Service)
 - 容器 (Container)
 
+关系图:
+
+```
+Docker Compose 工程（Project）
+│
+├── 服务 Service A
+│     ├── 容器 A1
+│     ├── 容器 A2（副本/扩展）
+│
+├── 服务 Service B
+│     ├── 容器 B1
+│
+└── 服务 Service C
+      ├── 容器 C1
+      ├── 容器 C2
+      ├── 容器 C3
+```
+
+👉 一句话理解：
+
+> **Compose 工程 = 一组服务的集合  
+> 服务 = 容器的“模板 + 运行规则”  
+> 容器 = 真正跑起来的实例**
 
 
 ## 3.2 步骤

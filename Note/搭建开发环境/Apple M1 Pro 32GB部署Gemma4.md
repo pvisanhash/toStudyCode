@@ -35,6 +35,9 @@ Bash
  # 运行 Gemma 4 26B MoE (建议使用 A4B 架构优化版)  
 ```
  ollama run gemma4:26b
+ 
+ # 如果只限翻译用
+ ollama run gemma4:e4b
 ```
 
 ### 3. 针对 M1 Pro 的性能调优 (Expert Only)

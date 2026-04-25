@@ -6,7 +6,7 @@
 
 如下图所示：
 
-![img](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/20260109231644914.jpg)
+![image-20220118170228476](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/20260109230759920.png)
 
 
 
@@ -47,11 +47,9 @@
 ## 4.1 在DockerHub直接下载
 
 
-
 ~~~powershell
 # docker pull centos:latest
 ~~~
-
 
 
 ~~~powershell
@@ -59,21 +57,13 @@
 ~~~
 
 
-
-
-
 ## 4.2 把操作系统中文件系统打包为容器镜像
 
-### 4.2.1 安装一个最化的操作系统
+### 4.2.1 安装一个最小化的操作系统
 
 
 
 ![image-20220210123047484](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/20260109231644916.png)
-
-
-
-
-
 
 
 ### 4.2.2 把操作系统中文件系统进行打包
@@ -82,10 +72,7 @@
 # tar --numeric-owner --exclude=/proc --exclude=/sys -cvf centos7u6.tar /
 ~~~
 
-
-
 ### 4.2.3 把打包后文件加载至本地文件系统生成本地容器镜像
-
 
 
 ~~~powershell
@@ -94,11 +81,9 @@ centos7u6.tar
 ~~~
 
 
-
 ~~~powershell
 # docker import centos7u6.tar centos7u6:v1
 ~~~
-
 
 
 ~~~powershell
@@ -121,8 +106,6 @@ centos7u6    v1        130cb005b2dc   7 seconds ago   1.09GB
     inet 172.17.0.2/16 brd 172.17.255.255 scope global eth0
        valid_lft forever preferred_lft forever
 ~~~
-
-
 
 
 
@@ -177,13 +160,11 @@ httpd-2.4.6-97.el7.centos.4.x86_64
 
 
 
-
-
 ## 4.4 通过Dockerfile实现容器镜像的自定义及生成
 
 ### 4.4.1 Dockerfile介绍
 
-Dockerfile是一种能够被Docker程序解释的剧本。Dockerfile由一条一条的指令组成，并且有自己的书写格式和支持的命令。当我们需要在容器镜像中指定自己额外的需求时，只需在Dockerfile上添加或修改指令，然后通过docker build生成我们自定义的容器镜像（image）。
+Dockerfile是一种能够被Docker程序解释的脚本。Dockerfile由一条一条的指令组成，并且有自己的书写格式和支持的命令。当我们需要在容器镜像中指定自己额外的需求时，只需在Dockerfile上添加或修改指令，然后通过docker build生成我们自定义的容器镜像（image）。
 
 <img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/20260109231644918.jpg" alt="img"  />
 
@@ -211,18 +192,18 @@ Dockerfile是一种能够被Docker程序解释的剧本。Dockerfile由一条一
 
 
 
-| 指令    | 描述                                                |
-| ------- | --------------------------------------------------- |
-| FROM    | 构建新镜像基于的基础镜像                            |
-| LABEL   | 标签                                                |
-| RUN     | 构建镜像时运行的Shell命令                           |
-| COPY    | 拷贝文件或目录到镜像中                              |
-| ADD     | 解压压缩包并拷贝                                    |
-| ENV     | 设置环境变量                                        |
-| USER    | 为RUN、CMD和ENTRYPOINT执行命令指定运行用户          |
-| EXPOSE  | 声明容器运行的服务端口                              |
-| WORKDIR | 为RUN、CMD、ENTRYPOINT、COPY和ADD设置工作目录       |
-| CMD     | 运行容器时默认执行，如果有多个CMD指令，最后一个生效 |
+| 指令      | 描述                                 |
+| ------- | ---------------------------------- |
+| FROM    | 构建新镜像基于的基础镜像                       |
+| LABEL   | 标签                                 |
+| RUN     | 构建镜像时运行的Shell命令                    |
+| COPY    | 拷贝文件或目录到镜像中                        |
+| ADD     | 解压压缩包并拷贝                           |
+| ENV     | 设置环境变量                             |
+| USER    | 为RUN、CMD和ENTRYPOINT执行命令指定运行用户      |
+| EXPOSE  | 声明容器运行的服务端口                        |
+| WORKDIR | 为RUN、CMD、ENTRYPOINT、COPY和ADD设置工作目录 |
+| CMD     | 运行容器时默认执行，如果有多个CMD指令，最后一个生效        |
 
 
 
@@ -299,7 +280,7 @@ CMD command param1 param2
 
 4, **EXPOSE**
 
-EXPOSE指令用于指定容器在运行时监听的端口
+EXPOSE指令用于指定容器在运行时监听的端口(是容器的端口)
 
 ~~~powershell
 格式:EXPOSE <port> [<port>...]
