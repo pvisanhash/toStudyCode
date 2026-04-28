@@ -12,7 +12,7 @@ tags:
 
 > 课程整理说明
 > - 内容来源：[飞书课程原文](https://my.feishu.cn/drive/folder/LkfIfEoarlbcmEdRLLIcmMt0nvg)
-> - python基础语法在线练习网站:[python在线练习](https://hedy.org/ "python在线练习")
+> - python基础语法在线练习网站:[python在线练习](https://hedy.org/ "python在线练习"),[python123](https://www.python123.io/index)
 > - 整理方式：基于原文语义重新编排标题与内容结构，清理格式噪音
 > - 用途：适合在 Obsidian 中检索、阅读与复习
 
