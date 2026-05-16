@@ -453,292 +453,569 @@ sudo vim /etc/hosts
 
 ## 安装Python3
 
-> 参考:[mac安装python3](https://www.trae.cn/article/3133510146)
+这份指南面向 macOS 用户，目标是搭建一个干净、稳定、容易维护的 Python 开发环境。
 
-**首先，你需要知道你当前 Python 版本以及它的安装路径。**
+推荐结论：
 
-1. **检查 Python 版本：**
+- 使用 Homebrew 安装系统级工具
+- 使用 uv 管理 Python 版本、虚拟环境、依赖和命令运行
+- 每个项目使用独立的 `.venv`
+- 不要直接往 Homebrew Python 或 macOS 系统 Python 里安装项目依赖
+- 只有在维护老项目或需要特殊版本矩阵时，再考虑 pyenv
+
+### 推荐方案
+
+当前最推荐的组合是：
+
+```text
+Homebrew + uv + 项目级 .venv
+```
+
+职责分工：
+
+```text
+Homebrew：安装 uv、git、数据库、编译工具等系统级工具
+uv：安装 Python 版本、创建虚拟环境、管理依赖、运行项目命令
+.venv：每个项目独立隔离依赖
+```
+
+Homebrew 自带或安装的 Python 可以保留，但不要把它当作主要项目开发环境。它更适合作为 Homebrew 生态自己的运行依赖。
+
+### 安装 Homebrew
+
+如果已经安装 Homebrew，可以跳过这一节。
 
 ```bash
- python --version # 可能指向 Python 2.x
- python3 --version # 通常指向 Python 3.x
-```
-
-  
-
-2. **检查 Python 路径：**
-
-```bash
-which python
-which python3
-```
-
-
-根据你 `which` 命令的输出，我们可以推断出安装方式。常见的安装方式有：
-
-
-- **macOS 系统自带 Python：** 通常在 `/usr/bin/python`。**不建议直接修改或升级系统自带的 Python，因为它可能被 macOS 的内部工具所依赖，直接操作可能导致系统不稳定。**
-    
-- **Homebrew 安装：** 通常在 `/usr/local/bin/python3` 或 `/opt/homebrew/bin/python3` (M1/M2 Mac)。这是 Mac 用户最推荐和最方便的管理 Python 的方式。
-    
-- **pyenv 安装：** 通常在 `~/.pyenv/shims/python`。pyenv 是一个强大的 Python 版本管理工具。
-    
-- **Anaconda/Miniconda 安装：** 通常在 `~/anaconda3/bin/python` 或 `~/miniconda3/bin/python`。Anaconda 是一个全面的数据科学平台。
-    
-- **直接从 Python 官网下载安装包 (pkg)：** 通常安装到 `/Library/Frameworks/Python.framework`。
-    
-
-
-下面针对不同的安装方式讲解如何升级：
-
----
-### 最推荐的方式：使用 Homebrew (如果还没有安装，强烈建议安装)
-
-Homebrew 是 macOS 上最流行的包管理器，也是管理 Python 版本的最佳方式之一。
-
-  
-**1. 安装 Homebrew (如果尚未安装):**打开终端并运行：
-
-  
-```
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-  
-按照屏幕上的指示完成安装。
+安装后确认：
 
-  
-**2. 升级 Homebrew 本身:**
-
-  
 ```bash
-brew update
+brew --version
 ```
 
-  
-**3. 升级 Python (如果已通过 Homebrew 安装):**如果你的 Python 3 是通过 Homebrew 安装的，只需运行：
+Apple Silicon Mac 通常 Homebrew 位于：
 
-  
+```text
+/opt/homebrew
+```
+
+Intel Mac 通常位于：
+
+```text
+/usr/local
+```
+
+### 安装 uv
+
+推荐通过 Homebrew 安装：
+
 ```bash
-brew upgrade python
-pip3 install --upgrade pip
+brew install uv
 ```
 
-  
-这会把 Homebrew 版的 Python 升级到最新稳定版本。
+确认安装：
 
-
-**4. 如果你尚未通过 Homebrew 安装 Python 3，或者需要安装特定版本:**
-
-  
 ```bash
-brew install python # 这会安装最新稳定版 Python 3
+uv --version
 ```
 
-  
-**5. 确保你的 PATH 环境变量正确设置:**Homebrew 会自动将 `/usr/local/bin` (或 M1/M2 Mac 上的 `/opt/homebrew/bin`) 添加到你的 PATH 中，确保 Homebrew 安装的 Python 优先于系统自带的。在你的 `~/.zshrc` (macOS Catalina 及更高版本默认) 或 `~/.bash_profile` (旧版本) 中确认有类似以下的行：
+如果 `uv` 命令找不到，检查 shell 配置里是否已经加载 Homebrew：
 
-  
-```
-export PATH="/usr/local/opt/python/libexec/bin:$PATH" # 对于 Intel Mac
-export PATH="/opt/homebrew/opt/python/libexec/bin:$PATH" # 对于 M1/M2 Mac
-```
-
-  
-或者更通用的，确保 Homebrew 的 bin 目录在 PATH 前面：
-
-  
-```
-export PATH="/opt/homebrew/bin:$PATH" # For M1/M2 Mac
-export PATH="/usr/local/bin:$PATH" # For Intel Mac
-```
-
-  
-更新后，运行 `source ~/.zshrc` 或 `source ~/.bash_profile` 使其生效。
-
-
-**6. 验证升级:**
-
-  
 ```bash
-python3 --version
+eval "$(/opt/homebrew/bin/brew shellenv)"
+```
+
+可以把它放进 `~/.zprofile`：
+
+```bash
+eval "$(/opt/homebrew/bin/brew shellenv)"
+```
+
+### 安装 Python 版本
+
+使用 uv 安装 Python：
+
+```bash
+uv python install 3.12
+```
+
+查看可用 Python：
+
+```bash
+uv python list
+```
+
+查看 uv 会使用哪个 Python：
+
+```bash
+uv python find
+```
+
+建议优先使用当前稳定版本，例如：
+
+```bash
+uv python install 3.12
+uv python install 3.13
+```
+
+如果某个项目明确要求特定版本，再安装对应版本。
+
+### 创建新项目
+
+创建一个新项目：
+
+```bash
+mkdir my-project
+cd my-project
+uv init
+```
+
+固定项目 Python 版本：
+
+```bash
+uv python pin 3.12
+```
+
+这会生成 `.python-version`，用于记录该项目使用的 Python 版本。
+
+创建虚拟环境：
+
+```bash
+uv venv
+```
+
+安装依赖：
+
+```bash
+uv add requests
+```
+
+运行代码：
+
+```bash
+uv run python main.py
+```
+
+### 迁移已有项目
+
+如果项目已有 `requirements.txt`：
+
+```bash
+cd existing-project
+uv python pin 3.12
+uv venv
+uv pip install -r requirements.txt
+```
+
+运行：
+
+```bash
+uv run python your_script.py
+```
+
+如果你习惯激活虚拟环境，也可以：
+
+```bash
+source .venv/bin/activate
+python your_script.py
+```
+
+但长期建议优先使用：
+
+```bash
+uv run ...
+```
+
+这样不容易因为忘记激活环境而装错包或跑错解释器。
+
+### 管理依赖
+
+添加依赖：
+
+```bash
+uv add fastapi
+```
+
+添加开发依赖：
+
+```bash
+uv add --dev pytest ruff
+```
+
+删除依赖：
+
+```bash
+uv remove fastapi
+```
+
+同步环境：
+
+```bash
+uv sync
+```
+
+查看依赖树：
+
+```bash
+uv tree
+```
+
+### 运行常见命令
+
+运行 Python：
+
+```bash
+uv run python
+```
+
+运行脚本：
+
+```bash
+uv run python script.py
+```
+
+运行模块：
+
+```bash
+uv run python -m pytest
+```
+
+运行项目工具：
+
+```bash
+uv run ruff check .
+uv run pytest
+```
+
+### 安装全局 Python 命令行工具
+
+对于 `ruff`、`black`、`ipython`、`httpie` 这类命令行工具，不要装进系统 Python。
+
+推荐使用 `uv tool`：
+
+```bash
+uv tool install ruff
+uv tool install black
+uv tool install ipython
+```
+
+查看已安装工具：
+
+```bash
+uv tool list
+```
+
+升级工具：
+
+```bash
+uv tool upgrade --all
+```
+
+如果团队已经使用 `pipx`，也可以继续使用：
+
+```bash
+brew install pipx
+pipx install ruff
+```
+
+`uv tool` 和 `pipx` 选一个作为主力即可，不建议混用太多。
+
+### 不推荐的做法
+
+不要这样安装项目依赖：
+
+```bash
+pip install requests
+pip3 install requests
+sudo pip install requests
+pip install --break-system-packages requests
+```
+
+这些方式容易污染 Homebrew Python 或系统 Python，也容易造成不同项目之间依赖冲突。
+
+也不要依赖全局 Python 环境来运行项目：
+
+```bash
+python main.py
+```
+
+除非你非常确定当前 shell 已经激活了正确的虚拟环境。
+
+更稳的方式是：
+
+```bash
+uv run python main.py
+```
+
+### Homebrew Python 的角色
+
+通过 Homebrew 安装某些工具时，Homebrew 可能会自动安装 `python@3.x`。
+
+例如：
+
+```bash
+brew install python@3.14
+```
+
+这不是坏事，可以保留。
+
+但它的定位更像是系统工具依赖，而不是你的项目环境。项目环境应该交给 uv 创建的 `.venv`。
+
+可以查看 Homebrew Python：
+
+```bash
 which python3
-# 查看python3包管理工具pip3版本
-pip3 --version
+python3 --version
 ```
 
-  
-现在 `python3` 应该指向 Homebrew 安装的最新版本。
+如果输出类似：
 
-
----
-
-### 使用 pyenv (推荐用于管理多个 Python 版本)
-
-如果你需要在同一台机器上管理多个 Python 版本（例如，项目 A 需要 Python 3.8，项目 B 需要 Python 3.10），`pyenv` 是一个绝佳的选择。
-
-  
-
-**1. 安装 pyenv (如果尚未安装):**
-
-  
-
-```
-brew install pyenv
+```text
+/opt/homebrew/bin/python3
 ```
 
-  
+说明当前 `python3` 来自 Homebrew。
 
-然后，你需要将 pyenv 初始化添加到你的 shell 配置文件。编辑你的 `~/.zshrc` (或 `~/.bash_profile`)，添加以下行：
+这没有问题，只要你不直接把项目依赖装进去。
 
-  
+### 是否还需要 pyenv
+
+大多数新项目不再需要 pyenv。
+
+uv 已经可以处理这些事情：
+
+- 安装 Python 版本
+- 查找 Python 解释器
+- 创建虚拟环境
+- 管理依赖
+- 固定项目 Python 版本
+- 运行项目命令
+
+仍然适合保留 pyenv 的情况：
+
+- 老项目已经大量依赖 `pyenv local`
+- 需要非常细的 Python patch 版本矩阵
+- 团队工具链明确要求 pyenv
+- 需要测试多个历史 Python 版本
+
+如果没有这些需求，可以选择：
+
+```text
+卸载 pyenv，使用 uv 统一管理
 ```
+
+卸载 pyenv 后，应从 shell 配置中删除类似内容：
+
+```bash
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 ```
 
+常见位置：
 
-保存文件并运行 `source ~/.zshrc`。
-
-
-**2. 列出可用的 Python 版本:**
-
-
-```
-pyenv install --list
+```text
+~/.zprofile
+~/.zshrc
+~/.bash_profile
+~/.profile
 ```
 
-  
+### 推荐的目录结构
 
-**3. 安装新的 Python 版本 (即升级):**选择你想要安装的最新版本，例如 Python 3.11.x:
+一个普通 Python 项目可以长这样：
 
-  
-
-```
-pyenv install 3.11.x # 将 x 替换为具体的最新补丁版本，如 3.11.4
-```
-
-  
-**4. 设置全局或局部 Python 版本:**
-
-  
-- **全局设置 (对所有 shell 会话生效):**
-
-
-```
- pyenv global 3.11.x
+```text
+my-project/
+  .python-version
+  .venv/
+  pyproject.toml
+  uv.lock
+  README.md
+  src/
+    my_project/
+      __init__.py
+  tests/
+    test_basic.py
 ```
 
-  
+其中：
 
-- **局部设置 (仅对当前目录及其子目录生效):**进入你的项目目录，然后运行：
-
-
-```
- pyenv local 3.11.x
-```
-
-
-**5. 验证升级:**
-
-
-```
-python --version
-python3 --version
-which python
-which python3
+```text
+.python-version：记录项目 Python 版本
+.venv：项目独立虚拟环境
+pyproject.toml：项目元数据和依赖声明
+uv.lock：锁定依赖版本，保证环境可复现
 ```
 
-  
-pyenv 会通过修改 PATH 来“垫片” (shim) 你选择的 Python 版本。
+`.venv` 不应该提交到 Git。
 
+`.gitignore` 中应包含：
 
----
-
-### 使用 Anaconda/Miniconda
-
-如果你使用 Anaconda 或 Miniconda 管理 Python 环境，升级方式如下：
-
-  
-**1. 更新 conda 本身:**
-
-  
-```
-conda update conda
+```gitignore
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
 ```
 
-  
+### 推荐的日常工作流
 
-**2. 升级基础环境中的 Python (不推荐，最好创建新环境):**如果你想直接升级 `base` 环境中的 Python，可以尝试：
+新建项目：
 
-  
-```
-conda update python
-```
-
-
-**但更推荐的做法是创建新的环境来管理不同的 Python 版本。**
-
-  
-
-**3. 创建一个新的环境并指定 Python 版本:**
-
-  
-
-```
-conda create -n my_new_env python=3.11
-conda activate my_new_env
-python --version
+```bash
+mkdir demo
+cd demo
+uv init
+uv python pin 3.12
+uv add requests
+uv run python main.py
 ```
 
-  
+进入已有项目：
 
-这样你就可以在不同的环境中切换，每个环境有自己独立的 Python 版本和库。
+```bash
+cd demo
+uv sync
+uv run pytest
+```
 
-  
----
+添加依赖：
 
-### 从 Python 官网安装包 (pkg) 升级
+```bash
+uv add pandas
+```
 
-如果你最初是从 Python 官网下载的 `.pkg` 安装包，你可以：
+添加开发工具：
 
-  
+```bash
+uv add --dev pytest ruff
+```
 
-1. **访问 Python 官网：** [www.python.org/downloads/macos/](https://xie.infoq.cn/link?target=https%3A%2F%2Fwww.python.org%2Fdownloads%2Fmacos%2F)  
-    
-2. **下载最新版本的 macOS 安装程序。**
-    
-3. **运行下载的** `**.pkg**` **文件。** 它会引导你完成安装，并通常会安装在 `/Library/Frameworks/Python.framework` 下的一个新版本目录中，并更新你的系统 PATH，使其指向最新的安装。
-    
+格式检查：
 
-  
+```bash
+uv run ruff check .
+```
 
-**注意：** 这种方法可能会安装多个 Python 版本在你的系统上，并且可能需要手动管理 PATH，不如 Homebrew 或 pyenv 灵活。
+运行测试：
 
-  
----
+```bash
+uv run pytest
+```
 
-### 总结和最佳实践：
+### 常见问题
 
-1. **永远不要直接修改 macOS 系统自带的 Python (**`**/usr/bin/python**`**)。**
-    
-2. **对于大多数 Mac 用户，使用 Homebrew 是最简单、最推荐的方式来安装和升级 Python 3。**
-    
-3. **如果你需要管理多个 Python 版本用于不同的项目，使用** `**pyenv**` **是理想的选择。**
-    
-4. **如果你进行数据科学或机器学习工作，并且依赖大量的科学计算库，Anaconda/Miniconda 是一个强大的解决方案。**
-    
-5. **在升级 Python 后，记得重新安装或更新你的项目依赖 (**`**pip install -r requirements.txt**`**)，因为 Python 版本的变化可能会影响库的兼容性。**
-    
-6. **始终在一个新的终端会话或使用** `**source**` **命令来确保 PATH 环境变量的更改生效，然后再检查 Python 版本。**
+#### 为什么不直接用 macOS 自带 Python
 
+macOS 自带 Python 或系统相关 Python 可能被系统工具依赖，不适合用来安装项目包。
 
-通过安装homebrew安装python3
+修改它可能导致系统工具、脚本或权限行为变得混乱。
 
-> Homebrew Python 就是 CPython，只是通过 Homebrew 包管理器来安装和管理，更方便 macOS 开发者使用
+#### 为什么不直接用 Homebrew Python
 
+Homebrew Python 可以用，但不建议把项目依赖直接装进去。
+
+Homebrew 可能随着 `brew upgrade` 更新 Python 小版本，这会影响全局安装的包。
+
+更好的方式是：
+
+```bash
+uv venv
+uv add package-name
+```
+
+#### 遇到 externally-managed-environment 怎么办
+
+这通常说明你正在尝试往受管理的 Python 环境里直接安装包。
+
+不要使用：
+
+```bash
+pip install package-name
+```
+
+改用项目虚拟环境：
+
+```bash
+uv venv
+uv pip install package-name
+```
+
+或使用 uv 项目依赖：
+
+```bash
+uv add package-name
+```
+
+#### 要不要激活虚拟环境
+
+可以激活：
+
+```bash
+source .venv/bin/activate
+```
+
+但不是必须。
+
+推荐用：
+
+```bash
+uv run python main.py
+uv run pytest
+```
+
+这样命令会自动在项目环境中运行。
+
+#### Python 版本应该选哪个
+
+普通新项目建议选择当前稳定且生态兼容好的版本，例如 Python 3.12 或 3.13。
+
+如果你依赖的数据科学、机器学习、音视频、浏览器自动化等库还没有完全适配最新 Python，优先选更稳的版本。
+
+例如：
+
+```bash
+uv python install 3.12
+uv python pin 3.12
+```
+
+### 最终推荐
+
+对于大多数 Mac 用户，最佳方案是：
+
+```text
+安装 Homebrew
+安装 uv
+使用 uv 安装 Python
+每个项目创建 .venv
+用 uv add / uv sync / uv run 管理项目
+全局 CLI 工具用 uv tool
+不要污染系统 Python 或 Homebrew Python
+```
+
+最常用命令汇总：
+
+```bash
+brew install uv
+uv python install 3.12
+uv init
+uv python pin 3.12
+uv add requests
+uv run python main.py
+uv add --dev pytest ruff
+uv run pytest
+uv tool install ipython
+```
+
+一句话总结：
+
+```text
+Mac 上现代 Python 环境的最佳实践是：Homebrew 管工具，uv 管 Python 和项目，每个项目一个 .venv。
+```
 
 ## 安装Pycharm
 
