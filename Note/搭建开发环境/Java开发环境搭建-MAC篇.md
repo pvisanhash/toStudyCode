@@ -1004,6 +1004,7 @@ brew install uv
 uv python install 3.12
 uv init
 uv python pin 3.12
+uv venv
 uv add requests
 uv run python main.py
 uv add --dev pytest ruff
