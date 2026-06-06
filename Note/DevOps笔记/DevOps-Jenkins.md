@@ -1360,7 +1360,7 @@ Ps：由于采用变量，记得使用双引号
 
 * 任务中追加流水线配置
 
-  ```
+  ```sh
   pipeline {
       agent any
 
@@ -1707,7 +1707,7 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documen
 * Pod：Kubernetes运行的一组容器，Pod是Kubernetes的最小单位，但是对于Docker而然，Pod中会运行多个Docker容器
   * 命令方式：
 
-    ```
+    ```sh
     # 查看所有运行的pod
     kubectl get pods -A
 
@@ -1734,7 +1734,7 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documen
     ```
   * yaml方式（推荐）
 
-    ```
+    ```yaml
     apiVersion: v1
     kind: Pod
     metadata:
@@ -1783,7 +1783,7 @@ Deployment部署实现
 
 * 命令方式
 
-  ```
+  ```sh
   # 基于Deployment启动容器
   kubectl create deployment deployment名称 --image=镜像名称
   # 用deployment启动的容器会在被删除后自动再次创建，达到故障漂移的效果
@@ -1799,7 +1799,7 @@ Deployment部署实现
   ```
 * [配置文件方式](https://kubernetes.io/zh/docs/concepts/workloads/controllers/deployment/)
 
-  ```
+  ```yaml
   apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1827,9 +1827,9 @@ Deployment部署实现
 
 弹性伸缩功能
 
-```
+```sh
 # 基于scale实现弹性伸缩
-kubectl scale deploy/Deployment名称 --replicas 集群个数
+kubectl scale deploy/Deployment名称 --replicas Pod副本数
 # 或者修改yaml文件
 kubectl edit deploy Deployment名称
 ```
@@ -1838,7 +1838,7 @@ kubectl edit deploy Deployment名称
 
 ![image20220104210823057.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/5c978f1318664c5e965a7571333bbdbe.png)
 
-灰度发布
+滚动更新
 
 Deploy可以在部署新版本数据时，成功启动一个pod，才会下线一个老版本的Pod
 
@@ -1856,7 +1856,7 @@ ClusterIP是集群内部Pod之间的访问方式
 
 * 命令实现效果
 
-  ```
+  ```sh
   # 通过生成service映射一个Deployment下的所有pod中的某一个端口的容器
   kubectl expose deployment Deployment名称 --port=Service端口号 --target-port=Pod内容器端口
   ```
