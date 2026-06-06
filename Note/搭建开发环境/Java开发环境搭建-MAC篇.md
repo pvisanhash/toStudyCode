@@ -14,6 +14,22 @@ tags:
 
 # Java开发环境搭建-MAC篇
 
+## 安装Poppler
+
+Poppler 是一套开源的 **PDF 处理与渲染工具库**，基于 Xpdf 演化而来，常用于命令行和程序中操作 PDF。
+
+```bash
+brew install poppler
+```
+
+# 安装Pandoc
+
+Pandoc 是一个开源的**文档格式转换工具**，常被称为“文档转换界的瑞士军刀”。它支持 Markdown、Word、HTML、LaTeX、EPUB、PDF 等多种格式。
+
+```bash
+brew install pandoc
+```
+
 ## 安装tldr
 
 **tldr** 的全称是：**Too Long; Didn't Read**（太长不看）
