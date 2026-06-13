@@ -1321,7 +1321,7 @@ idea配置tomcat
 
 ## 安装NodeJS
 
-### 推荐方案（首选）：用 nvm 管理 Node.js
+### 用 nvm 管理 Node.js
 
 > 参考https://nodejs.org/en/download
 
@@ -1373,7 +1373,40 @@ npm -v
 
 ---
 
-## 你现在最适合的处理方式
+### 用fnm管理Node.js(推荐)
+
+相比直接 `brew install node`，`fnm` 能为不同项目切换 Node 版本，速度也比 `nvm` 更快。
+
+```sh
+# 安装 fnm
+brew install fnm
+
+# 配置 macOS 默认的 zsh
+echo 'eval "$(fnm env --use-on-cd --shell zsh)"' >> ~/.zshrc
+source ~/.zshrc
+
+# 安装并启用最新版 LTS
+fnm install --lts --use
+fnm default "$(fnm current)"
+
+# 验证
+node -v
+npm -v
+```
+
+没有 Homebrew 时，先安装：
+
+```sh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+项目里建议固定版本：
+
+```sh
+node -v > .node-version
+```
+
+之后进入项目目录，`fnm` 会自动切换版本。
 
 ### 安装包安装(不推荐)
 
