@@ -14,7 +14,12 @@ tags:
 
 # Java开发环境搭建-MAC篇
 
-## 安装Poppler
+# 安装Github CLI
+
+```bash
+brew install gh
+```
+# 安装Poppler
 
 Poppler 是一套开源的 **PDF 处理与渲染工具库**，基于 Xpdf 演化而来，常用于命令行和程序中操作 PDF。
 

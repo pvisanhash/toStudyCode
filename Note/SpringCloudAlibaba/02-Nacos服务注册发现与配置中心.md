@@ -451,7 +451,8 @@ public class DemoController {
 
 **pom**
 
-```java
+
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -483,9 +484,10 @@ public class DemoController {
 </project>
 ```
 
-注意父项目要添加<models>标记
 
-```java
+注意父项目要添加```<models>```标记
+
+```xml
 <modules>
     <module>cloudalibaba-nacos-9001</module>
     <module>cloudalibaba-nacos-9002</module>
@@ -493,11 +495,9 @@ public class DemoController {
 </modules>
 ```
 
-
-
 **yml**
 
-```java
+```xml
 server:
   port: 8083
 spring:
@@ -539,8 +539,6 @@ public class CloudalibabaConsumerNacos8083Application {
 
 
 
-
-
 #### 1.1.4.2 远程调用与Ribbon
 
 ​	大家现在肯定很疑惑，这个服务消费者不是要调用具体服务吗？但是现在仅仅是创建出来了，和上节课创建的服务者也没有多大的区别啊？这具体怎么用那？
@@ -578,6 +576,7 @@ restTemplate.getForObject(arg1,arg2,arg3...);
 **第一个参数url表示被调用的目标Rest接口位置**
 
 1\. url的第一部分是在Nacos中注册的服务提供者名称，如果多个服务提供者注册相同名称，Ribbon会自动寻找其中一个服务提供者，并且调用接口方法。这个就是负载均衡功能。
+
 2\. url后半部是控制器的请求路径。
 
 **第二个参数是返回值类型**
