@@ -111,7 +111,7 @@ sudo apt install cmake curl vim -y
 
 在Ubuntu终端执行如下命令：
 
-```
+```bash
 # Download and install nvm:
 
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
@@ -137,6 +137,8 @@ npm -v
 
 ```
 
+图示
+![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/a2ee488b-9857-5566-9160-5cfd5c67786f.jpg)
 ![image.png](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/a2ee488b-9857-5566-9160-5cfd5c67786f.jpg)
 
 **3) 安装OpenCode**
@@ -175,7 +177,7 @@ source ~/.bashrc
 opencode serve --hostname 0.0.0.0 --port 4096
 ```
 
-在桌面应用中连接到 [http://localhost:4096，如果localhost不能访问可以在Ubuntu系统中查找该linux系统的ip（hostname](http://localhost:4096，如果localhost不能访问可以在Ubuntu系统中查找该linux系统的ip（hostname) -I） ,然后使用 http://<wsl-ip>:4096访问。
+在桌面应用中连接到 [http://localhost:4096，如果localhost不能访问可以在Ubuntu系统中查找该linux系统的ip（hostname](http://localhost:4096，如果localhost不能访问可以在Ubuntu系统中查找该linux系统的ip（hostname) -I） ,然后使用```http://<wsl-ip>:4096```访问。
 
 * **Web客户端+WSL:**
 
@@ -236,7 +238,7 @@ ubuntu config --default-user <用户名>
 
 **5) 启动/退出wsl**
 
-```
+```powershell
 #启动Ubuntu系统
 wsl
 
@@ -252,14 +254,14 @@ exit
 
 **1) 关闭所有wsl实例**
 
-```
+```powershell
 #管理员身份打开PowerShell，执行如下命令，该命令强制终止所有WSL进程
 wsl --shutdown
 ```
 
 **2) 注消所有Linux发行版**
 
-```
+```powershell
 #查看已安装的发行版
 wsl --list --verbose
 
@@ -275,7 +277,7 @@ wsl --uninstall
 
 **4) 清理残留文件**
 
-```
+```powershell
 # 删除用户配置文件
 
 Remove-Item -Force "$env:USERPROFILE\.wslconfig" -ErrorAction SilentlyContinue
@@ -475,7 +477,7 @@ agent: build
 
 进入“~/.opencode”目录中创建“commands”目录，[然后在该目录中创建myreview.md](http://然后在该目录中创建myreview.md)文件。
 
-```
+```bash
 cd .opencode/
 mkdir commands && cd commands
 
@@ -545,7 +547,7 @@ OpenCode 为 LLM 提供了一系列内置工具，使其能够在您的代码库
 
 假设我们在对应目录中创建一个ts文件如下（.opencode/tools/query-db.ts）：
 
-```
+```ts
 import { tool } from "@opencode-ai/plugin";
 
 export default tool({
@@ -578,7 +580,7 @@ export default tool({
 
 在.opencode/中创建tools目录：
 
-```
+```bash
 cd ~
 mkdir -p .opencode/tools
 ```
@@ -615,7 +617,7 @@ if __name__ == "__main__":
 
 count\_py\_[lines.py](http://lines.py)文件实现指定python文件或者某个目录下python文件中代码行、注释行、空行统计。
 
-```
+```python
 #!/usr/bin/env python3
 """Python代码行数统计工具"""
 
