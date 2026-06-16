@@ -16,7 +16,7 @@
 
 ![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248197.png)
 
-![](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248199.png)
+![187](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img/202210042248199.png)
 
 ## 4. git的下载安装
 
