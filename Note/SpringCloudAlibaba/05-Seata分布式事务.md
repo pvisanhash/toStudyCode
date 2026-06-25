@@ -1,4 +1,4 @@
-# Seata
+# Seata分布式事务
 
 ## 1 Seata基础应用
 
