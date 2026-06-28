@@ -66,16 +66,13 @@
 
 ## 1 Sentinel 整合 Gateway
 
-> 来源：`附加/01/Sentinel整合GateWay.md`
-
-
 ### 1.1 网关限流概述
 
 在微服务系统中，网关提供了微服务系统的统一入口，所以我们在做限流的时候，肯定是要在网关层面做一个流量的控制，Sentinel 支持对 Spring Cloud Gateway、Zuul 等主流的 API Gateway 进行限流。
 
-![image-20220505163401151](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/fc7b5588-58f8-57f2-9c04-270e417bb4b1.png)
+<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/fc7b5588-58f8-57f2-9c04-270e417bb4b1.png" alt="image-20220505163401151" style="zoom: 50%;" />
 
-![sentinel-api-gateway-common-arch](https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/59ec8631-e8e6-51bb-9b70-68dacc34497c.png)
+<img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/59ec8631-e8e6-51bb-9b70-68dacc34497c.png" alt="sentinel-api-gateway-common-arch" style="zoom:50%;" />
 
 ### 1.2 官方定义
 
