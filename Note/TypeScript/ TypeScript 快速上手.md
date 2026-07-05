@@ -3,9 +3,11 @@
 [🪩 禹神：三小时快速上手TypeScript，TS速通教程_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1YS411w7Bf/?spm_id_from=333.1007.top_right_bar_window_history.content.click&vd_source=eec8d29cc9562259bc3afddcb56823bd)
 
 ## 1 TypeScript 简介
+
 1. TypeScript 由微软开发,是基于 JavaScript 的⼀个扩展语⾔。
 2. TypeScript 包含了 JavaScript 的所有内容,即: TypeScript 是 JavaScrip t 的超集。
     <img src="https://raw.githubusercontent.com/pvisanhash/PicSiteRepo1/main/note/img2/20260705011837807.png" alt="image" style="zoom: 25%;" />
+
 3. TypeScript 增加了:静态类型检查、接⼝、 泛型等很多现代开发特性,更适合⼤型项⽬ 的开发。
 4. TypeScript 需要编译为 JavaScript ,然后交给浏览器或其他 JavaScript 运⾏环 境执⾏。
 
@@ -51,13 +53,16 @@ const message = 'hello,world' message.toUperCase() //遗漏了一个"p"
 ```
 
 ### 2.3 静态类型检查
+
 - 在代码运⾏前进⾏检查,发现代码的错误或不合理之处,减⼩运⾏时出现异常的⼏率,此种检 查叫『静态类型检查』,TypeScript 和核⼼就是『静态类型检查』,简⾔之就是把运⾏时的 错误前置
 - 同样的功能,TypeScript 的代码量要⼤于 JavaScript,但由于 TypeScript 的代码结构更加 清晰,在后期代码的维护中 TypeScript 却胜于 JavaScript
 
 ## 3 编译 TypeScript
 
 ### 3.1 命令⾏编译
+
 要把 .ts ⽂件编译为 .js ⽂件,需要配置 TypeScript 的编译环境,步骤如下:
+
 - 第⼀步:创建⼀个 demo.ts ⽂件,例如:
 
 ```ts
@@ -67,12 +72,14 @@ const person = {
 }
 console.log(`我叫${person.name}，我今年${person.age}岁了`)
 ```
-- 第⼆步:全局安装 `TypeScript  npm i typescript -g`
+
+- 第⼆步:全局安装 `npm i typescript -g`
 - 第三步:使⽤命令编译 .ts ⽂件`tsc demo.ts`
 
 ### 3.2 ⾃动化编译
+
 - 第⼀步:创建 TypeScript 编译控制⽂件：`tsc --init`
-- 第⼆步:监视⽬录中的 .ts ⽂件变化  `tsc --watch 或 tsc -w`
+- 第⼆步:监视⽬录中的 .ts ⽂件变化  `tsc --watch` 或 `tsc -w`
 - 第三步:⼩优化,当编译出错时不⽣成 .js ⽂件 `tsc --noEmitOnError --watch`
 	- 备注:当然也可以修改tsconfig.json 中的 noEmitOnError 配置
 
@@ -129,16 +136,24 @@ d = false //警告:不能将类型"boolean"分配给类型"number"
 
 ### 6.1 JavaScript 中的数据类型
 
-① string ② number ③ boolean ④ null ⑤ undefined ⑥ bigint ⑦ symbol ⑧ object
+1. `string`
+2. `number`
+3. `boolean`
+4. `null`
+5. `undefined`
+6. `bigint`
+7. `symbol`
+8. `object`
 备注:其中 object 包含: Array 、 Function 、 Date 、 Error 等......
 
 ### 6.2 TypeScript 中的数据类型
-1. 上述所有 JavaScript 类型
-2. 六个新类型： ① any ② unknown ③ never ④ void ⑤ tuple ⑥ enum
-3. 两个用于自定义类型的方式： ① type ② interface
 
-> [!NOTE] 注意点
-在 JavaScript 中的这些内置构造函数: Number 、 String 、 Boolean ,⽤于 创建对应的包装对象, 在⽇常开发时==很少使⽤==,在 TypeScript 中也是同理,所以 在 TypeScript 中进⾏类型声明时,通常都是⽤⼩写的 number 、 string 、 boolean
+1. 上述所有 JavaScript 类型
+2. 六个新类型：`any`、`unknown`、`never`、`void`、`tuple`、`enum`
+3. 两个用于自定义类型的方式：`type`、`interface`
+
+> **注意点**
+在 JavaScript 中的这些内置构造函数: Number 、 String 、 Boolean ,⽤于 创建对应的包装对象, 在⽇常开发时**很少使⽤**,在 TypeScript 中也是同理,所以 在 TypeScript 中进⾏类型声明时,通常都是⽤⼩写的 number 、 string 、 boolean
 
 例如下⾯代码:
 
@@ -181,7 +196,7 @@ console.log(size); // 输出: 5
 
 ### 7.1 any
 
-any 的含义是:任意类型,⼀旦将变量类型限制为 any ,那就意味着==放弃了==对该变量的类型检查。
+any 的含义是:任意类型,⼀旦将变量类型限制为 any ,那就意味着**放弃了**对该变量的类型检查。
 
 ```ts
 // 明确的表示a的类型是 any —— 【显式的any
@@ -210,7 +225,7 @@ x = c // ⽆警告
 
 ### 7.2 unknown
 
-unknown 的含义是: ==未知类型==
+unknown 的含义是: **未知类型**
 
 适⽤于: 起初不确定数据的具体类型,要后期才能确定
 
@@ -271,7 +286,7 @@ str3.toUpperCase() //警告:"str3"的类型为"未知"
 
 never 的含义是:任何值都不是,即: 不能有值,例如 undefined 、 null 、 '' 、 0 都不⾏!
 
-1.⼏乎不⽤ never 去直接限制变量,因为没有意义,例如:
+1. ⼏乎不⽤ never 去直接限制变量,因为没有意义,例如:
 
 ```ts
 /* 指定a的类型为never, 那就意味着a以后不能存任何的数据了 */
@@ -284,7 +299,7 @@ a = undefined
 a = null
 ```
 
-2.never 一般是 TypeScript 主动推断出来的，例如：
+2. never 一般是 TypeScript 主动推断出来的，例如：
 
 ```ts
 // 指定a的类型为string
@@ -319,7 +334,7 @@ function logMessage(msg:string):void{
 logMessage('你好')
 ```
 
-注意:编码者没有编写 return 指定函数返回值,所以 logMessage 函数是没有==显式返回值==的,但会有⼀个==隐式返回值== ,是 undefined ,虽然函数返回类型为 void ,但也是可以接受 undefined 的,简单记: **undefined** 是 **void** 可以接受的⼀种"空"。
+注意:编码者没有编写 return 指定函数返回值,所以 logMessage 函数是没有**显式返回值**的,但会有⼀个**隐式返回值** ,是 undefined ,虽然函数返回类型为 void ,但也是可以接受 undefined 的,简单记: **undefined** 是 **void** 可以接受的⼀种"空"。
 
 2. 以下写法均符合规范
 
@@ -369,12 +384,14 @@ if (result) { // 此行无警告
 ```
 
 **理解 void 与 undefined**
+
 - void 是⼀个⼴泛的概念,⽤来表达"空",⽽ undefined 则是这种"空"的具体 实现。
 - 因此可以说 undefined 是 void 能接受的⼀种"空"的状态。
 - 也可以理解为: void 包含 undefined ,但 void 所表达的语义超越了 undefi ned , void 是⼀种意图上的约定,⽽不仅仅是特定值的限制。
 
 【总结】
 如果⼀个函数返回类型为 void ,那么:
+
 1. 从语法上讲:函数是可以返回 undefined 的,⾄于显式返回,还是隐式返回,这⽆ 所谓!
 2. 从语义上讲:函数调⽤者不应关⼼函数返回的值,也不应依赖返回值进⾏任何操作! 即使我们知道它返回了 undefined 。
 
@@ -483,7 +500,8 @@ count = function (x, y) { return x + y }
 ```
 
 备注:
-- TypeScript 中的 => 在函数类型声明时表示==函数类型,==描述其==参数类型==和返回类型。
+
+- TypeScript 中的 => 在函数类型声明时表示**函数类型,**描述其**参数类型**和返回类型。
 - JavaScript 中的 => 是⼀种定义函数的语法,是具体的函数实现。
 - 函数类型声明还可以使⽤:接⼝、⾃定义类型等⽅式,下⽂中会详细讲解。
 
@@ -501,7 +519,7 @@ arr2 = ['hello','world']
 
 ### 7.6 tuple
 
-元组 (Tuple) 是⼀种==特殊的数组类型==,可以存储固定数量的元素,并且每个元素的类型是==已知==的且可以==不同==。元组⽤于精确描述⼀组值的类型， ? 表示可选元素。
+元组 (Tuple) 是⼀种**特殊的数组类型**,可以存储固定数量的元素,并且每个元素的类型是**已知**的且可以**不同**。元组⽤于精确描述⼀组值的类型， ? 表示可选元素。
 
 ```ts
 // 第⼀个元素必须是 string 类型,第⼆个元素必须是 number 类型。
@@ -524,9 +542,9 @@ arr1 = ['hello',123,false]
 
 ### 7.7 enum
 
-枚举( enum )可以定义==⼀组命名常量==,它能增强代码的可读性,也让代码更好维护。
+枚举( enum )可以定义**⼀组命名常量**,它能增强代码的可读性,也让代码更好维护。
 
-如下代码的功能是:根据调⽤ walk 时传⼊的不同参数,执⾏不同的逻辑,存在的问题是调⽤ walk 时传参时没有任何提示,编码者很容易写错字符串内容;并且⽤于判断逻辑的 up 、 down 、 left 、 right 是连续且==相关的⼀组值==,那此时就特别适合使⽤==枚举( enum )==。
+如下代码的功能是:根据调⽤ walk 时传⼊的不同参数,执⾏不同的逻辑,存在的问题是调⽤ walk 时传参时没有任何提示,编码者很容易写错字符串内容;并且⽤于判断逻辑的 up 、 down 、 left 、 right 是连续且**相关的⼀组值**,那此时就特别适合使⽤**枚举( enum )**。
 
 ```ts
 function walk(str: string) {
@@ -551,7 +569,7 @@ walk('right');
 
 #### 7.7.1 数字枚举
 
-数字枚举⼀种最常⻅的枚举类型,其成员的值会⾃动递增,且数字枚举还具备==反向映射==的 特点,在下⾯代码的打印中,不难发现:可以通过值来获取对应的枚举成员名称
+数字枚举⼀种最常⻅的枚举类型,其成员的值会⾃动递增,且数字枚举还具备**反向映射**的 特点,在下⾯代码的打印中,不难发现:可以通过值来获取对应的枚举成员名称
 
 ```ts
 // 定义一个描述【上下左右】方向的枚举Direction
@@ -759,6 +777,7 @@ type House = Area & Address;
 ```
 
 ### 7.9 ⼀个特殊情况
+
 先来观察如下两段代码:
 
 代码段1(正常)
@@ -849,7 +868,7 @@ class Person {
 const p1 = new Person('周杰伦', 38);
 ```
 
-Student 继承 Person
+Student 继承 Person：
 
 ```ts
 class Student extends Person {
@@ -908,7 +927,7 @@ const p1 = new Person('张三', 18);
 console.log(p1.name);
 ```
 
-Student 继承 Person
+Student 继承 Person：
 
 ```ts
 class Student extends Person {
@@ -948,7 +967,7 @@ class Person {
 
 #### 7.11.2 protected 修饰符
 
-Person类
+Person 类
 
 ```ts
 class Person {
@@ -981,10 +1000,9 @@ p1.introduce();
 // p1.age;
 ```
 
-Student 继承 Person
+Student 继承 Person：
 
 ```ts
-TypeScript
 class Student extends Person {
     constructor(name: string, age: number) {
         super(name, age);
@@ -1073,13 +1091,13 @@ car.displayInfo()
 ### 7.12 抽象类
 
 - 概述:抽象类是⼀种⽆法被实例化的类,专⻔⽤来定义类的结构和⾏为,类中可以写抽象 ⽅法,也可以写具体实现。抽象类主要⽤来为其派⽣类提供⼀个基础结构,要求其派⽣类  必须实现其中的抽象⽅法。
-- 简记:抽象类==不能实例化==,其意义是==可以被继承==,抽象类⾥可以有==普通⽅法==、也可以有==抽象⽅法==。
+- 简记:抽象类**不能实例化**,其意义是**可以被继承**,抽象类⾥可以有**普通⽅法**、也可以有**抽象⽅法**。
 
 #### 7.12.1 通过以下场景,理解抽象类:
 
 我们定义⼀个抽象类 Package ,表示所有包裹的基本结构,任何包裹都有重量属性 weigh t ,包裹都需要计算运费。但不同类型的包裹(如:标准速度、特快专递)都有不同的运费计算 ⽅式,因此⽤于计算运费的 calculate ⽅法是⼀个抽象⽅法,必须由具体的⼦类来实现。
 
-Package 类 TypeScript
+Package 类：
 
 ```ts
 abstract class Package {
@@ -1138,20 +1156,20 @@ const e1 = new ExpressPackage(13,8,2)
 e1.printPackage()
 ```
 
-> [!NOTE] 总结:何时使⽤抽象类?
-1.定义通用接口 :为⼀组相关的类定义通⽤的⾏为(⽅法或属性)时。
-2.提供基础实现：在抽象类中提供某些⽅法或为其提供基础实现,这样派⽣类就可以继承这 些实现。
-3.确保关键实现：强制派⽣类实现⼀些关键⾏为。
-4.共享代码和逻辑:当多个类需要共享部分代码时,抽象类可以避免代码重复。
+> **总结:何时使⽤抽象类?**
+1. 定义通用接口 :为⼀组相关的类定义通⽤的⾏为(⽅法或属性)时。
+2. 提供基础实现：在抽象类中提供某些⽅法或为其提供基础实现,这样派⽣类就可以继承这 些实现。
+3. 确保关键实现：强制派⽣类实现⼀些关键⾏为。
+4. 共享代码和逻辑:当多个类需要共享部分代码时,抽象类可以避免代码重复。
 
 ### 7.13 interface(接⼝)
 
 interface 是⼀种`定义结构`的⽅式,主要作⽤是为:类、对象、函数等规定`⼀种契约`,这样 可以确保代码的⼀致性和类型安全,但要注意 interface `只能`定义`格式`,`不能`包含`任何实现` !
 
-• 定义类结构
+- 定义类结构
 
 ```ts
-// PersonInterface接口，用与限制Person类的格式
+// PersonInterface接口，用与限制Person 类的格式
 interface PersonInterface {
     name: string;
     age: number;
@@ -1248,7 +1266,7 @@ interface PersonInterface {
 	speak(): void;
 }
 
-// Person类实现PersonInterface
+// Person 类实现PersonInterface
 class Person implements PersonInterface {
 	name: string;
 	age: number;
@@ -1267,6 +1285,7 @@ class Person implements PersonInterface {
 ```
 
 总结:何时使⽤接⼝?
+
 1. 定义对象的格式: 描述数据模型、API 响应格式、配置对象........等等,是开发中⽤的最多 的场景。
 2. 类的契约:规定⼀个类需要实现哪些属性和⽅法。
 3. 扩展已有接⼝:⼀般⽤于扩展第三⽅库的类型, 这种特性在⼤型项⽬中可能会⽤到。
@@ -1281,7 +1300,7 @@ class Person implements PersonInterface {
 interface :更专注于定义对象和类的结构,⽀持继承、合并。
 type :可以定义类型别名、联合类型、交叉类型,但不⽀持继承和⾃动合并。
 
-interface 和 type 都可以定义对象结构 TypeScript
+interface 和 type 都可以定义对象结构：
 
 ```ts
 // 使⽤ interface 定义 Person 对象
@@ -1367,10 +1386,11 @@ const student: StudentType = {
 
 相同点:都能定义⼀个类的格式(定义类应遵循的契约)
 不相同:
+
 - 接⼝:只能描述结构,不能有任何实现代码,⼀个类可以实现多个接⼝。
 - 抽象类:既可以包含抽象⽅法,也可以包含具体⽅法, ⼀个类只能继承⼀个抽象类。
 
-⼀个类可以实现多个接⼝ TypeScript
+⼀个类可以实现多个接⼝：
 
 ```ts
 // FlyInterface 接⼝
@@ -1405,7 +1425,6 @@ duck.swim(); // 输出: 鸭⼦可以游泳
 
 ```ts
 // 泛型函数
-TypeScript
 function logData<T>(data: T): T {
     console.log(data)
     return data
@@ -1414,7 +1433,6 @@ logData<number>(100)
 logData<string>('hello')
 
 // 泛型可以有多个
-TypeScript
 function logData<T, U>(data1: T, data2: U): T | U {
     console.log(data1, data2)
     return Date.now() % 2 ? data1 : data2
@@ -1423,7 +1441,6 @@ logData<number, string>(100, 'hello')
 logData<string, boolean>('ok', false)
 
 // 泛型接口
-TypeScript
 interface PersonInterface<T> {
     name: string,
     age: number,
@@ -1437,7 +1454,6 @@ p2 = { name: '李四', age: 18, extraInfo: 250 }
 
 ```ts
 // 泛型约束
-TypeScript
 interface LengthInterface {
     length: number
 }
@@ -1453,7 +1469,6 @@ logPerson<string>('hello')
 // logPerson<number>(100)
 
 // 泛型类
-TypeScript
 class Person<T> {
     constructor(public name: string, public age: number, public extraInfo: T) {}
     speak() {
@@ -1504,32 +1519,34 @@ console.log(x, y);
 ```
 
 ## 10 装饰器
+
 [🪩 附加篇：TypeScript装饰器_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1YS411w7Bf?spm_id_from=333.788.videopod.episodes&vd_source=eec8d29cc9562259bc3afddcb56823bd&p=4)
 
 ### 10.1 简介
+
 1. 装饰器本质是一种特殊的**函数**，它可以对：类、属性、方法、参数进行扩展，同时能让代码更简洁。
 2. 装饰器自`2015`年在`ECMAScript-6`中被提出到现在，已将近10年。
 3. 截止目前，装饰器依然是实验性特性 ，需要开发者手动调整配置，来开启装饰器支持。
 4. 装饰器有 5 种：
-1⃣类装饰器
-2⃣属性装饰器
-3⃣方法装饰器
-4⃣访问器装饰器
-5⃣参数装饰器
+   1. 类装饰器
+   2. 属性装饰器
+   3. 方法装饰器
+   4. 访问器装饰器
+   5. 参数装饰器
 
-> 备注：虽然`TypeScript5.0`中可以直接使用`**类装饰器**`，但为了确保其他装饰器可用，现阶段使用时，仍建议使用`experimentalDecorators`配置来开启装饰器支持，而且不排除在来的版本中，官方会**进一步调整**装饰器的相关语法！
+> 备注：虽然`TypeScript5.0`中可以直接使用**类装饰器**，但为了确保其他装饰器可用，现阶段使用时，仍建议使用`experimentalDecorators`配置来开启装饰器支持，而且不排除在来的版本中，官方会**进一步调整**装饰器的相关语法！
 > 参考：[**《TypeScript 5.0发版公告》**](https://devblogs.microsoft.com/typescript/announcing-typescript-5-0-rc/)
 
 ### 10.2 类装饰器
 
 #### 10.2.1 基本语法
-:::info
- 类装饰器是一个应用在**类声明**上的**函数**，可以为类添加额外的功能，或添加额外的逻辑。
-:::
+
+> **说明：**
+>  类装饰器是一个应用在**类声明**上的**函数**，可以为类添加额外的功能，或添加额外的逻辑。
 
 ```ts
 /*
-  Demo函数会在Person类定义时执行
+  Demo函数会在Person 类定义时执行
   参数说明：
     ○ target参数是被装饰的类，即：Person
 */
@@ -1541,13 +1558,12 @@ function Demo(target: Function) {
 @Demo
 class Person { }
 
-
 ```
 
 #### 10.2.2 应用举例
-:::tips
-需求：定义一个装饰器，实现`Person`实例调用`toString`时返回`JSON.stringify`的执行结果。
-:::
+
+> **提示：**
+> 需求：定义一个装饰器，实现`Person`实例调用`toString`时返回`JSON.stringify`的执行结果。
 
 ```ts
 // 使用装饰器重写toString方法 + 封闭其原型对象
@@ -1582,10 +1598,10 @@ interface Person {
 ```
 
 #### 10.2.3 关于返回值
-:::info
-**类装饰器有返回值**：若类装饰器返回一个新的类，那这个新类将**替换**掉被装饰的类。
-**类装饰器无返回值**：若类装饰器无返回值或返回`undefined`，那被装饰的类**不会**被替换。
-:::
+
+> **说明：**
+> **类装饰器有返回值**：若类装饰器返回一个新的类，那这个新类将**替换**掉被装饰的类。
+> **类装饰器无返回值**：若类装饰器无返回值或返回`undefined`，那被装饰的类**不会**被替换。
 
 ```ts
 function demo(target:Function){
@@ -1632,7 +1648,7 @@ test(Person)
 ```
 
 声明构造类型＋指定静态属性
-#0-综合、通用/状态/问题
+
 
 ```ts
 // 定义一个构造类型，且包含一个静态属性 wife
@@ -1649,10 +1665,11 @@ test(Person)
 ```
 
 #### 10.2.5 替换被装饰的类
+
 对于高级一些的装饰器，不仅仅是覆盖一个原型上的方法，还要有更多功能，例如添加新的方法和状态。
-:::tips
-需求：设计一个`LogTime`装饰器，可以给实例添加一个属性，用于记录实例对象的创建时间，再添加一个方法用于读取创建时间。
-:::
+
+> **提示：**
+> 需求：设计一个`LogTime`装饰器，可以给实例添加一个属性，用于记录实例对象的创建时间，再添加一个方法用于读取创建时间。
 
 ```ts
 // User接口
@@ -1695,10 +1712,11 @@ console.log(user1.getTime())
 ```
 
 ### 10.3 装饰器工厂
+
 装饰器工厂是一个返回装饰器函数的函数，可以为装饰器添加参数，可以更灵活地控制装饰器的行为。
-:::tips
-需求**：**定义一个`LogInfo`类装饰器工厂，实现`Person`实例可以调用到`introduce`方法，且`introduce`中输出内容的次数，由`LogInfo`接收的参数决定。
-:::
+
+> **提示：**
+> 需求**：**定义一个`LogInfo`类装饰器工厂，实现`Person`实例可以调用到`introduce`方法，且`introduce`中输出内容的次数，由`LogInfo`接收的参数决定。
 
 ```ts
 interface Person {
@@ -1735,6 +1753,7 @@ p1.introduce()
 ```
 
 ### 10.4 装饰器组合
+
 装饰器可以组合使用，执行顺序为：先【由上到下】的执行所有的装饰器工厂，依次获取到装饰器，然后再【由下到上】执行所有的装饰器。
 
 ```ts
@@ -1903,9 +1922,8 @@ console.log(Person.prototype.age)//18
 
 #### 10.5.3 应用举例
 
-:::tips
-需求：定义一个`State`属性装饰器，来监视属性的修改。
-:::
+> **提示：**
+> 需求：定义一个`State`属性装饰器，来监视属性的修改。
 
 ```ts
 // 声明一个装饰器函数 State，用于捕获数据的修改
@@ -1987,12 +2005,12 @@ p1.speak()
 ```
 
 #### 10.6.2 应用举例
-:::tips
-需求：
 
-1. 定义一个`Logger`方法装饰器，用于在方法执行前和执行后，均追加一些额外逻辑。
-2. 定义一个`Validate`方法装饰器，用于验证数据。
-:::
+> **提示：**
+> 需求：
+>
+> 1. 定义一个`Logger`方法装饰器，用于在方法执行前和执行后，均追加一些额外逻辑。
+> 2. 定义一个`Validate`方法装饰器，用于验证数据。
 
 ```ts
 function Logger(target: object, propertyKey: string, descriptor: PropertyDescriptor){
@@ -2074,9 +2092,9 @@ class Person {
 ```
 
 #### 10.7.2 应用举例
-:::tips
-需求：对`Weather`类的`temp`属性的`set`访问器进行限制，设置的最低温度`-50`，最高温度`50`
-:::
+
+> **提示：**
+> 需求：对`Weather`类的`temp`属性的`set`访问器进行限制，设置的最低温度`-50`，最高温度`50`
 
 ```ts
 function RangeValidate(min: number, max: number) {
@@ -2151,9 +2169,8 @@ class Person {
 
 #### 10.8.2 应用举例
 
-:::tips
-需求：定义方法装饰器`Validate`，同时搭配参数装饰器`NotNumber`，来对`speak`方法的参数类型进行限制。
-:::
+> **提示：**
+> 需求：定义方法装饰器`Validate`，同时搭配参数装饰器`NotNumber`，来对`speak`方法的参数类型进行限制。
 
 ```ts
 function NotNumber(target: any, propertyKey: string, parameterIndex: number) {
