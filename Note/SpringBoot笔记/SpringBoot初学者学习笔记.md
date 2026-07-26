@@ -112,6 +112,109 @@ javac -version
 
 `./mvnw -version` 输出中的 Java home 才是 Maven 实际使用的 JDK。`JAVA_HOME` 只是告诉许多工具去哪里找 JDK，修改后要重新打开终端或确认当前进程已经读取新值。Maven Wrapper 固定的是 Maven 版本，不会替项目自动安装正确的 JDK。
 
+#### 2.1.1 Maven Wrapper：为什么项目使用 `mvnw`
+
+`mvnw` 是 Maven Wrapper（Maven 包装器）在 macOS、Linux 等类 Unix 系统上的启动脚本，Windows 对应 `mvnw.cmd`。它不是另一套构建工具，最后执行的仍是 Apache Maven；它解决的是“由项目声明并自动准备 Maven 版本”这个问题。
+
+直接执行：
+
+```bash
+mvn test
+```
+
+使用的是当前操作系统 `PATH` 中找到的 Maven。不同开发者和持续集成环境可能安装了不同版本。执行：
+
+```bash
+./mvnw test
+```
+
+则先读取项目中的 Wrapper 配置，找到项目指定的 Maven 发行版；本机没有该版本时先下载、解压并缓存，然后用它执行 `test`。后续运行通常直接复用缓存，不会每次重新下载。
+
+```mermaid
+flowchart LR
+    A["执行 ./mvnw test"] --> B["读取 maven-wrapper.properties"]
+    B --> C{"指定版本已缓存？"}
+    C -->|否| D["下载并校验 Maven 发行版"]
+    D --> E["解压到用户 Maven 目录"]
+    C -->|是| F["复用已缓存版本"]
+    E --> G["执行 Maven test"]
+    F --> G
+```
+
+一个 Wrapper 至少包含以下项目文件：
+
+```text
+demo/
+├── mvnw
+├── mvnw.cmd
+└── .mvn/
+    └── wrapper/
+        └── maven-wrapper.properties
+```
+
+现代 Wrapper 默认可以采用 `only-script` 方式，不一定包含 `maven-wrapper.jar`。因此看到项目中没有该 JAR，不代表 Wrapper 不完整；应以 `maven-wrapper.properties` 和脚本的实际配置为准。
+
+`maven-wrapper.properties` 中最关键的是 `distributionUrl`：
+
+```properties
+distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip
+```
+
+URL 中的版本就是该项目准备使用的 Maven 版本。团队升级 Maven 时，应统一更新并提交 Wrapper 文件，通过构建验证后再合并，不要让每位开发者各自修改本机 Maven。
+
+Wrapper 固定 Maven，不固定 JDK，也不固定项目依赖：
+
+1\. JDK 版本仍由本机、IDE、`JAVA_HOME`、工具链或持续集成环境提供。
+
+2\. Maven 版本由 Wrapper 的 `distributionUrl` 决定。
+
+3\. Spring Boot、MyBatis 等项目依赖由 `pom.xml` 和依赖管理决定。
+
+4\. 依赖仓库镜像、代理、认证和本地仓库通常仍受 Maven `settings.xml` 影响。
+
+因此，`./mvnw` 能运行不代表 Java 版本一定正确，也不代表依赖下载网络一定可用。定位问题时分别检查：
+
+```bash
+# 当前终端直接执行的 Java。
+java -version
+
+# Wrapper 最终使用的 Maven 和 Java。
+./mvnw -version
+
+# 项目实际解析出的依赖关系。
+./mvnw dependency:tree
+```
+
+常用命令与作用：
+
+| 命令 | 作用 |
+|---|---|
+| `./mvnw test` | 编译并执行测试 |
+| `./mvnw clean verify` | 清理旧产物，执行完整验证生命周期 |
+| `./mvnw spring-boot:run` | 使用 Spring Boot Maven 插件启动应用 |
+| `./mvnw dependency:tree` | 查看最终依赖树和版本冲突 |
+| `./mvnw help:effective-pom` | 查看继承、属性和依赖管理合并后的有效 POM |
+| `./mvnw -U clean verify` | 强制检查快照和缺失更新；不应把 `-U` 当作日常修复手段，U是--update-snapshots |
+
+首次执行 Wrapper 往往需要访问网络。如果此时失败，应区分两类下载：
+
+1\. Maven 发行版下载失败：通常发生在 Wrapper 启动阶段，应检查 `distributionUrl`、代理、证书、DNS（Domain Name System，域名系统）和公司仓库策略。
+
+2\. 项目依赖下载失败：Maven 已经启动，但解析 `pom.xml` 依赖时失败，应检查仓库镜像、`settings.xml`、凭据和具体构件坐标。
+
+macOS 或 Linux 出现 `Permission denied`，表示 `mvnw` 没有可执行权限：
+
+```bash
+chmod +x mvnw
+git update-index --chmod=+x mvnw
+```
+
+第一条修改本地文件权限，第二条让 Git 记录可执行位，避免其他开发者检出后再次失败。不要用 `sudo ./mvnw` 解决权限或下载问题，否则可能在用户 Maven 缓存中留下属于 root 用户的文件，随后普通用户反而无法更新。
+
+Wrapper 文件应与项目源码一起提交，包括 `mvnw`、`mvnw.cmd` 和 `.mvn/wrapper/`。不要只提交脚本而遗漏配置，也不要随意手工修改生成的脚本。对供应链要求较高的项目可在 `maven-wrapper.properties` 中配置 `distributionSha256Sum`，校验下载的 Maven 发行版是否与预期一致。
+
+官方参考：[Apache Maven Wrapper](https://maven.apache.org/tools/wrapper/)。
+
 ### 2.2 使用 Spring Initializr 创建项目
 
 打开 `https://start.spring.io/`，建议初学项目选择：
@@ -238,6 +341,99 @@ package com.example.demo.greeting;
 public record GreetingResponse(String message) {
 }
 ```
+
+`record` 是 Java 用来声明“以数据为主要职责的类”的关键字，Java 16 起成为正式语言特性。圆括号中的 `String message` 称为 Record Component（记录组件），它同时描述了字段名称和类型。
+
+上面的代码大致替代了下面这类普通 Java 类：
+
+```java
+public final class GreetingResponse {
+
+    private final String message;
+
+    public GreetingResponse(String message) {
+        this.message = message;
+    }
+
+    public String message() {
+        return message;
+    }
+}
+```
+
+除此之外，record 还会生成基于全部组件值的 `equals()`、`hashCode()` 和 `toString()`；普通类若需要同样的值语义，必须自行正确实现这些方法。
+
+编译器会为 `GreetingResponse` 自动提供：
+
+1\. `private final String message` 对应的状态。
+
+2\. 接收全部组件的 Canonical Constructor（规范构造器），因此可以执行 `new GreetingResponse("你好")`。
+
+3\. 名为 `message()` 的访问方法。它不是 JavaBean 风格的 `getMessage()`，调用方式为 `response.message()`。
+
+4\. 基于所有组件值生成的 `equals()`、`hashCode()` 和 `toString()`。
+
+这使 record 很适合 DTO、配置快照、查询结果和其他只负责传递数据的值对象。Spring MVC 与 Jackson 可以把公开的 record 组件序列化为 JSON，所以：
+
+```java
+new GreetingResponse("你好，小明")
+```
+
+可以转换成：
+
+```json
+{
+  "message": "你好，小明"
+}
+```
+
+record 不是“所有对象都完全不可变”的保证。它只保证组件引用不能在构造完成后重新赋值，也不会自动生成 Setter（设置方法）。如果组件本身是可变对象，内部内容仍可能被修改：
+
+```java
+import java.util.List;
+
+public record TeamResponse(List<String> members) {
+}
+```
+
+调用者如果持有同一个可变 `List`，仍可能修改其中的元素。需要真正稳定的值对象时，应在构造阶段创建防御性副本：
+
+```java
+import java.util.List;
+
+public record TeamResponse(List<String> members) {
+
+    public TeamResponse {
+        members = List.copyOf(members);
+    }
+}
+```
+
+这里省略参数列表的写法叫 Compact Constructor（紧凑构造器）。它适合校验、规范化或复制组件值，编译器会在构造结束时完成字段赋值：
+
+```java
+public record GreetingResponse(String message) {
+
+    public GreetingResponse {
+        if (message == null || message.isBlank()) {
+            throw new IllegalArgumentException("message 不能为空");
+        }
+        message = message.trim();
+    }
+}
+```
+
+还要理解 record 的类型边界：
+
+1\. record 类隐式为 `final`，不能再被其他类继承。
+
+2\. record 不能继承普通业务父类，但可以实现接口。
+
+3\. record 可以定义普通方法、静态字段和静态方法，但不能额外声明保存实例状态的字段。
+
+4\. 组件是 API 契约的一部分；增加、删除或改名都会改变构造方式、访问方法以及 JSON 字段，应按接口兼容性变更处理。
+
+如果对象需要频繁改变内部状态、依赖复杂继承或拥有与数据组件无关的生命周期，普通 class 通常更合适。选择 record 的理由应是“这个类型表达一组数据值”，而不只是为了少写 Getter 和 Setter。
 
 启动并验证：
 
@@ -453,7 +649,7 @@ public class GreetingController {
 
 4\. 循环依赖更容易在启动阶段暴露。
 
-不建议初学项目普遍使用字段注入。字段注入隐藏了依赖，也让不启动 Spring 的普通单元测试更难编写。
+不建议初学项目普遍使用字段注入。字段注入隐藏了依赖，也让 不启动 Spring  的普通单元测试更难编写。
 
 ### 4.3 常用组件注解
 
@@ -554,20 +750,188 @@ Clock fixedClock = Clock.fixed(
 
 ### 4.8 Bean 的完整创建与初始化过程
 
-“Spring 创建一个 Bean”不是简单执行一次构造器。以普通单例 Bean 为例，可以用以下主线理解：
+Bean 的生命周期，就是一个对象从“Spring 知道应该怎样创建它”，到“可以被其他对象使用”，最后到“应用关闭时释放资源”的全过程。
+
+初学时不要先背 `BeanPostProcessor` 等接口名称。先理解简要流程和四个重点；等需要排查代理、循环依赖或初始化顺序时，再看完整流程。
+
+#### 4.8.1 先看简要流程
+
+```mermaid
+flowchart LR
+    A["读取对象创建说明"] --> B["调用构造器或工厂方法创建对象"]
+    B --> C["注入依赖和配置值"]
+    C --> D["执行初始化回调"]
+    D --> E["必要时包装成代理对象"]
+    E --> F["交给其他 Bean 使用"]
+    F --> G["容器关闭时执行销毁回调"]
+```
+
+把它想成 Spring 在组装并管理一个对象：
+
+1\. 读取说明：Spring 先知道要创建哪个类、需要哪些依赖，以及这个对象采用什么作用域。保存这些信息的“对象创建说明”叫 `BeanDefinition`。
+
+2\. 创建对象：Spring 调用构造器、`@Bean` 方法或其他工厂方法，得到一个原始 Java 对象。这个动作叫实例化。
+
+3\. 补齐依赖：把构造器参数、`@Autowired` 依赖和 `@Value` 配置值交给对象。构造器依赖会在创建对象时解析，字段或 Setter 依赖通常在对象创建后填充。
+
+4\. 完成初始化：依赖就绪后，执行 `@PostConstruct` 等初始化回调，让对象完成轻量的启动准备。
+
+5\. 对外提供：Spring 可能给原始对象包一层代理，用来实现事务、异步、缓存或方法安全。其他 Bean 最终拿到的是 Spring 决定暴露的对象。
+
+6\. 关闭清理：应用正常关闭时，Spring 调用 `@PreDestroy` 等销毁回调，让对象释放自己持有的线程、文件或网络资源。
+
+#### 4.8.2 小白必须掌握的四个重点
+
+1\. Bean 定义不等于 Bean 对象。`BeanDefinition` 类似一份对象创建说明；根据说明真正创建出来的 Java 对象才是 Bean 实例。
+
+2\. 实例化不等于初始化完成。构造器执行结束，只能说明对象已经出现；它可能还没有完成字段注入、`@PostConstruct` 和代理包装。
+
+3\. `new` 出来的对象不等于 Spring 管理的 Bean。自己执行 `new OrderService()` 会绕过依赖注入、生命周期回调和代理增强，因此该对象上的 `@Transactional`、`@Async` 等能力通常不会按预期工作。
+
+4\. 注入到业务代码中的对象可能是代理。调用者应该使用容器注入的 Bean，不要在初始化过程中把原始 `this` 保存到全局变量，否则可能绕过事务等代理逻辑。
+
+下面这个例子展示了初学阶段最常用的生命周期写法：
+
+```java
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import org.springframework.stereotype.Component;
+
+import java.time.Clock;
+
+@Component
+public class LocalCache {
+
+    private final Clock clock;
+
+    public LocalCache(Clock clock) {
+        // Spring 创建 LocalCache 时，通过构造器传入依赖。
+        this.clock = clock;
+    }
+
+    @PostConstruct
+    void initialize() {
+        // 构造器依赖已经就绪，适合执行有界、轻量的初始化检查。
+    }
+
+    @PreDestroy
+    void close() {
+        // 只释放 LocalCache 自己拥有并负责管理的资源。
+    }
+}
+```
+
+第一次学习读到这里即可。需要理解框架源码、回答生命周期顺序问题或排查“注解为什么没有生效”时，再继续阅读完整流程。
+
+#### 4.8.3 进阶：再看完整流程
+
+完整过程要区分三个范围：
+
+1\. 容器级准备：处理的是 Bean 定义和容器扩展点，发生在大多数普通 Bean 实例化之前。
+
+2\. 单个 Bean 的创建与初始化：从获取合并后的定义开始，最终得到可能经过代理包装的对外对象。
+
+3\. 容器关闭时的销毁：只对由容器负责销毁的 Bean 执行；原型 Bean 通常不在完整销毁管理范围内。
+
+以下流程以 `ApplicationContext` 中的普通单例 Bean 为主，同时画出实例化前短路和循环依赖提前暴露等特殊分支：
 
 ```mermaid
 flowchart TD
-    A["读取配置并注册 BeanDefinition"] --> B["实例化：调用构造器"]
-    B --> C["属性填充：注入依赖"]
-    C --> D["Aware 接口回调"]
-    D --> E["BeanPostProcessor 初始化前处理"]
-    E --> F["@PostConstruct 等初始化方法"]
-    F --> G["BeanPostProcessor 初始化后处理"]
-    G --> H["可能返回代理对象"]
-    H --> I["Bean 对外提供服务"]
-    I --> J["@PreDestroy 等销毁回调"]
+    subgraph P["阶段一：容器级准备"]
+        A["读取配置并注册 BeanDefinition"] --> B["执行 BeanDefinitionRegistryPostProcessor"]
+        B --> C["执行 BeanFactoryPostProcessor 修改定义元数据"]
+        C --> D["提前创建并排序注册 BeanPostProcessor"]
+    end
+
+    subgraph C1["阶段二：单个 Bean 的创建与初始化"]
+        D --> E["触发 getBean 或预实例化单例"]
+        E --> F["合并 BeanDefinition、解析作用域与依赖元数据"]
+        F --> G["InstantiationAwareBeanPostProcessor 实例化前处理"]
+        G --> H{"是否直接返回替代对象或代理？"}
+        H -->|是| I["执行初始化后 BeanPostProcessor"]
+        I --> Z["把最终对象作为 Bean 暴露"]
+
+        H -->|否| J["选择构造器或工厂方法并实例化原始对象"]
+        J --> K["MergedBeanDefinitionPostProcessor 处理合并定义"]
+        K --> L["必要时注册单例提前暴露工厂"]
+        L --> M["InstantiationAwareBeanPostProcessor 实例化后处理"]
+        M --> N["解析依赖并填充属性：@Autowired、@Value 等"]
+        N --> O["直接 Aware 回调：BeanName、ClassLoader、BeanFactory"]
+        O --> P1["初始化前 BeanPostProcessor"]
+        P1 --> P2["上下文类 Aware 回调与 @PostConstruct"]
+        P2 --> Q["InitializingBean.afterPropertiesSet"]
+        Q --> R["执行自定义 init-method"]
+        R --> S["初始化后 BeanPostProcessor"]
+        S --> T["可能包装为 AOP 代理"]
+        T --> U["注册销毁回调并放入单例缓存"]
+        U --> Z
+    end
+
+    subgraph D1["阶段三：使用与销毁"]
+        Z --> V["Bean 对外提供服务"]
+        V --> W["ApplicationContext 正常关闭"]
+        W --> X["DestructionAwareBeanPostProcessor：包括 @PreDestroy"]
+        X --> Y["DisposableBean.destroy"]
+        Y --> Y1["执行自定义 destroy-method"]
+        Y1 --> Y2["释放由该 Bean 持有的资源"]
+    end
 ```
+
+阅读这张图时要注意以下边界。
+
+#### 4.8.4 容器级后处理与 Bean 实例后处理不是一回事
+
+`BeanDefinitionRegistryPostProcessor` 可以继续注册 Bean 定义；`BeanFactoryPostProcessor` 读取或修改已经注册的定义元数据。它们处理的是“怎样创建对象的说明书”，不是普通业务对象本身，并且必须在大多数 Bean 实例化之前执行。
+
+`BeanPostProcessor` 处理的是已经进入创建流程的 Bean 实例。Spring 会先创建并注册这些处理器，再让它们参与后续普通 Bean 的实例化、依赖注入、初始化和代理包装。过早创建的 Bean 可能来不及经过全部处理器，因此日志中的“not eligible for getting processed by all BeanPostProcessors”意味着该对象可能没有得到自动代理等完整增强。
+
+#### 4.8.5 实例化、属性填充和初始化是三个不同阶段
+
+1\. 实例化：通过构造器、静态工厂方法或 `@Bean` 工厂方法得到一个原始 Java 对象。
+
+2\. 属性填充：解析并注入字段、Setter 或其他依赖，包括 `@Autowired`、`@Value` 以及 BeanDefinition 中声明的属性值。构造器依赖在实例化时已经解析，不要把所有依赖注入都误认为发生在构造器之后。
+
+3\. 初始化：对象已经实例化且主要依赖已经注入，随后执行 Aware 回调、初始化前后处理器和初始化方法。初始化完成后对外暴露的对象可能已经不是原始对象，而是代理。
+
+`InstantiationAwareBeanPostProcessor` 的实例化前回调可以直接返回替代对象或代理。一旦返回非空对象，常规构造器实例化、属性填充和普通初始化主线会被跳过，只继续执行相应的初始化后处理。因此，“每个 Bean 都一定完整经过图中的每个节点”并不成立。
+
+#### 4.8.6 初始化回调的顺序
+
+对一条没有被短路的常规创建路径，可以使用以下顺序记忆：
+
+1\. 完成依赖解析和属性填充。
+
+2\. 执行 `BeanNameAware`、`BeanClassLoaderAware`、`BeanFactoryAware` 等直接 Aware 回调。
+
+3\. 执行初始化前 `BeanPostProcessor`。`ApplicationContextAware` 等上下文类回调以及 `@PostConstruct` 通常由相应的处理器在这一阶段完成。
+
+4\. 如果实现 `InitializingBean`，执行 `afterPropertiesSet()`。
+
+5\. 执行 BeanDefinition 指定的自定义 `init-method`。
+
+6\. 执行初始化后 `BeanPostProcessor`，AOP（Aspect-Oriented Programming，面向切面编程）自动代理通常在这一阶段包装对象。
+
+`BeanPostProcessor` 可以返回包装对象，因此调用者最终注入和调用的应是容器暴露的 Bean，而不是开发者自行保存或创建的原始实例。
+
+多个处理器之间的精确先后还受 `PriorityOrdered`、`Ordered` 和注册顺序影响。图中表达的是稳定的生命周期阶段，而不是承诺每个自定义处理器都有一个固定的全局序号。
+
+#### 4.8.7 单例提前暴露不等于已经初始化完成
+
+为处理允许范围内的单例循环依赖，Spring 可能在原始对象实例化后、属性填充完成前注册一个用于提前获取引用的工厂。这只是让另一个 Bean 有机会取得早期引用，不表示当前 Bean 已经执行 `@PostConstruct`、初始化方法或全部代理处理。
+
+构造器循环依赖无法依靠这种方式解决，因为构造器执行前连原始对象都还不存在。即使属性注入循环在某些配置下能够启动，另一个对象也可能观察到尚未完整初始化的早期引用，所以正确做法仍是拆分循环职责。
+
+#### 4.8.8 销毁回调的完整边界
+
+`ApplicationContext` 正常关闭时，常见销毁顺序为：
+
+1\. `DestructionAwareBeanPostProcessor` 的销毁前处理，其中可触发 `@PreDestroy`。
+
+2\. 如果实现 `DisposableBean`，执行 `destroy()`。
+
+3\. 执行 BeanDefinition 指定的自定义 `destroy-method`。
+
+销毁不是进程被强制终止时的可靠保证。`kill -9`、机器断电或运行时崩溃都可能让回调来不及执行。Bean 应释放自己拥有的线程池、文件句柄和客户端连接，但数据正确性不能只依赖关闭回调。
 
 关键对象和扩展点：
 
@@ -581,23 +945,9 @@ flowchart TD
 
 5\. `BeanFactoryPostProcessor`：处理的是 Bean 定义元数据，时机早于普通 Bean 创建。不要与 `BeanPostProcessor` 混淆。
 
-初始化与销毁示例：
+6\. `InstantiationAwareBeanPostProcessor`：在普通初始化前后处理之外，增加实例化前、实例化后和属性填充阶段的扩展能力，主要供框架内部基础设施使用。
 
-```java
-@Component
-public class LocalCache {
-
-    @PostConstruct
-    void initialize() {
-        // 依赖已经注入，适合做轻量且可失败的初始化检查。
-    }
-
-    @PreDestroy
-    void close() {
-        // 释放本 Bean 自己持有的资源。
-    }
-}
-```
+7\. `DestructionAwareBeanPostProcessor`：在 Bean 销毁前执行处理，`@PreDestroy` 等生命周期注解由相应处理器接入。
 
 生产注意事项：
 
@@ -606,6 +956,14 @@ public class LocalCache {
 2\. 销毁回调只有在容器正常关闭时才有机会执行，不能把数据安全完全寄托于它。
 
 3\. 后置处理器属于容器级扩展点，初学业务代码通常不需要自行实现。
+
+官方参考：
+
+1\. [Spring Bean 生命周期回调](https://docs.spring.io/spring-framework/reference/core/beans/factory-nature.html)。
+
+2\. [Spring 容器扩展点](https://docs.spring.io/spring-framework/reference/core/beans/factory-extension.html)。
+
+3\. [InstantiationAwareBeanPostProcessor API](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/beans/factory/config/InstantiationAwareBeanPostProcessor.html)。
 
 ### 4.9 Bean 的常见作用域与线程安全
 
@@ -616,8 +974,28 @@ public class LocalCache {
 | request | 每个 HTTP 请求一个实例 | 请求级上下文 |
 | session | 每个 HTTP Session 一个实例 | 传统服务端会话状态 |
 | application | 每个 ServletContext 一个实例 | Web 应用级共享对象 |
+| websocket | 每个 WebSocket 会话一个实例 | WebSocket 会话级状态 |
 
-需要区分三个概念：
+“作用域”回答的是：Spring 创建的目标对象会在多大范围内被重复使用，以及何时需要创建另一个目标对象。它不是 Java 的 `public`、`private` 等访问范围。
+
+可以先用下面这张图建立直觉：
+
+```mermaid
+flowchart TD
+    A["Spring 容器"] --> S["singleton：容器内共享"]
+    A --> P["prototype：每次获取时新建"]
+    A --> W["ServletContext：一个 Web 应用"]
+    W --> AP["application：应用内共享"]
+    W --> H1["HTTP Session A"]
+    W --> H2["HTTP Session B"]
+    H1 --> SE1["session Bean A"]
+    H2 --> SE2["session Bean B"]
+    H1 --> R1["request：本次 HTTP 请求"]
+    H1 --> R2["request：下一次 HTTP 请求"]
+    W --> WS["websocket：一次 WebSocket 会话"]
+```
+
+需要先区分四个概念：
 
 1\. 单例作用域不等于 Java 语言中的全局单例。
 
@@ -625,7 +1003,300 @@ public class LocalCache {
 
 3\. 无状态对象通常更容易安全地被多线程共享。
 
-`prototype` 也不是自动资源管理方案。Spring 创建并初始化原型 Bean 后，通常不会继续完整管理其销毁生命周期，使用者需要自行处理资源释放。
+4\. `request`、`session`、`application` 和 `websocket` 是 Web 作用域，只能在支持相应作用域的 Web `ApplicationContext` 中使用。
+
+#### 4.9.1 `singleton`：每个 Spring 容器一个实例
+
+`singleton` 是 Spring 的默认作用域。对于同一个 Bean 定义，同一个 Spring `ApplicationContext` 通常只创建并缓存一个实例，之后的依赖注入和 `getBean()` 都复用它。
+
+```java
+import org.springframework.stereotype.Service;
+
+@Service
+public class GreetingFormatter {
+
+    public String format(String name) {
+        return "你好，" + name;
+    }
+}
+```
+
+这里没有写 `@Scope`，因此 `GreetingFormatter` 默认就是单例。它没有保存某一次请求或某一个用户的数据，是适合共享的无状态对象。
+
+初学者要特别注意：
+
+1\. “每个容器一个”不是“整个 JVM（Java Virtual Machine，Java 虚拟机）永远只有一个”。同一进程创建两个 `ApplicationContext`，每个上下文都可能拥有自己的实例。
+
+2\. 部署多个应用实例时，每个进程或容器都有自己的单例。需要跨实例共享的数据应放进数据库、Redis 等外部存储。
+
+3\. 一个单例会被多个请求线程并发调用。不要把当前用户、请求参数、临时计算结果放进普通成员变量；否则用户之间可能串数据，还可能发生数据竞争。
+
+4\. Spring Boot 默认会在容器启动阶段创建大部分非延迟单例，所以单例构造或初始化失败，往往会导致应用启动失败。
+
+默认选择原则很简单：无状态的 Service、Mapper、Repository 和配置类通常使用 `singleton`，不用显式声明。
+
+#### 4.9.2 `prototype`：每次向容器获取时创建新实例
+
+`prototype` 表示 Spring 每次处理“获取这个 Bean”的请求时，都创建并初始化一个新对象：
+
+```java
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+public class ReportDraft {
+}
+```
+
+直接调用两次 `applicationContext.getBean(ReportDraft.class)`，会得到两个不同实例。但“每次调用该对象的方法都新建”是错误理解，Spring 控制的是 Bean 的获取过程，不会拦截普通 Java 方法来自动换对象。
+
+还有一个非常容易踩的坑：把原型 Bean 直接注入单例时，依赖只在创建单例的那一刻解析一次，所以这个单例以后通常一直持有同一个原型实例。若业务要求每次操作都取一个新对象，可以注入 `ObjectProvider`：
+
+```java
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ReportService {
+
+    private final ObjectProvider<ReportDraft> draftProvider;
+
+    public ReportService(ObjectProvider<ReportDraft> draftProvider) {
+        this.draftProvider = draftProvider;
+    }
+
+    public ReportDraft createDraft() {
+        return draftProvider.getObject();
+    }
+}
+```
+
+每次执行 `getObject()` 才会向容器申请一个新的 `ReportDraft`。
+
+`prototype` 也不是自动资源管理方案。Spring 负责创建、依赖注入和初始化原型对象，但交付后通常不会继续跟踪它，也不会在容器关闭时自动执行完整销毁回调。因此，持有文件、线程或连接的原型对象应由使用者明确关闭。普通业务中不要只为追求“线程安全”就大量改成原型；无状态单例通常更简单。
+
+#### 4.9.3 `request`：每个 HTTP 请求一个实例
+
+`request` 作用域表示：一次 HTTP（Hypertext Transfer Protocol，超文本传输协议）请求处理期间共享同一个目标实例；下一次请求会得到另一个实例。
+
+```java
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.RequestScope;
+
+import java.util.UUID;
+
+@Component
+@RequestScope
+public class RequestTrace {
+
+    private final String traceId = UUID.randomUUID().toString();
+
+    public String getTraceId() {
+        return traceId;
+    }
+}
+```
+
+在同一次请求中，不同组件注入 `RequestTrace` 后访问的是同一个请求级目标对象，因此适合保存请求编号、租户标识等只属于本次请求的上下文。请求结束后，该目标对象随作用域结束。
+
+注意以下边界：
+
+1\. 它不是长期存储。请求结束后对象就不应再被依赖，业务数据仍应写入数据库等持久化存储。
+
+2\. 它只能在有效的 Web 请求上下文中解析。在普通单元测试、应用启动线程或自行创建的新线程中直接访问，可能出现“request scope is not active”一类错误。
+
+3\. 异步任务不会天然继承原请求的全部上下文。真正需要的值应作为明确的方法参数传给任务，而不是让后台线程继续依赖请求 Bean。
+
+4\. `@RequestScope` 会使用作用域代理，因此可以注入默认的单例 Service；真正的请求对象会在代理被调用时按当前请求查找。
+
+#### 4.9.4 `session`：每个 HTTP Session 一个实例
+
+`session` 作用域表示：同一个 HTTP Session 中的多次请求共享一个目标实例；另一个 Session 会得到另一个实例。Session 可以先理解为服务器识别同一位访问者的一段会话，通常由浏览器携带会话 Cookie 与服务器关联。
+
+```java
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.SessionScope;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+@SessionScope
+public class ShoppingCart {
+
+    private final List<Long> productIds = new ArrayList<>();
+
+    public synchronized void add(Long productId) {
+        productIds.add(productId);
+    }
+
+    public synchronized List<Long> items() {
+        return List.copyOf(productIds);
+    }
+}
+```
+
+同一会话的多个请求可以看到同一个购物车；会话过期或被主动失效后，对应的会话 Bean 才随之结束。示例使用同步方法，是因为同一用户也可能同时发起多个请求，`session` 并不自动保证线程安全。
+
+使用时还要理解：
+
+1\. Session 通常由 Cookie 关联，不等于“一个浏览器标签页”。同一浏览器的多个标签页往往共享同一 Session。
+
+2\. 不要把大对象、无限增长集合或敏感明文长期塞进 Session，否则会增加服务器内存和泄漏风险。
+
+3\. 应用部署多个实例后，本机内存中的 Session 不会自动跨实例同步。需要结合负载均衡粘性会话，或使用 Spring Session、Redis 等共享会话方案。
+
+4\. REST（Representational State Transfer，表述性状态转移）接口和令牌认证系统通常倾向无状态设计，不应为了方便随意引入服务器 Session。
+
+#### 4.9.5 `application`：每个 Web 应用一个实例
+
+`application` 作用域只用于 Web 应用。它表示：同一个 Bean 定义在一个 `ServletContext` 生命周期内只创建一个目标实例。
+
+`ServletContext` 可以先理解为 Servlet 容器为“当前 Web 应用”提供的共享上下文。应用启动时创建，应用停止或重新部署时销毁。Spring 会把 `application` 作用域的对象作为 `ServletContext` 属性保存，因此同一个 Web 应用中的多个请求和组件可以访问同一个目标对象。
+
+```mermaid
+flowchart TD
+    A["应用实例 A"] --> B["ServletContext A"]
+    B --> C["一个 application 作用域 Bean"]
+    D["请求 1"] --> C
+    E["请求 2"] --> C
+
+    F["应用实例 B"] --> G["ServletContext B"]
+    G --> H["另一个 application 作用域 Bean"]
+```
+
+这张图说明：
+
+1\. 同一应用实例中的不同请求共享同一个 `application` 作用域目标对象。
+
+2\. 部署两个应用实例时，会有两个 `ServletContext`，也就有两个独立对象。
+
+3\. 它不是跨进程、跨服务器或跨集群的全局单例。需要多实例共享的数据，应放在数据库、Redis 等外部存储中。
+
+使用注解声明：
+
+```java
+package com.example.demo.config;
+
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.ApplicationScope;
+
+import java.time.Instant;
+
+@Component
+@ApplicationScope
+public class ApplicationMetadata {
+
+    private final Instant startedAt = Instant.now();
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+}
+```
+
+无论多少个请求注入 `ApplicationMetadata`，在同一个 `ServletContext` 中最终访问的都是同一个目标实例。`@ApplicationScope` 是 `@Scope("application")` 的便捷写法，并且默认使用基于目标类的作用域代理。注入点拿到的可能是代理对象，代理负责定位当前 Web 应用中的真实目标对象。
+
+`application` 与默认 `singleton` 看起来很像，但边界不同：
+
+| 对比项 | singleton | application |
+|---|---|---|
+| 实例边界 | 每个 Spring `ApplicationContext` 一个实例 | 每个 `ServletContext` 一个目标实例 |
+| 可用环境 | 普通 Spring 容器和 Web 容器 | 仅 Web 感知的 Spring 容器 |
+| 存储位置 | Spring 单例缓存 | `ServletContext` 属性 |
+| 多个 Spring 上下文 | 每个上下文可能各有一个实例 | 共享同一 `ServletContext` 时可以定位到同一实例 |
+| 常见选择 | 无状态 Service、Mapper 和基础设施 Bean | 明确绑定 Web 应用生命周期的共享对象 |
+
+在常见的单体 Spring Boot Web 应用中，通常只有一个主要 `ApplicationContext` 和一个 `ServletContext`，所以两者在“看起来只有一个对象”这一点上几乎相同。大多数业务 Service 使用默认 `singleton` 即可，不应为了表达“全应用共享”就机械改成 `application`。
+
+共享对象仍然要考虑线程安全。多个请求会并发访问同一个 `application` 作用域对象，如果在普通字段中保存可变计数、用户信息或请求状态，就可能产生数据竞争：
+
+```java
+@Component
+@ApplicationScope
+public class UnsafeCounter {
+
+    private long count;
+
+    public long increment() {
+        return ++count; // 多线程下不是安全的原子操作。
+    }
+}
+```
+
+请求状态应放在 request 作用域，用户会话状态可根据架构放在 session 或外部会话存储，全局业务数据应放在数据库或缓存。`application` 作用域更适合只读应用元数据、Web 应用级注册表，或者确实需要通过 `ServletContext` 共享并且已经完成并发设计的对象。
+
+非 Web 的 `ApplicationContext` 没有这个标准 Web 作用域，强行使用通常会出现作用域未注册的错误。测试 `application` 作用域组件时，也要加载 Web 类型的测试上下文，不能只创建普通 `ApplicationContext`。
+
+官方参考：
+
+1\. [Spring Bean Scopes：Application Scope](https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html)。
+
+2\. [`@ApplicationScope` API](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/context/annotation/ApplicationScope.html)。
+
+#### 4.9.6 `websocket`：每个 WebSocket 会话一个实例
+
+WebSocket 建立连接后，可以在同一条连接上持续双向收发消息。`websocket` 作用域表示：同一个 WebSocket 会话中的多条消息共享一个目标实例；另一条 WebSocket 连接使用另一个实例。
+
+```java
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+@Component
+@Scope("websocket")
+public class WebSocketConversationState {
+}
+```
+
+它适合保存只属于当前连接的轻量会话状态，例如连接级订阅信息。需要注意：
+
+1\. WebSocket 会话不等于 HTTP Session。二者可能有关联，但生命周期和作用域边界不同。
+
+2\. 它不是“每条消息一个实例”。同一 WebSocket 会话中的多条消息会复用目标对象。
+
+3\. 连接断开后对象随会话结束，不适合保存必须可靠留存的数据。
+
+4\. 它只在支持该作用域的 WebSocket 处理环境中可用。普通 MVC（Model-View-Controller，模型-视图-控制器）请求不应依赖它。
+
+#### 4.9.7 跨作用域注入：为什么有时需要代理
+
+长生命周期 Bean 直接持有短生命周期 Bean，会产生一个问题：单例只创建一次，但 request、session 等目标对象需要不断变化。Spring 常用“作用域代理”解决：
+
+```mermaid
+flowchart LR
+    S["singleton Service"] --> P["作用域代理"]
+    P --> C{"当前上下文"}
+    C -->|请求 A| A["request Bean A"]
+    C -->|请求 B| B["request Bean B"]
+```
+
+单例真正持有的是代理。每次调用代理时，代理根据当前请求或会话找到正确的目标对象。`@RequestScope`、`@SessionScope` 和 `@ApplicationScope` 这些便捷注解已经配置了作用域代理。
+
+若当前线程没有对应的有效作用域，代理也找不到目标对象，调用时仍会报“scope is not active”之类的错误。代理只是延迟查找，不会凭空创建 HTTP 请求或 Session。
+
+选择作用域时可以按下面的顺序判断：
+
+1\. 对象能否设计成无状态并安全共享？可以就优先使用默认 `singleton`。
+
+2\. 对象是否只属于一次 HTTP 请求？使用 `request`。
+
+3\. 对象是否确实要在同一 HTTP Session 的多次请求间共享？谨慎使用 `session`。
+
+4\. 对象是否绑定整个 `ServletContext` 生命周期？才考虑 `application`。
+
+5\. 对象是否绑定一条 WebSocket 会话？使用 `websocket`。
+
+6\. 是否每次从容器取出都必须是新对象？才考虑 `prototype`，并明确负责其销毁。
+
+官方参考：
+
+1\. [Spring Bean Scopes](https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html)。
+
+2\. [`@RequestScope` API](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/context/annotation/RequestScope.html)。
+
+3\. [`@SessionScope` API](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/context/annotation/SessionScope.html)。
 
 ### 4.10 循环依赖为什么是设计警报
 
@@ -651,9 +1322,11 @@ class PaymentService {
 
 2\. 把流程编排提取到上层 Application Service（应用服务）。
 
-3\. 对非即时协作使用领域事件，降低直接双向依赖。
+3\. 对非即时协作 使用 领域事件，降低直接双向依赖。
 
 4\. 重新划分读模型与写模型，避免为了查询方便形成反向依赖。
+
+
 
 部分 Spring 场景可能借助提前暴露引用处理属性注入式循环依赖，但这有明显边界：
 
@@ -661,7 +1334,7 @@ class PaymentService {
 
 2\. 代理对象、初始化时机和线程可见性会让问题更复杂。
 
-3\. 现代 Spring Boot 默认倾向于禁止循环引用，应用不应依赖这一容器技巧维持设计。
+3\. 现代 Spring Boot **默认倾向于禁止循环引用**，应用不应依赖这一容器技巧维持设计。
 
 不要把 `@Lazy` 当作通用修复。它只是把依赖解析延迟，业务结构上的环仍然存在。
 
@@ -695,6 +1368,8 @@ flowchart LR
 
 2\. CGLIB（Code Generation Library，代码生成库）风格的子类代理：通过生成目标类子类实现拦截。
 
+
+
 代理机制带来重要边界：
 
 1\. 调用必须经过代理才会触发增强。
@@ -706,6 +1381,8 @@ flowchart LR
 4\. 私有方法不是外部代理调用入口。
 
 5\. 构造器阶段还没有得到最终代理，不应依赖事务或异步增强。
+
+
 
 查看一个 Bean 是否为代理：
 
@@ -721,7 +1398,7 @@ boolean proxied = AopUtils.isAopProxy(applicationContext.getBean(OrderService.cl
 
 它适合框架集成和复杂对象创建，普通业务对象通常使用构造器、`@Component` 或 `@Bean` 即可。不要因为名字相似而把它与 `BeanFactory` 混淆：
 
-1\. `BeanFactory` 是 Spring 容器的基础接口。
+1\. `BeanFactory` 是 Spring 容器`ApplicationContext`的基础接口。
 
 2\. `FactoryBean` 是由容器管理、负责生产另一个对象的特殊 Bean。
 
@@ -3421,6 +4098,10 @@ SLF4J（Simple Logging Facade for Java，Java 简单日志门面）提供统一�
 
 ### 9.2 Actuator 最小配置
 
+Spring Boot Actuator 是 Spring Boot 提供的一套“应用监控与管理工具”。它可以在应用运行期间暴露一些管理端点，帮助我们查看应用是否健康、加载了哪些 Bean、当前配置是什么、请求处理情况如何，以及 JVM（Java Virtual Machine，Java 虚拟机）的运行指标等。
+
+
+
 加入 Actuator 依赖后：
 
 ```yaml
@@ -4082,7 +4763,7 @@ public class SecurityConfiguration {
 
 ### 11.5 CSRF 与 CORS 不是一回事
 
-CSRF 利用浏览器自动携带 Cookie 的行为，诱导已登录用户向可信站点发起非预期操作。CORS 是浏览器对跨源脚本读取响应的限制。
+CSRF 利用浏览器自动携带 Cookie 的行为，诱导已登录用户向可信站点发起非预期操作。CORS 是浏览器对跨源脚本读取响应的限制（ Cross-Origin Resource Sharing跨源资源共享）。
 
 判断是否需要 CSRF 防护时，应看认证凭证是否由浏览器自动携带，而不是只看“是不是 REST API”：
 
