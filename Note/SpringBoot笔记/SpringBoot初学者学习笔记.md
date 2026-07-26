@@ -2,7 +2,7 @@
 
 > 目标：从“能启动一个接口”走到“能理解、测试、配置、排查并上线一个小型 Spring Boot 服务”。
 >
-> 版本说明：本文按 2026 年 7 月官方当前版本 Spring Boot 4.1 编写，使用 Java 17 及以上版本。Spring Boot 3.x 的核心概念相同，但少数测试模块和包名不同。具体 Spring Boot、Maven 和 Gradle 版本应以 [Spring Initializr](https://start.spring.io/) 当前生成结果为准，不要手工猜测依赖版本。
+> 版本说明：截至 2026 年 7 月 26 日，Spring Boot 当前稳定版为 4.1.0，最低要求 Java 17。考虑到本文完整实战依赖 MyBatis，动手项目采用生态兼容性更明确的 Spring Boot 4.0.x 与 MyBatis Spring Boot Starter 4.0.1；Spring Boot 4.1 的核心机制相同，但应等 MyBatis 发布明确支持 4.1 的稳定版本后再整体升级。不要把“Boot 最新版”和“第三方 Starter 最新版”直接拼在一起，具体组合应同时核对 [Spring Boot 系统要求](https://docs.spring.io/spring-boot/system-requirements.html)、[MyBatis Spring Boot 兼容说明](https://github.com/mybatis/spring-boot-starter#requirements)和 [Spring Initializr](https://start.spring.io/) 当前生成结果。
 
 ## 1 学习路径与心智模型
 
@@ -194,7 +194,7 @@ java -version
 | `./mvnw spring-boot:run` | 使用 Spring Boot Maven 插件启动应用 |
 | `./mvnw dependency:tree` | 查看最终依赖树和版本冲突 |
 | `./mvnw help:effective-pom` | 查看继承、属性和依赖管理合并后的有效 POM |
-| `./mvnw -U clean verify` | 强制检查快照和缺失更新；不应把 `-U` 当作日常修复手段，U是--update-snapshots |
+| `./mvnw -U clean verify` | 强制检查快照和缺失更新；`-U` 是 `--update-snapshots` 的缩写，不应把它当作日常修复手段 |
 
 首次执行 Wrapper 往往需要访问网络。如果此时失败，应区分两类下载：
 
@@ -223,11 +223,13 @@ Wrapper 文件应与项目源码一起提交，包括 `mvnw`、`mvnw.cmd` 和 `.
 
 2\. Language：Java。
 
-3\. Packaging：Jar。
+3\. Spring Boot：本文实战选择与 MyBatis 4.0.1 明确兼容的 4.0.x，不直接使用页面默认的 4.1.x。
 
-4\. Java：17 或当前团队统一的长期支持版本。
+4\. Packaging：Jar。
 
-5\. Dependencies：Spring Web、Validation、Spring Boot Actuator、MyBatis Framework、H2 Database。
+5\. Java：17 或当前团队统一的长期支持版本。
+
+6\. Dependencies：Spring Web MVC、Validation、Spring Boot Actuator、MyBatis Framework、H2 Database。
 
 生成并解压后，在项目根目录执行：
 
@@ -523,7 +525,7 @@ class GreetingControllerTest {
 
 6\. 参数校验器执行 `@Valid` 约束。校验失败时，Controller 方法不会执行。
 
-7\. Controller 调用 Service，得到 `GreetingResponse` 对象。
+7\. Controller 根据 `name` 创建 `GreetingResponse` 对象。本章先跑通最小 Web 主线，第 4 章再把消息拼装职责提取到 Service。
 
 8\. `HttpMessageConverter` 选择 JSON 转换器，由 Jackson 把 Java 对象序列化为 JSON。
 
@@ -536,7 +538,6 @@ sequenceDiagram
     participant DS as "DispatcherServlet"
     participant HM as "HandlerMapping"
     participant C as "GreetingController"
-    participant S as "GreetingService"
     participant J as "Jackson"
 
     Client->>Tomcat: "GET /api/greetings?name=小明"
@@ -544,8 +545,6 @@ sequenceDiagram
     DS->>HM: "查找处理方法"
     HM-->>DS: "GreetingController.greet"
     DS->>C: "解析参数并调用"
-    C->>S: "createMessage"
-    S-->>C: "你好，小明"
     C-->>DS: "GreetingResponse"
     DS->>J: "序列化对象"
     J-->>DS: "JSON"
@@ -564,28 +563,22 @@ sequenceDiagram
 
 ### 3.7 实战调试：确认请求停在哪一层
 
-在 IDE 中依次给以下位置设置断点：
-
-1\. `GreetingController.greet()`。
-
-2\. `GreetingService.createMessage()`。
-
-3\. `GlobalExceptionHandler` 的异常处理方法。
+本章代码还没有 Service 和全局异常处理器。先在 `GreetingController.greet()` 的返回语句设置断点；若希望观察框架入口，可再给 `DispatcherServlet.doDispatch()` 设置方法断点，但框架断点调用频繁，只适合短时学习。
 
 然后分别发起三次请求：
 
 ```bash
-# 正常请求：Controller 和 Service 断点都会命中。
+# 正常请求：Controller 断点会命中，name 为“小明”。
 curl -i "http://localhost:8080/api/greetings?name=小明"
 
-# 不存在的路径：通常不会命中 Controller。
-curl -i "http://localhost:8080/api/not-exists"
+# 未提供 name：defaultValue 生效，返回“你好，世界”。
+curl -i "http://localhost:8080/api/greetings"
 
-# 后续加入校验后发送非法参数：可能在进入方法前失败。
-curl -i "http://localhost:8080/api/greetings?name="
+# 不存在的路径：不会命中 GreetingController。
+curl -i "http://localhost:8080/api/not-exists"
 ```
 
-调试时重点观察调用栈，不要只看当前一行。调用栈能展示请求如何从容器进入 Spring MVC，再到你的代码。
+调试时重点观察调用栈，不要只看当前一行。调用栈能展示请求如何从容器进入 Spring MVC，再到你的代码。还要注意：给 `@RequestParam` 设置 `defaultValue` 后，参数缺失或值为空时都会采用默认值；如果业务要求“显式空字符串必须报错”，应移除默认值并加入校验，而不是期待当前写法自动失败。
 
 ## 4 Spring 核心：容器、Bean 与依赖注入
 
@@ -649,7 +642,7 @@ public class GreetingController {
 
 4\. 循环依赖更容易在启动阶段暴露。
 
-不建议初学项目普遍使用字段注入。字段注入隐藏了依赖，也让 不启动 Spring  的普通单元测试更难编写。
+不建议初学项目普遍使用字段注入。字段注入隐藏了依赖，也让不启动 Spring 的普通单元测试更难编写。
 
 ### 4.3 常用组件注解
 
@@ -1322,11 +1315,9 @@ class PaymentService {
 
 2\. 把流程编排提取到上层 Application Service（应用服务）。
 
-3\. 对非即时协作 使用 领域事件，降低直接双向依赖。
+3\. 对非即时协作使用领域事件，降低直接双向依赖。
 
 4\. 重新划分读模型与写模型，避免为了查询方便形成反向依赖。
-
-
 
 部分 Spring 场景可能借助提前暴露引用处理属性注入式循环依赖，但这有明显边界：
 
@@ -1368,8 +1359,6 @@ flowchart LR
 
 2\. CGLIB（Code Generation Library，代码生成库）风格的子类代理：通过生成目标类子类实现拦截。
 
-
-
 代理机制带来重要边界：
 
 1\. 调用必须经过代理才会触发增强。
@@ -1381,8 +1370,6 @@ flowchart LR
 4\. 私有方法不是外部代理调用入口。
 
 5\. 构造器阶段还没有得到最终代理，不应依赖事务或异步增强。
-
-
 
 查看一个 Bean 是否为代理：
 
@@ -1398,7 +1385,7 @@ boolean proxied = AopUtils.isAopProxy(applicationContext.getBean(OrderService.cl
 
 它适合框架集成和复杂对象创建，普通业务对象通常使用构造器、`@Component` 或 `@Bean` 即可。不要因为名字相似而把它与 `BeanFactory` 混淆：
 
-1\. `BeanFactory` 是 Spring 容器`ApplicationContext`的基础接口。
+1\. `BeanFactory` 是 Spring 容器 `ApplicationContext` 的基础接口。
 
 2\. `FactoryBean` 是由容器管理、负责生产另一个对象的特殊 Bean。
 
@@ -1543,7 +1530,7 @@ public @interface EnableAutoConfiguration {
 
 ### 5.4 自动配置候选类从哪里来
 
-Spring Boot 4.1 使用类路径中以下资源发现自动配置候选类：
+Spring Boot 4.x 使用类路径中以下资源发现自动配置候选类：
 
 ```text
 META-INF/spring/
@@ -1934,7 +1921,7 @@ acme-greeting-spring-boot-starter/
 </dependencies>
 ```
 
-使用 Maven Compiler Plugin 3.12.0 或更高版本显式配置注解处理器：
+使用项目插件管理提供的 Maven Compiler Plugin 显式配置注解处理器；插件版本应与项目的 Spring Boot 构建基线一起升级：
 
 ```xml
 <build>
@@ -2064,17 +2051,16 @@ import com.acme.greeting.GreetingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnClass(GreetingClient.class)
 @EnableConfigurationProperties(GreetingProperties.class)
-@ConditionalOnProperty(
+@ConditionalOnBooleanProperty(
         prefix = "acme.greeting",
         name = "enabled",
-        havingValue = "true",
         matchIfMissing = true)
 public class GreetingAutoConfiguration {
 
@@ -2137,6 +2123,7 @@ package com.acme.greeting.autoconfigure;
 import com.acme.greeting.GreetingClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -2193,6 +2180,16 @@ class GreetingAutoConfigurationTest {
     void shouldDisableWithProperty() {
         contextRunner
                 .withPropertyValues("acme.greeting.enabled=false")
+                .run(context ->
+                        assertThat(context)
+                                .doesNotHaveBean(GreetingClient.class));
+    }
+
+    @Test
+    void shouldIgnoreWhenClientClassIsMissing() {
+        contextRunner
+                .withClassLoader(new FilteredClassLoader(
+                        GreetingClient.class))
                 .run(context ->
                         assertThat(context)
                                 .doesNotHaveBean(GreetingClient.class));
@@ -2428,9 +2425,11 @@ package com.example.demo.common;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.time.Instant;
 
@@ -2454,6 +2453,31 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleMethodValidation(
+            HandlerMethodValidationException ex,
+            HttpServletRequest request) {
+        boolean inputError = ex.getStatusCode().is4xxClientError();
+        ApiError body = new ApiError(
+                inputError ? "INVALID_ARGUMENT" : "INTERNAL_ERROR",
+                inputError ? "请求参数不合法" : "服务端返回值校验失败",
+                request.getRequestURI(),
+                Instant.now());
+        return ResponseEntity.status(ex.getStatusCode()).body(body);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableBody(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+        ApiError body = new ApiError(
+                "MALFORMED_JSON",
+                "请求体不是合法的 JSON",
+                request.getRequestURI(),
+                Instant.now());
+        return ResponseEntity.badRequest().body(body);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(
             UserNotFoundException ex,
@@ -2468,7 +2492,7 @@ public class GlobalExceptionHandler {
 }
 ```
 
-生产中不要把堆栈、SQL（Structured Query Language，结构化查询语言）、内部主机名或密钥返回给客户端。错误响应给调用者稳定的错误码，完整堆栈只写入受保护的服务端日志。
+以上处理器覆盖 DTO 字段校验、Controller 方法校验和 JSON 解析失败。它们的触发阶段不同：前两者发生在参数已经能够解析但不满足约束时，最后一个发生在请求体根本无法转换成 Java 对象时。`HandlerMethodValidationException` 也可能表示服务端返回值违反约束，此时框架状态码是 500，不能错误地包装成客户端 400。生产中不要把底层异常消息原样返回给客户端，因为其中可能包含类名、字段路径或反序列化细节；完整堆栈只写入受保护的服务端日志。
 
 ### 6.5 HTTP 状态码的实战选择
 
@@ -3022,7 +3046,7 @@ public void createTask(CreateTaskRequest request) {
 
 #### 8.5.2 添加依赖
 
-在 Spring Initializr 中选择 Spring Web MVC、Validation、MyBatis Framework、H2 Database、Flyway Migration 和 Actuator。Spring Boot 4.x 使用 MyBatis Spring Boot Starter 4.x；具体小版本应以 MyBatis 官方兼容表和 Spring Initializr 当前结果为准。
+在 Spring Initializr 中选择 Spring Web MVC、Validation、MyBatis Framework、H2 Database、Flyway Migration 和 Actuator。本文可运行基线是 Spring Boot 4.0.x 与 MyBatis Spring Boot Starter 4.0.1；若 Initializr 对所选 Boot 版本不再提供这一组合，应重新核对兼容矩阵并整体升级，不要只改一个版本号。
 
 核心依赖：
 
@@ -3489,10 +3513,18 @@ public class TaskService {
     @Transactional
     public TaskResponse complete(long id) {
         Task task = findTask(id);
-        if (task.complete(clock.instant())) {
-            updateOrThrow(task);
+        if (!task.complete(clock.instant())) {
+            return TaskResponse.from(task);
         }
-        return get(id);
+
+        if (taskMapper.updateWithVersion(task) == 0) {
+            Task latest = findTask(id);
+            if (latest.getStatus() == TaskStatus.DONE) {
+                return TaskResponse.from(latest);
+            }
+            throw new TaskConflictException(id);
+        }
+        return TaskResponse.from(task);
     }
 
     @Transactional
@@ -3518,7 +3550,9 @@ public class TaskService {
 }
 ```
 
-MyBatis 不进行脏检查。修改普通 Java 对象不会自动生成 SQL，Service 必须显式调用 `updateWithVersion()`。INSERT 预期写入一行却返回其他数量时立即失败；版本更新返回 0 表示记录已被并发修改，转换为稳定的业务冲突异常。不要先返回“成功”再假设数据库一定完成了预期写入。
+MyBatis 不进行脏检查。修改普通 Java 对象不会自动生成 SQL，Service 必须显式调用 `updateWithVersion()`。INSERT 预期写入一行却返回其他数量时立即失败；普通更新的版本条件不匹配时转换为 409 冲突。
+
+“完成任务”多了一次状态判断：两个并发请求都读取到 `TODO` 时，先提交者完成更新，后提交者的乐观锁更新返回 0；后者重新读取，如果最新状态已经是 `DONE`，就把它视为同一幂等目标已经达成，而不是误报冲突。若最新状态不是 `DONE`，仍然返回真实的并发冲突。这里的成功判据不是“方法没有抛异常”，而是数据库中的最终状态确实为 `DONE`。
 
 #### 8.5.9 注册可测试的时钟
 
@@ -3549,6 +3583,9 @@ package com.example.demo.task;
 
 import com.example.demo.common.PageResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -3580,40 +3617,41 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
-    public TaskResponse get(@PathVariable long id) {
+    public TaskResponse get(@PathVariable @Positive long id) {
         return taskService.get(id);
     }
 
     @GetMapping
     public PageResponse<TaskResponse> list(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 100);
-        return taskService.list(safePage, safeSize);
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20")
+            @Min(1) @Max(100) int size) {
+        return taskService.list(page, size);
     }
 
     @PutMapping("/{id}")
     public TaskResponse update(
-            @PathVariable long id,
+            @PathVariable @Positive long id,
             @Valid @RequestBody UpdateTaskRequest request) {
         return taskService.update(id, request);
     }
 
     @PatchMapping("/{id}/completion")
-    public TaskResponse complete(@PathVariable long id) {
+    public TaskResponse complete(@PathVariable @Positive long id) {
         return taskService.complete(id);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable long id) {
+    public void delete(@PathVariable @Positive long id) {
         taskService.delete(id);
     }
 }
 ```
 
-Controller 只做协议转换、输入校验和分页边界保护。核心状态变更交给 Service，SQL 访问交给 Mapper。
+Controller 只做协议转换、输入校验和分页边界保护。这里选择“非法页码返回 400”，而不是悄悄把 `page=-1` 改成 0；显式失败能让调用者尽早修正错误。参数上的 `@Min`、`@Max` 和 `@Positive` 会触发 Spring MVC 内置的方法校验，前文的 `HandlerMethodValidationException` 处理器负责将失败转换成稳定响应。
+
+Spring Framework 6.1 及更高版本不需要在 Controller 类上再加 `@Validated`；类级 `@Validated` 会把方法校验交给 AOP（Aspect-Oriented Programming，面向切面编程）代理，异常类型和处理链会发生变化。本文移除它，是为了使用 Spring MVC 原生的方法参数校验路径。核心状态变更交给 Service，SQL 访问交给 Mapper。
 
 #### 8.5.11 增加任务不存在的异常响应
 
@@ -4100,8 +4138,6 @@ SLF4J（Simple Logging Facade for Java，Java 简单日志门面）提供统一�
 
 Spring Boot Actuator 是 Spring Boot 提供的一套“应用监控与管理工具”。它可以在应用运行期间暴露一些管理端点，帮助我们查看应用是否健康、加载了哪些 Bean、当前配置是什么、请求处理情况如何，以及 JVM（Java Virtual Machine，Java 虚拟机）的运行指标等。
 
-
-
 加入 Actuator 依赖后：
 
 ```yaml
@@ -4360,7 +4396,7 @@ class GreetingServiceTest {
 | `@SpringBootTest` | 完整应用上下文 | 跨层集成测试 |
 | `@Transactional` | 测试事务 | 测试后回滚数据库改动 |
 
-Spring Boot 4.x 对应测试依赖：
+本文 Spring Boot 4.0.x 基线对应的 MyBatis 测试依赖：
 
 ```xml
 <dependency>
@@ -4459,10 +4495,35 @@ class TaskServiceTest {
                 TaskNotFoundException.class,
                 () -> taskService.get(99L));
     }
+
+    @Test
+    void shouldTreatConcurrentCompletionAsIdempotent() {
+        Task firstRead = new Task(
+                "学习事务",
+                null,
+                Instant.parse("2026-07-24T00:00:00Z"));
+        firstRead.setId(1L);
+
+        Task latest = new Task(
+                "学习事务",
+                null,
+                Instant.parse("2026-07-24T00:00:00Z"));
+        latest.setId(1L);
+        latest.complete(clock.instant());
+
+        when(taskMapper.findById(1L))
+                .thenReturn(firstRead, latest);
+        when(taskMapper.updateWithVersion(firstRead))
+                .thenReturn(0);
+
+        TaskResponse response = taskService.complete(1L);
+
+        assertEquals(TaskStatus.DONE, response.status());
+    }
 }
 ```
 
-这类测试关注业务分支，不验证 Mapper XML、参数绑定或数据库行为。不要把 Mockito 测试误认为数据库集成测试。
+最后一条测试模拟另一个请求先完成更新：当前请求的乐观锁更新返回 0，但重新读取后目标状态已经达成，因此仍返回成功。它验证的是 Service 的分支选择，不证明数据库真的会产生相同并发时序。真实的锁等待、隔离级别和提交行为仍要用目标数据库做集成测试。不要把 Mockito 测试误认为数据库集成测试。
 
 ### 10.6 实战：用 `@MybatisTest` 验证 Mapper
 
@@ -4522,7 +4583,7 @@ class TaskMapperTest {
 
 ### 10.7 实战：用 MockMvc 验证 HTTP 契约
 
-Controller 测试应关注路径、JSON、校验和状态码。Spring Boot 4.1 可使用：
+Controller 测试应关注路径、JSON、校验和状态码。Spring Boot 4.x 可使用：
 
 ```java
 package com.example.demo.task;
@@ -4536,6 +4597,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -4576,6 +4638,14 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.status").value("TODO"));
     }
+
+    @Test
+    void shouldRejectInvalidPageSize() throws Exception {
+        mockMvc.perform(get("/api/tasks")
+                        .param("page", "0")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+    }
 }
 ```
 
@@ -4605,6 +4675,8 @@ final class TestFixtures {
 ```
 
 `@WebMvcTest` 只加载 MVC（Model-View-Controller，模型-视图-控制器）相关切片，不会加载真实 Service 和 Mapper。因此它能证明 HTTP 契约正确，却不能证明 SQL 能执行。反过来，`@MybatisTest` 也不会证明路由、JSON 和安全过滤器正确。切片测试的价值正是缩小范围，代价是必须清楚哪些组件没有参与。
+
+如果项目已经引入 Spring Security，`@WebMvcTest` 默认也会加载相关安全配置。受保护接口应使用 Spring Security 测试支持建立测试身份并验证 401、403 与成功路径，不要为了让 Controller 测试通过就统一关闭过滤器。若本测试只关注校验契约，也应在说明中明确安全链是否参与。
 
 ### 10.8 如何判断应该写哪种测试
 
@@ -4751,6 +4823,8 @@ public class SecurityConfiguration {
 
 此示例只用于理解授权规则，不是完整生产认证方案。生产通常需要 TLS（Transport Layer Security，传输层安全）、统一身份服务、凭证轮换、审计和防暴力破解。
 
+还要注意，以上配置没有处理 CSRF。Spring Security 默认会对 POST、PUT、PATCH、DELETE 等非安全方法执行 CSRF 校验，所以仅携带 HTTP Basic 凭证调用写接口时仍可能得到 403。若应用使用浏览器自动携带的 Session Cookie，应保留 CSRF 防护并正确传递 Token；只有在确认接口完全无状态、凭证不会由浏览器自动携带并完成威胁评估后，才对明确的 API 范围调整 CSRF 策略。不要为了让一个 curl 命令通过就全局关闭防护。
+
 ### 11.4 401、403 与异常处理边界
 
 1\. 401 Unauthorized 实际表示尚未通过认证或凭证无效。
@@ -4763,7 +4837,7 @@ public class SecurityConfiguration {
 
 ### 11.5 CSRF 与 CORS 不是一回事
 
-CSRF 利用浏览器自动携带 Cookie 的行为，诱导已登录用户向可信站点发起非预期操作。CORS 是浏览器对跨源脚本读取响应的限制（ Cross-Origin Resource Sharing跨源资源共享）。
+CSRF 利用浏览器自动携带 Cookie 的行为，诱导已登录用户向可信站点发起非预期操作。CORS 是浏览器对跨源脚本读取响应的限制（Cross-Origin Resource Sharing，跨源资源共享）。
 
 判断是否需要 CSRF 防护时，应看认证凭证是否由浏览器自动携带，而不是只看“是不是 REST API”：
 
@@ -4861,7 +4935,59 @@ jar tf target/*.jar | head -n 40
 
 这一结构也支持镜像分层：变化较少的依赖层可以复用缓存，变化频繁的应用代码放在后续层。遇到“IDE 能运行但 JAR 缺类”时，应检查打包插件、依赖 Scope 和最终 JAR 内容，而不是只检查源码导入。
 
-## 13 常见故障速查
+## 13 面试复盘与常见故障速查
+
+### 13.1 用“机制链 + 证据链”回答框架问题
+
+面试回答 Spring Boot 问题时，只有名词定义通常不够。一个完整回答应形成四段闭环：
+
+1\. 先界定对象：说明问题讨论的是依赖、Bean 定义、Bean 实例、代理、HTTP 请求、数据库事务还是部署制品，避免把不同阶段混在一起。
+
+2\. 再说明入口和机制：指出由哪个依赖、注解、配置或方法开启，框架如何发现候选项，什么条件下注册和执行。
+
+3\. 接着给出边界和失败场景：说明默认值、退让规则、线程边界、代理边界、事务边界以及什么情况下不会生效。
+
+4\. 最后给验证证据：给出日志、测试、条件评估报告、依赖树、受影响行数、SQL、线程名或制品内容，证明实际运行行为。
+
+例如回答“`@Transactional` 为什么失效”，不能只说“因为自调用”。更完整的主线是：事务能力由 Spring 代理拦截外部方法调用；`this.save()` 是目标对象内部的普通 Java 调用，没有重新经过代理；可以用调用栈、`AopUtils.isAopProxy()`、事务日志和回滚测试验证；修复时把事务入口移动到职责明确的另一个 Bean，而不是机械改成 `public`。
+
+### 13.2 核心知识的递归追问链
+
+下表不重复正文答案，而是把高频追问映射到相应章节。复习时应先沿“第一问 -> 继续追问”口述机制，再回到“验证证据”检查回答是否落地。
+
+| 第一问 | 继续追问 | 回答必须出现的证据 | 回看章节 |
+|---|---|---|---|
+| Spring Boot 与 Spring Framework 有什么关系 | Starter、自动配置、组件扫描分别做什么；Boot 如何退让 | 依赖树、条件评估报告、Bean 列表 | 1.1、5.1 至 5.12 |
+| Bean 是怎样创建出来的 | 实例化和初始化有什么区别；何时生成代理；原型 Bean 谁负责销毁 | 生命周期回调、Bean 类型、代理检测 | 4.4、4.8、4.9 |
+| 为什么推荐构造器注入 | 多实现怎样选择；循环依赖说明什么；字段注入为什么难测 | 启动失败信息、普通单元测试 | 4.2、4.5、4.10 |
+| 自动配置为什么能“开箱即用” | 候选类从哪里来；类缺失为什么不报错；用户 Bean 如何覆盖 | `AutoConfiguration.imports`、Positive/Negative matches | 5.2 至 5.13 |
+| 一个 HTTP 请求怎样找到 Controller | 404、400、415 分别在哪个阶段产生；Filter、Interceptor、AOP 如何选择 | Handler 映射、请求头、断点调用栈 | 3.6、6.4、6.7、6.8 |
+| `@Transactional` 的原理是什么 | 自调用、异常吞掉、受检异常、异步线程分别怎样影响回滚 | 代理调用路径、事务日志、数据库最终状态 | 4.11、8.2、8.3、8.7 |
+| MyBatis Mapper 为什么不需要实现类 | XML 怎样定位方法；`#{}` 与 `${}` 有什么区别；事务如何绑定会话 | `namespace + statement id`、预编译参数、Mapper 测试 | 8.1、8.10、8.11、8.13 |
+| 乐观锁怎样判断冲突 | 更新行数为 0 有哪些含义；重复请求怎样保持幂等 | 带版本条件的 UPDATE、受影响行数、最终状态 | 8.5、8.9 |
+| `@Async` 为什么可能不生效 | 自调用、事务和日志上下文为何不自动传播；队列满后发生什么 | 代理、线程名、队列与拒绝指标 | 9.5、9.8 |
+| 缓存为什么会不一致 | 穿透、击穿、雪崩有什么不同；数据库提交与缓存删除如何协调 | 命中率、回源量、Key 版本和失败重试 | 9.7 |
+| `@WebMvcTest` 与 `@SpringBootTest` 怎样选择 | MockMvc 能证明什么；为什么 H2 通过仍不能证明生产兼容 | 测试加载范围、真实数据库集成测试 | 10.3 至 10.10 |
+| 401 与 403 有什么区别 | 为什么安全异常不一定进入 Controller Advice；CSRF 与 CORS 有何不同 | Security Filter Chain、认证主体、响应状态 | 11.3 至 11.5 |
+| IDE 能运行但 JAR 失败怎样排查 | 运行类路径、资源打包、依赖 Scope 和 JDK 分别怎样验证 | `dependency:tree`、`jar tf`、Wrapper 使用的 Java | 2.1、8.13、12.5 |
+
+### 13.3 从故障现象反推知识缺口
+
+面对场景题时，不要从配置项开始猜。先判断失败发生在哪一阶段，再建立最短证据链。
+
+1\. 应用启动失败：先找第一条根异常，判断是类路径、Bean 定义、依赖注入、配置绑定还是外部资源连接；再使用依赖树、条件报告和配置来源验证。最后一条异常通常只是启动失败的汇总，不一定是根因。
+
+2\. 请求没有进入 Controller：依次确认端口和进程、请求路径与 HTTP 方法、Filter 或安全链、Handler 映射、参数解析。404、401、403、400 和 415 指向的阶段不同，不能统一归因于“接口代码有问题”。
+
+3\. 方法执行了但数据没变：检查 Mapper 是否真的执行 UPDATE、受影响行数是否为预期值、事务是否提交、是否读到了缓存对象、查询是否连接到同一数据库。没有抛异常不是数据成功的判据。
+
+4\. 测试通过但部署失败：确认测试替身证明了什么，再检查生产数据库方言、构建产物、资源路径、运行 JDK、依赖 Scope、环境变量和容器文件系统。Mock 或 H2 只能证明被它覆盖的那部分行为。
+
+5\. 接口逐渐变慢：先看请求率、错误率和延迟分位数，再沿 Web 线程池、数据库连接池、HTTP 连接池和下游容量定位等待点。只扩大入口线程数可能放大下游拥塞。
+
+6\. 注解“有时生效、有时不生效”：优先检查对象是不是 Spring Bean、调用是否经过代理、方法可见性、同类自调用、线程是否切换，以及条件配置是否匹配。注解只是入口声明，不是脱离运行路径的魔法。
+
+### 13.4 常见故障速查
 
 | 现象 | 常见原因 | 首要检查 |
 |---|---|---|
@@ -5040,7 +5166,7 @@ src/main/resources/
 
 优先阅读官方资料，尤其注意搜索结果中旧版本文档可能不适用于当前项目：
 
-1\. [Spring Boot 项目主页](https://spring.io/projects/spring-boot/)：查看当前版本和项目定位。
+1\. [Spring Boot 系统要求](https://docs.spring.io/spring-boot/system-requirements.html)：核对当前稳定版、Java、Maven、Gradle 与 Servlet 容器要求。
 
 2\. [Spring Boot Reference Documentation](https://docs.spring.io/spring-boot/reference/)：完整参考文档。
 
@@ -5050,9 +5176,11 @@ src/main/resources/
 
 5\. [Spring Initializr](https://start.spring.io/)：生成与当前版本兼容的项目骨架。
 
-6\. [MyBatis Spring Boot Starter](https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/)：Spring Boot 集成、版本兼容和配置项。
+6\. [MyBatis Spring Boot Starter](https://github.com/mybatis/spring-boot-starter#requirements)：核对 MyBatis Starter 与 Spring Boot、Java 的兼容线。
 
-7\. [MyBatis 3 Reference](https://mybatis.org/mybatis-3/)：Mapper XML、动态 SQL、TypeHandler 和缓存。
+7\. [MyBatis Spring Boot 参考文档](https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/)：查看自动配置、配置属性和扩展点。
+
+8\. [MyBatis 3 Reference](https://mybatis.org/mybatis-3/)：Mapper XML、动态 SQL、TypeHandler 和缓存。
 
 后续学习建议：
 
