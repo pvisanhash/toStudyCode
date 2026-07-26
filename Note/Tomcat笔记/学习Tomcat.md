@@ -1,6 +1,6 @@
 # Java 初学者学习 Tomcat
 
-> 本笔记面向掌握 Java 基础语法、准备学习 Java Web 的初学者。主线采用 Apache Tomcat 11；截至 2026 年 7 月，Tomcat 11 是当前重点开发的稳定系列，要求 Java 17 或更高版本。若维护使用 `javax.servlet.*` 的旧项目，应先阅读 2.4 节的版本兼容说明。
+> 本笔记面向掌握 Java 基础语法、准备学习 Java Web 的初学者。主线采用 Apache Tomcat 11。技术事实复核基线为 2026-07-26，对应当时最新稳定补丁版 Tomcat 11.0.24；补丁版本会持续更新，安装和升级时仍应以官方版本选择页、安全公告与迁移指南为准。Tomcat 11 要求 Java 17 或更高版本。若维护使用 `javax.servlet.*` 的旧项目，应先阅读 2.4 节的版本兼容说明。
 
 ## 1 学习目标与路线
 
@@ -57,7 +57,7 @@ flowchart LR
 
 Apache Tomcat 是一个开源的 Servlet 容器和 Web 服务器。它监听网络端口，把 HTTP 请求转换为 Java 对象，调用应用中的 Servlet，并把 Servlet 产生的响应转换为 HTTP 响应。
 
-Tomcat 实现 Jakarta Servlet、Jakarta Pages（JSP）、Jakarta Expression Language（EL，表达式语言）、Jakarta WebSocket 等规范，但它不是完整的 Jakarta EE 应用服务器。需要消息队列、完整企业级组件等能力时，通常要引入其他产品或依赖。
+Tomcat 实现 Jakarta Servlet、Jakarta Pages（JSP）、Jakarta Expression Language（EL，表达式语言）、Jakarta WebSocket、Jakarta Authentication 等 Web 相关规范，但它只覆盖 Jakarta EE 平台的一部分，不是完整的 Jakarta EE 应用服务器。需要 Jakarta Persistence、Jakarta Messaging 等完整企业级规范能力时，通常要引入其他实现、框架或应用服务器。
 
 ### 2.2 Tomcat、JDK、Servlet 与业务应用
 
@@ -82,7 +82,7 @@ flowchart TB
 
 3\. Tomcat 实现规范，负责网络监听、对象创建、生命周期、线程调度和请求分派。
 
-4\. 业务应用依赖规范编程，不应依赖 Tomcat 内部实现类完成普通业务。意思是：编写普通业务代码时，应该使用 Servlet 规范提供的标准接口，而不要直接使用 Tomcat 自己实现这些接口的内部类，因为除了Tomcat还有别的实现。
+4\. 业务应用依赖规范编程，不应依赖 Tomcat 内部实现类完成普通业务。意思是：编写普通业务代码时，应该使用 Servlet 规范提供的标准接口，而不要直接使用 Tomcat 自己实现这些接口的内部类，因为除了 Tomcat 还有其他实现。
 
 ### 2.3 Web 服务器与 Servlet 容器的区别
 
@@ -98,9 +98,11 @@ Tomcat 同时具备基础 Web 服务器和 Servlet 容器能力。小型应用�
 
 | Tomcat 系列 | 最低 Java 版本 | Servlet 规范 | 主要包名 | 适用情形 |
 |---|---:|---:|---|---|
-| 11.0.x | 17 | Jakarta Servlet 6.1 | `jakarta.servlet.*` | 新项目、Jakarta EE 11 技术栈 |
-| 10.1.x | 11 | Jakarta Servlet 6.0 | `jakarta.servlet.*` | 新项目、Jakarta EE 10 技术栈 |
+| 11.0.x | 17 | Jakarta Servlet 6.1 | `jakarta.servlet.*` | 采用 Jakarta EE 11 Web 规范的新项目 |
+| 10.1.x | 11 | Jakarta Servlet 6.0 | `jakarta.servlet.*` | 采用 Jakarta EE 10 Web 规范的项目 |
 | 9.0.x | 8 | Servlet 4.0 | `javax.servlet.*` | 尚未迁移到 Jakarta 命名空间的旧项目 |
+
+在本次复核基线下，官方仍支持 11.0.x、10.1.x 和 9.0.x，最新发布分别为 11.0.24、10.1.57 和 9.0.120。这里的补丁号只记录复核时状态，不应复制成长期固定版本；选型时先确认系列，再从官方站点取得该系列的最新安全补丁。
 
 关键边界：Tomcat 10 起，规范 API 从 `javax.*` 改为 `jakarta.*`。这不是只改服务器版本就能兼容的变化。一个编译时引用 `javax.servlet.http.HttpServlet` 的应用，不能直接作为 Jakarta Servlet 应用部署到 Tomcat 11。
 
@@ -113,6 +115,10 @@ Tomcat 同时具备基础 Web 服务器和 Servlet 容器能力。小型应用�
 3\. Spring、第三方 Filter、认证组件等依赖支持哪个命名空间。
 
 4\. 构建产物实际包含哪些依赖，而不是只看集成开发环境是否无报错。
+
+5\. 跨大版本升级时检查迁移指南和默认配置差异。即使仍在 11.0.x 内升级，补丁版也可能修正默认值或产生少量兼容性变化，不能只替换 `lib/` 后沿用旧配置。
+
+Tomcat 11 还移除了 Java `SecurityManager` 运行支持以及 HTTP/2 Server Push（服务器推送）实现。若旧系统依赖这些机制，升级前必须先替换设计，而不是等待部署时报错。
 
 ## 3 安装、目录与生命周期
 
@@ -256,6 +262,8 @@ hello-tomcat/
 
 `provided` 表示编译需要该 API，但运行时由 Tomcat 提供，因此不把 Servlet API 重复打进 WAR。若误用默认编译作用域，可能产生规范类重复、类型不一致或升级困难。
 
+当前 `HelloServlet` 只使用 Servlet API，单独运行这个最小示例时可以暂时省略 `jakarta.annotation-api`。本笔记在 8.4 节继续使用 `jakarta.annotation.Resource` 注入 JNDI 数据源，因此提前加入该依赖并保持 `provided`。依赖是否需要应以实际源码导入和 WAR 内容为判据，不要把示例依赖无条件复制到所有项目。
+
 ### 4.3 编写 Servlet
 
 ```java
@@ -311,12 +319,22 @@ Servlet 实例通常由容器创建和复用。多个请求可能由多个线程
 
 本例使用 `@WebServlet` 完成映射，`web.xml` 可以不重复声明 Servlet。真实项目仍常用它配置欢迎页、错误页、安全约束、会话和部分过滤器。
 
+这里能发现 `@WebServlet` 的前提是 Tomcat 在部署阶段扫描应用元数据。以下设置会改变结果：
+
+1\. `web.xml` 默认没有声明 `metadata-complete="true"`，因此容器会把部署描述符、`web-fragment.xml` 和扫描到的注解合并成应用的有效配置。
+
+2\. 如果把 `metadata-complete` 显式设为 `true`，容器会把 `web.xml` 视为完整元数据，不能再依赖 `@WebServlet`、`@WebFilter`、`@WebListener` 自动注册组件。
+
+3\. Tomcat Context 的 `ignoreAnnotations="true"` 也会关闭应用注解处理。它是 Tomcat 专属配置，不要只检查源码里“注解明明存在”。
+
+4\. 排查注解和 XML 合并结果时，可以临时在对应 Context 上启用 `logEffectiveWebXml="true"`，让 Tomcat 在应用启动时以 INFO 级别记录合并后的有效 `web.xml`。故障结束后关闭，避免长期产生冗长日志。
+
 ### 4.5 构建、检查和部署
 
 ```bash
-# 清理 打包
+# 清理并打包
 mvn clean package
-# jar归档工具查看t=table,f=file
+# 用 JDK 的 jar 工具列出归档内容：t 表示列表，f 表示指定文件
 jar tf target/hello.war
 cp target/hello.war "$CATALINA_BASE/webapps/"
 ```
@@ -345,6 +363,8 @@ Content-Type: text/plain;charset=UTF-8
 
 Hello, Tomcat!
 ```
+
+这个复制动作只用于本地教程：它能证明 WAR 结构、Context 映射和 Servlet 调用链能够走通，不能证明生产发布具备原子性、回滚和多实例一致性。生产发布还要执行 7.2 节与 10.6 节的制品校验、摘流、健康检查和回滚流程。
 
 ### 4.6 最小闭环失败排查
 
@@ -539,11 +559,40 @@ Tomcat 的 AccessLogValve、RemoteIpValve 和 StuckThreadDetectionValve 都建�
 
 2\. `protocol`：协议处理器选择。文本 `HTTP/1.1` 会由 Tomcat 选择对应实现。
 
-3\. `connectionTimeout`：等待请求数据的连接超时，单位毫秒；它不等于业务执行超时。
+3\. `connectionTimeout`：连接建立后等待请求 URI 行的时间，单位毫秒。Connector 属性自身默认是 60 秒，但 Tomcat 11.0.24 随附的标准 `server.xml` 显式设置为 20 秒；在默认上传设置下，它还会影响读取请求体。它不是 Servlet 业务执行超时。
 
 4\. `redirectPort`：安全约束要求机密传输时的重定向目标端口；仅配置它不会自动启用 HTTPS。
 
-5\. `maxParameterCount`：限制可解析参数数量，超过限制的参数会被忽略，属于资源保护边界之一。
+5\. `maxParameterCount`：限制查询字符串和特定表单请求体可解析出的参数总数。Tomcat 11 默认值是 1000，超限请求会被拒绝，而不是静默忽略多余参数。Servlet 6.1 参数 API 在触发解析且解析失败时可抛出运行时异常；Tomcat 11 已移除旧的 `FailedRequestFilter`。
+
+还应把 Connector 看成一组连续的容量闸门，而不是只看 `maxThreads`：
+
+```mermaid
+flowchart LR
+    A["到达的新连接"] --> B{"处理中连接是否达到 maxConnections"}
+    B -->|否| C["Connector 接收并处理连接"]
+    B -->|是| D["操作系统 acceptCount 队列"]
+    D -->|队列未满| E["等待连接容量"]
+    D -->|队列已满| F["连接被拒绝或超时"]
+    C --> G{"是否有请求处理线程"}
+    G -->|有| H["执行 Filter 与 Servlet"]
+    G -->|无| I["等待工作线程"]
+```
+
+Tomcat 11.0.24 标准 NIO（Non-blocking I/O，非阻塞输入输出）Connector 的常用容量属性如下。默认值是理解初始行为的参考，不是生产推荐值：
+
+| 属性 | Tomcat 11.0.24 默认值 | 控制对象 | 关键边界 |
+|---|---:|---|---|
+| `maxThreads` | 200 | 同时执行请求的最大工作线程数 | 配置共享 Executor 后，此属性被忽略 |
+| `maxConnections` | 8192 | Connector 同时接受并处理的连接数 | 连接数不等于正在执行的请求数 |
+| `acceptCount` | 100 | 达到 `maxConnections` 后的操作系统连接队列 | 操作系统可能使用不同的实际队列长度 |
+| `keepAliveTimeout` | 继承 `connectionTimeout` | 等待同一持久连接上下一个请求的时间 | 过大可能长期占用连接容量 |
+| `maxParameterCount` | 1000 | 可解析的请求参数总数 | 超限请求被拒绝 |
+| `maxPostSize` | 2 MiB | Tomcat 转换成参数的请求体数据 | 不是所有 POST 请求体的通用大小限制 |
+| `maxHttpRequestHeaderSize` | 8 KiB | 请求行与请求头总字节数 | 调大后会增加每个并发请求的内存成本 |
+| `URIEncoding` | UTF-8 | URI 百分号解码后的字符解码 | 与请求体字符编码是不同入口 |
+
+验证容量配置不能只看 `server.xml`。应在压测或受控流量下同时观察当前线程数、忙线程数、连接数、排队、拒绝或超时、应用延迟以及下游连接池。若配置了共享 Executor（执行器），Connector 上的线程属性即使仍可看到，也不再决定实际线程池容量。
 
 ### 6.3 Context 路径从哪里来
 
@@ -617,6 +666,8 @@ WAR 是符合标准目录结构的 ZIP 格式归档。Tomcat 可以直接运行 
 
 自动部署便于开发，但生产环境频繁扫描、直接覆盖 WAR 可能导致短暂不可用、旧文件残留或发布状态不确定。生产应采用可审计的制品、原子切换、健康检查和回滚流程；高安全环境还会关闭自动部署。
 
+Tomcat 原生的并行部署也能降低版本切换对现有 Session 的影响，但它属于生产发布方案。先理解 8.2 节的 Session，再阅读 10.6 节的版本选择规则。
+
 ### 7.3 Tomcat 类加载心智模型
 
 ```mermaid
@@ -627,7 +678,21 @@ flowchart TB
     Common --> Web2["Webapp ClassLoader：应用 B"]
 ```
 
-Web 应用通常优先加载自身的 `WEB-INF/classes` 和 `WEB-INF/lib`，但 Java 核心类、Jakarta API 等存在委派例外。这样既允许应用隔离自己的依赖版本，又防止覆盖容器必须统一实现的规范 API。
+类加载器的父子关系不等于每次都严格“父优先”。默认情况下，从 Web 应用视角查找普通类或资源的顺序是：
+
+1\. JVM（Java Virtual Machine，Java 虚拟机）的 Bootstrap 类。
+
+2\. 当前应用的 `WEB-INF/classes`。
+
+3\. 当前应用的 `WEB-INF/lib/*.jar`。
+
+4\. System 类加载器可见内容。
+
+5\. Common 类加载器可见内容。
+
+Java 核心类不能被应用覆盖；Tomcat 实现的 Servlet、JSP、EL、WebSocket 等 Jakarta EE API 类也始终优先委派。若 Context 显式设置 `<Loader delegate="true"/>`，普通类的顺序会改为 Bootstrap → System → Common → 应用本地，接近传统父优先模型。
+
+这种默认策略既允许不同应用隔离自己的普通依赖版本，又防止应用替换容器必须统一实现的规范 API。排查时不能只问“父优先还是子优先”，而要同时说清目标类属于哪一类、当前 Context 是否修改了 `delegate`，以及同名类分别由哪个类加载器定义。
 
 常见故障：
 
@@ -638,6 +703,8 @@ Web 应用通常优先加载自身的 `WEB-INF/classes` 和 `WEB-INF/lib`，但 
 3\. 应用停止后线程、ThreadLocal、驱动或定时器未清理，导致 Webapp ClassLoader 无法回收。
 
 4\. 把 Servlet API 打进 WAR，造成容器接口冲突。
+
+`ClassCastException: X cannot be cast to X` 看似左右类名相同，也可能是两个不同类加载器分别定义了同名类。可在受控诊断代码或调试器中检查 `object.getClass().getClassLoader()`，再对照 WAR 和 `lib/` 中的重复 JAR；删除重复依赖后必须重新部署或重启，并再次确认实际类加载来源。
 
 ### 7.4 热部署为什么可能泄漏
 
@@ -686,9 +753,43 @@ sequenceDiagram
 
 4\. 不要把超大对象或无界集合放入 Session。
 
+Session 的“存在”“新建”和“失效”也要区分：
+
+1\. `request.getSession()` 在没有会话时会创建一个；只想查询现有会话时使用 `request.getSession(false)`，返回 `null` 表示当前请求没有可用会话。
+
+2\. 超时通常按一段时间内未被访问计算，不是从登录时刻开始的固定寿命。安全要求更高的系统还要实现绝对登录时长和重新认证策略。
+
+3\. 注销时调用 `session.invalidate()`。认证成功后应更换 Session ID 防止会话固定攻击，可调用 `request.changeSessionId()`，成熟安全框架通常会代为完成。
+
+4\. Session 已经失效、Cookie 未提供、Cookie 值为空和 Cookie 指向不存在的 Session 是不同状态，不能仅根据“请求带了 `JSESSIONID`”判断用户已登录。
+
+单个应用可在 `WEB-INF/web.xml` 中设置会话超时和标准 Cookie 属性：
+
+```xml
+<session-config>
+    <session-timeout>30</session-timeout>
+    <cookie-config>
+        <http-only>true</http-only>
+        <secure>true</secure>
+    </cookie-config>
+</session-config>
+```
+
+`session-timeout` 单位为分钟。`secure=true` 只适用于全程 HTTPS 的生产环境；本地纯 HTTP 教程若照搬，浏览器不会回传该 Cookie。Tomcat 的 Context 默认会为 Session Cookie 启用 `HttpOnly`，但在应用配置中显式声明能让安全意图更清楚。
+
+`SameSite` 由 Tomcat 的 CookieProcessor（Cookie 处理器）配置，而不是上述标准 `cookie-config`：
+
+```xml
+<Context>
+    <CookieProcessor sameSiteCookies="lax" />
+</Context>
+```
+
+Tomcat 11 默认 `sameSiteCookies="unset"`，即不主动写入 SameSite 属性。选择 `lax`、`strict` 或 `none` 必须结合跨站登录、嵌入页面和前后端域名设计验证；使用 `none` 时还要满足现代浏览器对 `Secure` 的要求。
+
 ### 8.3 JSP 的执行过程
 
-JSP（Jakarta Server Pages，Jakarta 服务器页面）最终会被 Tomcat 转换为 Servlet 源码、编译成类并执行。生成文件通常可以在 `work/` 下找到。
+JSP（历史上指 JavaServer Pages，当前规范名为 Jakarta Pages）最终会被 Tomcat 转换为 Servlet 源码、编译成类并执行。生成文件通常可以在 `work/` 下找到。
 
 ```mermaid
 flowchart LR
@@ -792,6 +893,8 @@ $CATALINA_BASE/conf/Catalina/localhost/hello.xml
 
 `hello.xml` 对应 `/hello` 应用。不要在同一个应用同时使用多种 Context 定义方式，否则容易出现重复部署或不清楚哪份配置生效。
 
+示例通过 `factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"` 明确选择 Tomcat JDBC Pool，而 Tomcat 默认数据源工厂使用的是内置的 Apache Commons DBCP 2（Database Connection Pool 2，数据库连接池 2）变体。前者对应可选的 `tomcat-jdbc.jar`；使用前应确认当前发行包的 `lib/` 中包含它。若改用默认 DBCP 2 工厂，属性名和默认值并非全部相同，例如常见最大连接数属性是 `maxTotal`，不能保留本例的 `maxActive` 后假定语义不变。
+
 关键属性：
 
 | 属性 | 作用 | 初学者需要注意 |
@@ -804,6 +907,8 @@ $CATALINA_BASE/conf/Catalina/localhost/hello.xml
 | `maxActive` | 最多同时借出的连接数 | 不能超过数据库和整体容量预算 |
 | `maxWait` | 借不到连接时最多等待多久 | 单位毫秒，超时后获取连接失败 |
 | `validationQuery` | 检查连接是否可用的 SQL | 应选择开销很小的语句 |
+
+本例设置 `testOnBorrow="true"`，每次借连接前都要求验证连接。Tomcat JDBC Pool 可以用 `validationInterval` 避免在很短时间内重复验证；是否开启以及间隔多长应根据数据库驱动、网络空闲断连策略和实际故障模式压测，不能把“每次验证”当作免费的可靠性。
 
 数据库 JDBC 驱动必须在运行类路径中。由 Tomcat 创建的共享资源通常把驱动 JAR 放入 `$CATALINA_BASE/lib` 或 `$CATALINA_HOME/lib`，然后重启 Tomcat。只把驱动放进某个应用的 `WEB-INF/lib`，Tomcat 的公共类加载器不一定能看到它。
 
@@ -897,6 +1002,8 @@ curl -i http://localhost:8080/hello/db-health
 
 4\. 连续调用接口后，连接数在连接池范围内稳定，而不是每次都无限增加。
 
+这个接口只能证明“当前实例在当前时刻能够借到连接并执行最小 SQL”，不能证明所有业务表、事务、读写路由或数据库容量都正常。它还会真实消耗数据库资源，不应作为无认证的公网诊断接口；用于就绪检查时，要评估数据库短暂波动是否会导致所有实例同时被摘流。
+
 常见失败：
 
 | 现象 | 缺失知识或原因 | 检查位置 |
@@ -905,7 +1012,7 @@ curl -i http://localhost:8080/hello/db-health
 | `ClassNotFoundException: com.mysql.cj.jdbc.Driver` | Tomcat 看不到 JDBC 驱动 | `$CATALINA_BASE/lib`、驱动版本、重启日志 |
 | `Access denied for user` | 数据库账号、密码或来源授权错误 | 数据库用户权限与连接地址 |
 | `Cannot get a connection, pool error` | 连接池耗尽或数据库不可达 | `maxActive`、`maxWait`、慢 SQL、连接泄漏 |
-| `dataSource` 是 `null` | 对象不是由容器创建，或注入未发生 | 对象创建入口、注解位置、部署日志 |
+| `dataSource` 是 `null` | 对象不是由容器创建、注解处理被关闭，或注入失败 | 对象创建入口、`metadata-complete`、`ignoreAnnotations`、部署日志 |
 
 连接池大小不是越大越好。它受数据库最大连接能力、Tomcat 并发数、应用实例数量和每个请求占用连接的时间共同约束。例如 5 个实例各配置 50 个连接，理论上可能向数据库建立 250 个连接，而不是 50 个。
 
@@ -1022,7 +1129,7 @@ flowchart LR
     Decision -->|否| Reject["401 或 403"]
 ```
 
-现代项目也常使用 Spring Security 等应用级安全框架。两种方案的认证入口、会话管理和异常处理不同，不应在没有设计的情况下叠加。Tomcat 默认的 MemoryRealm、`tomcat-users.xml` 更适合学习或小规模静态管理，不适合作为大型业务用户库。
+现代项目也常使用 Spring Security 等应用级安全框架。两种方案的认证入口、会话管理和异常处理不同，不应在没有设计的情况下叠加。Tomcat 标准配置中的 UserDatabaseRealm 通常通过 MemoryUserDatabase 读取 `tomcat-users.xml`；这种文件型用户库适合管理示例或小规模静态账号，不适合作为大型业务用户库。
 
 ## 9 日志、监控与故障排查
 
@@ -1507,6 +1614,8 @@ flowchart LR
 
 线程越多，内存、上下文切换和下游压力也越大。应结合压测、响应时间目标、数据库连接池和实例资源确定。
 
+在 Java 21 或更高版本上，Tomcat 11 也可让内部执行器使用虚拟线程，例如在 Connector 上设置 `useVirtualThreads="true"`，或配置 `StandardVirtualThreadExecutor`。虚拟线程可以降低大量阻塞任务占用平台线程的成本，但不会提高数据库连接数、外部服务配额、CPU 或 `maxConnections`；切换后仍要以端到端延迟、下游饱和度、连接数和内存压测为准。若 Connector 绑定了显式 Executor，Connector 自身的 `useVirtualThreads` 会被忽略，实际线程模型由该 Executor 决定。
+
 ### 10.2 超时应形成链路预算
 
 一次请求可能经过客户端、负载均衡、Nginx、Tomcat、数据库和远程 API。各层连接超时、读取超时、业务超时必须协同。
@@ -1599,6 +1708,10 @@ openssl s_client -connect localhost:8443 -servername localhost
 
 12\. 高安全生产环境评估关闭 `autoDeploy` 与 `deployOnStartup`，使用受控发布流程。
 
+13\. 不需要脚本关闭端口时，可将 `<Server port="-1">` 禁用它；若保留关闭端口，应配置难以猜测的关闭命令并限制本机访问，不能把默认命令当作认证机制。
+
+14\. Tomcat 11 已移除 Java `SecurityManager` 支持。需要隔离不可信应用时，应采用独立低权限进程、容器或虚拟机等边界；同一 Tomcat 实例内的 Web 应用应被视为可信代码。
+
 ### 10.5 JVM 与内存预算
 
 Tomcat 进程内存不只包含 Java 堆：
@@ -1626,6 +1739,23 @@ Tomcat 进程内存不只包含 Java 堆：
 6\. 小流量观察错误率与延迟后逐步恢复流量。
 
 7\. 指标异常时按明确条件回滚。
+
+Tomcat 还支持并行部署。同一 Context 路径可以同时部署多个版本，制品基础名格式为 `应用名##版本`，例如：
+
+```text
+orders##20260726-001.war
+orders##20260726-002.war
+```
+
+两者的 Context 路径都为 `/orders`，但 Context 名分别带有版本。请求选择规则是：
+
+1\. 没有 Session 信息时，使用字符串顺序上最新的版本。
+
+2\. 携带 Session 信息且某个旧版本仍持有该 Session 时，继续进入对应旧版本。
+
+3\. 携带 Session 信息但所有版本都找不到对应 Session 时，进入最新版本。
+
+版本比较是字符串比较，因此纯数字版本应补齐位数，例如 `##002`、`##011`，否则 `##11` 会被认为早于 `##2`。并行部署可以让旧会话逐步排空，但它不是完整的无损发布方案：数据库结构、外部消息、缓存键和跨版本 Session 对象仍须向前与向后兼容，旧版本也要有明确的下线判据。
 
 只看到进程启动不代表发布成功；真正判据是正确版本已加载、实例就绪、关键业务探测成功且观察窗口内指标正常。
 
@@ -1702,6 +1832,8 @@ Tomcat 进程内存不只包含 Java 堆：
 2\. 数据库连接池小于工作线程池意味着什么。
 
 3\. CPU 密集与 I/O（Input/Output，输入/输出）密集任务的调优差异。
+
+4\. 切换虚拟线程后，为什么仍可能被数据库连接池和 `maxConnections` 限制。
 
 ### 11.7 Spring Boot 内嵌 Tomcat 与外部 Tomcat
 
@@ -1789,9 +1921,15 @@ Tomcat 进程内存不只包含 Java 堆：
 
 10\. 写出生产安全基线并说明每一项防范的风险。
 
+11\. 解释 `metadata-complete`、`ignoreAnnotations` 如何导致 `@WebServlet` 不生效，并说明怎样查看有效配置。
+
+12\. 解释并行部署怎样为有 Session 和无 Session 的请求选择版本，以及为什么版本号需要补齐位数。
+
+13\. 画出 `maxThreads`、`maxConnections`、`acceptCount` 与下游连接池的关系，并指出每层饱和时的可观察现象。
+
 ### 12.4 官方资料入口
 
-1\. [Apache Tomcat 版本选择](https://tomcat.apache.org/whichversion)：确认稳定系列、Java 要求和规范版本。
+1\. [Apache Tomcat 版本选择](https://tomcat.apache.org/whichversion.html)：确认稳定系列、Java 要求和规范版本。
 
 2\. [Tomcat 11 文档首页](https://tomcat.apache.org/tomcat-11.0-doc/)：教程、配置、部署、监控和参考文档入口。
 
@@ -1816,5 +1954,17 @@ Tomcat 进程内存不只包含 Java 堆：
 12\. [Tomcat 11 Logging](https://tomcat.apache.org/tomcat-11.0-doc/logging.html)：JULI、Logger、Handler、Web 应用日志与访问日志。
 
 13\. [Tomcat 11 Manager App How-To](https://tomcat.apache.org/tomcat-11.0-doc/manager-howto.html)：线程、Connector、JVM 状态和诊断入口；生产使用时必须严格限制访问权限。
+
+14\. [Tomcat 11 HTTP Connector](https://tomcat.apache.org/tomcat-11.0-doc/config/http.html)：连接、线程、请求大小、编码、超时和过载边界。
+
+15\. [Tomcat 11 Class Loader How-To](https://tomcat.apache.org/tomcat-11.0-doc/class-loader-howto.html)：类加载器层级、默认查找顺序和委派例外。
+
+16\. [Tomcat 11 Context 与并行部署](https://tomcat.apache.org/tomcat-11.0-doc/config/context.html)：Context 命名、版本选择、配置入口和运行属性。
+
+17\. [Tomcat 11 Cookie Processor](https://tomcat.apache.org/tomcat-11.0-doc/config/cookie-processor.html)：SameSite 等 Cookie 解析与生成配置。
+
+18\. [Tomcat JDBC Pool](https://tomcat.apache.org/tomcat-11.0-doc/jdbc-pool.html)：Tomcat JDBC Pool 工厂、属性、验证和 JMX 监控。
+
+19\. [Tomcat 11 Executor](https://tomcat.apache.org/tomcat-11.0-doc/config/executor.html)：共享平台线程池和虚拟线程执行器。
 
 阅读网络文章时必须核对其 Tomcat 大版本。若示例使用 `javax.servlet.*`、旧版属性或已移除机制，应回到对应版本官方文档确认，不能直接套用到 Tomcat 11。
