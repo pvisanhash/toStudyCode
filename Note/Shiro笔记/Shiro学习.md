@@ -20,7 +20,7 @@
 
 5\. 能处理密码散列、登录失败、Remember Me、会话固定、越权访问和缓存不一致等风险。
 
-6\. 能说明单机 Session、分布式 Session、JWT（JSON Web Token，JSON 网络令牌）、SSO（Single Sign-On，单点登录）、CAS（Central Authentication Service，中央认证服务）与 OAuth 2.0 的边界。
+6\. 能解释 HTTP Basic、Session-Cookie 与 Bearer Token 如何把认证材料带入 Shiro，并说明单机 Session、分布式 Session、JWT（JSON Web Token，JSON 网络令牌）、SSO（Single Sign-On，单点登录）、CAS（Central Authentication Service，中央认证服务）与 OAuth 2.0 的边界。
 
 7\. 能通过日志、异常、缓存、会话存储和线程上下文排查线上鉴权问题。
 
@@ -30,7 +30,7 @@
 
 2\. 第二阶段：跑通最小示例，再接入 Spring Boot 与数据库 Realm。
 
-3\. 第三阶段：掌握密码散列、Session、Remember Me、缓存与权限变更。
+3\. 第三阶段：掌握 HTTP Basic、Session-Cookie、Bearer Token、密码散列、Remember Me、缓存与权限变更。
 
 4\. 第四阶段：学习前后端分离、集群 Session、SSO、CAS、JWT 和 OAuth 2.0。
 
@@ -96,7 +96,7 @@ flowchart LR
 
 3\. 第 4 章：亲手跑通最小认证授权闭环。
 
-4\. 第 5.1 至 5.6 节：Spring Boot 依赖、分层、Realm、过滤链、注解和异常。
+4\. 第 5.1 至 5.6 节及第 5.10 节：Spring Boot 依赖、分层、Realm、过滤链、注解、异常，以及 HTTP Basic、Session-Cookie、Bearer Token 的统一认证链路。
 
 5\. 第 6.1 至 6.3 节：密码散列、凭证匹配和登录防护。
 
@@ -106,7 +106,7 @@ flowchart LR
 
 #### 1.6.2 B 级：完成项目时掌握
 
-1\. 第 5.7 至 5.14 节：数据库、接口、配置、过滤器、项目目录和运行验证。
+1\. 第 5.7 至 5.9 节及第 5.11 至 5.20 节：数据库、接口、配置、过滤器、项目目录和运行验证。
 
 2\. 第 6.4 至 6.8 节：注册、改密、PasswordService 与 CredentialsMatcher。
 
@@ -146,7 +146,7 @@ flowchart LR
 
 ### 1.7 初学者最小完成标准
 
-如果你能独立完成下面六项，就已经掌握了 Shiro 入门主线：
+如果你能独立完成下面七项，就已经掌握了 Shiro 入门主线：
 
 1\. 用自己的话解释 Subject、Principal、Credentials。
 
@@ -156,9 +156,11 @@ flowchart LR
 
 4\. 使用角色和权限保护接口，并区分 HTTP 401 与 HTTP 403。
 
-5\. 正确处理密码摘要、登录、退出和 Session。
+5\. 正确处理密码摘要、登录、退出和 Session，并能用 HTTP 请求解释 Session Cookie 如何恢复登录态。
 
-6\. 写出未登录、无权限和越权访问的负向测试。
+6\. 能比较 HTTP Basic、Session-Cookie 与 Bearer Token 的认证链路、状态位置、退出语义和主要风险。
+
+7\. 写出未登录、无权限和越权访问的负向测试。
 
 ## 2 安全基础：认证、授权与 RBAC
 
@@ -341,6 +343,8 @@ UsernamePasswordToken token = new UsernamePasswordToken(
 在这个 Token 中，`zhangsan` 是提交的 Principal，`passwordChars` 是提交的 Credentials。
 
 Token 不是登录成功后的用户对象，也不应该长期保存。使用完毕后应调用 `clear()` 清理其中的敏感凭证。
+
+在 Web 请求中，表单登录和 HTTP Basic 通常会产生 `UsernamePasswordToken`，Bearer 认证会产生 `BearerToken`。它们只是把本次不可信输入送入统一认证流程的不同载体；Session Cookie 恢复已有会话时，通常不会再次创建登录 Token。三条链路的完整比较见第 5.10 节。
 
 #### 2.7.7 AuthenticationInfo 是什么
 
@@ -1090,7 +1094,9 @@ public class ShiroConfig {
 
 5\. 用户自定义 Bean 覆盖默认 Bean 后，Session、缓存和过滤链行为仍符合预期。
 
-### 5.10 Web 过滤器速查
+### 5.10 Web 认证入口：过滤器与三种凭证传递方案
+
+#### 5.10.1 默认 Web 过滤器速查
 
 | 过滤器 | 语义 | 常见用途 |
 | --- | --- | --- |
@@ -1106,6 +1112,237 @@ public class ShiroConfig {
 | `ssl` | 要求安全传输 | HTTPS 约束，通常还由网关统一保障 |
 
 过滤链匹配通常遵循“先匹配先生效”，因此必须由精确规则到宽泛规则，最后使用 `/**` 兜底。修改配置后要用真实请求验证，不能只凭肉眼判断。
+
+#### 5.10.2 先分清认证方式、凭证传递方式与登录态
+
+HTTP Basic、Session-Cookie 和 Bearer Token 常被并列为“认证方式”，但它们实际位于不同层次。若不先区分层次，很容易把 Cookie 当成 Session、把 Token 当成 JWT，或者误以为每次带 Session Cookie 都在重新校验密码。
+
+| 层次 | 回答的问题 | 例子 |
+| --- | --- | --- |
+| 原始认证因素 | 主体最初拿什么证明身份 | 密码、一次性验证码、客户端证书、硬件密钥 |
+| HTTP 传递方案 | 本次请求怎样携带认证材料 | `Authorization: Basic ...`、`Authorization: Bearer ...`、请求体登录 |
+| 登录态或凭证状态 | 后续请求凭什么继续被识别 | 服务端 Session、自包含 JWT、不透明 Token |
+| 传输容器 | 浏览器或客户端把值放在哪里 | Cookie、`Authorization` 请求头 |
+| Shiro 认证请求 | HTTP 材料进入框架后变成什么 | `UsernamePasswordToken`、`BearerToken` |
+| 最终授权依据 | 认证成功后用什么判断能否操作 | 稳定 Principal、角色、权限、租户和数据归属 |
+
+Cookie 只是 HTTP 的键值传输与保存机制，Cookie 中既可以放 Session ID，也可能放其他令牌；Session 是服务端维护的会话状态，二者不是同一个对象。Token（令牌）是凭证或信息载体的统称，Bearer Token 可以是不透明随机串，也可以采用 JWT 格式；JWT 只是 Token 的一种格式。
+
+从 Shiro 视角看，三条主线最终都会汇合到 `Subject → SecurityManager → Authenticator → Realm`。区别主要发生在请求入口、Token 类型、凭证验证方式和后续状态保存位置。
+
+```mermaid
+flowchart LR
+    B["HTTP Basic：用户名与密码"] --> BF["authcBasic"]
+    BF --> UP["UsernamePasswordToken"]
+    C["Session Cookie：Session ID"] --> SM["SessionManager 查找 Session"]
+    SM --> SR["恢复已认证 Subject"]
+    T["Bearer：访问令牌"] --> TF["authcBearer"]
+    TF --> BT["BearerToken"]
+    UP --> L["Subject.login"]
+    BT --> L
+    L --> R["匹配 Token 类型的 Realm"]
+    R --> P["认证成功：建立最小 Principal"]
+    SR --> A["角色、权限与数据归属检查"]
+    P --> A
+```
+
+Session-Cookie 这条路径通常不会在每次请求上重新执行 `Subject.login`：用户名密码只在登录请求中验证一次，后续请求使用 Session ID 找回服务端会话，再恢复此前的 Subject 状态。权限判断发生授权缓存未命中时，授权 Realm 仍可能再次查询角色和权限，这不等于重新验证密码。HTTP Basic 和无状态 Bearer Token 则通常让每个请求都携带可用于认证的材料。
+
+#### 5.10.3 HTTP Basic：每次请求携带用户名与密码
+
+HTTP Basic Authentication（HTTP 基本认证）把 `用户名:密码` 进行 Base64 编码后放入 `Authorization` 请求头。Base64 只是编码，不是加密；任何拿到该值的人都可以还原用户名和密码，所以 Basic 必须在 HTTPS 上使用，并像保护明文密码一样保护请求头、代理日志和调试记录。
+
+```http
+GET /internal/reports/daily HTTP/1.1
+Host: api.example.invalid
+Authorization: Basic <Base64(service-reader:password)>
+```
+
+客户端未提供凭证时，Shiro 的 `authcBasic` 会返回认证挑战。默认响应语义类似：
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Basic realm="application"
+```
+
+`realm="application"` 中的 realm 是 HTTP 挑战保护空间，不是 Shiro 的 `Realm` 组件。Shiro 过滤器把它称为 `applicationName`，可以改成便于客户端识别的名称。收到挑战后，浏览器可能弹出内置登录框；命令行和服务调用方也可以不等挑战，直接预先发送 `Authorization` 请求头。
+
+在 Shiro 3 中，请求依次经过以下步骤：
+
+1\. `BasicHttpAuthenticationFilter` 从 `Authorization` 头识别 `Basic` 方案。
+
+2\. 过滤器 Base64 解码凭证，并按第一个冒号拆成用户名和密码。
+
+3\. Shiro 创建 `UsernamePasswordToken`，再调用 `Subject.login(token)`。
+
+4\. 支持 `UsernamePasswordToken` 的 Realm 查询账号，`CredentialsMatcher` 校验密码。
+
+5\. 成功后请求继续执行；缺少头、格式错误或凭证失败时返回 HTTP 401，并带 `WWW-Authenticate` 挑战头。
+
+Basic 的价值是协议简单、客户端支持广、无需额外登录接口，适合受控内部工具、短期运维入口或具备完善凭证轮换的服务调用。它不适合普通公网用户登录：长期密码会在每次请求中重复出现，浏览器可能缓存凭证，服务端也没有类似“删除 Session”那样可靠的单请求登出状态。无状态 Basic 的“退出”本质上是客户端停止发送请求头，或服务端禁用、轮换相应凭证。
+
+下面的过滤链让 `/internal/**` 使用 Basic，并阻止请求创建新 Session：
+
+```java
+chain.addPathDefinition(
+    "/internal/**",
+    "noSessionCreation, authcBasic"
+);
+```
+
+`noSessionCreation` 只禁止当前请求新建 Session，并不会忽略请求到来前已经存在的 Session。如果同一主机同时承载浏览器 Session 和严格的无状态接口，必须额外验证旧 Session Cookie 不会让 Basic 路径直接通过；高隔离场景更适合使用独立主机、独立过滤链策略，或明确关闭 Subject 的 Session 状态保存。
+
+使用测试账号验证时可以执行：
+
+```bash
+# 正确凭证：预期 200。
+curl -i --user 'service-reader:test-password' \
+  https://api.example.invalid/internal/reports/daily
+
+# 缺少凭证：预期 401，并包含 WWW-Authenticate: Basic。
+curl -i \
+  https://api.example.invalid/internal/reports/daily
+
+# 错误凭证：预期仍为 401，不向客户端暴露账号是否存在。
+curl -i --user 'service-reader:wrong-password' \
+  https://api.example.invalid/internal/reports/daily
+```
+
+命令行参数可能被 Shell 历史或进程信息记录。生产排查应使用受控凭证注入方式，不要把真实密码直接写入脚本、聊天记录或构建日志。HTTP Basic 的当前协议定义见 [RFC 7617：The Basic HTTP Authentication Scheme](https://www.rfc-editor.org/rfc/rfc7617)。
+
+#### 5.10.4 Session-Cookie：认证一次，后续按会话恢复 Subject
+
+Session-Cookie 方案通常先由登录接口接收用户名和密码，认证成功后在服务端创建 Session，再通过响应 Cookie 把不可预测的 Session ID 交给浏览器。浏览器后续自动携带 Cookie，服务端根据 Session ID 找到会话并恢复 Subject。
+
+```mermaid
+sequenceDiagram
+    participant C as 浏览器
+    participant L as 登录接口
+    participant S as Shiro
+    participant SS as Session 存储
+    C->>L: 用户名和密码
+    L->>S: Subject.login(UsernamePasswordToken)
+    S->>SS: 认证成功后保存 Subject 状态
+    S-->>C: Set-Cookie，返回 Session ID
+    C->>S: Cookie，携带 Session ID
+    S->>SS: 查询有效 Session
+    SS-->>S: 恢复 Principal 和认证状态
+    S-->>C: 授权通过后返回业务响应
+```
+
+这里真正证明密码正确的是第一次登录；后续 Cookie 中的 Session ID 相当于会话通行证，谁持有它，谁就可能冒用该会话。它虽然通常不是用户的原始密码，却仍是高敏感凭证，不能写入日志、URL、前端可读存储或错误响应。
+
+Session-Cookie 的优势是服务端可立即删除会话；在具备“账号到会话”的索引、失效事件和多节点一致性后，账号禁用、主动退出和踢下线可以及时生效。主要代价是服务端需要维护状态，集群需要共享或复制 Session。浏览器会自动携带 Cookie，因此修改数据的请求必须防护 CSRF（Cross-Site Request Forgery，跨站请求伪造）；同时配置 `HttpOnly`、`Secure`、合适的 `SameSite`、域和路径。完整生命周期、两种 SessionManager 配置与 Cookie 属性见第 7.1 节。
+
+可用 Cookie 文件模拟浏览器完成闭环：
+
+```bash
+# 登录：-c 把响应中的 Session Cookie 保存到临时文件。
+curl -i -c /tmp/shiro-session.cookies \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"reader","password":"test-password","rememberMe":false}' \
+  https://app.example.invalid/api/auth/login
+
+# 后续访问：-b 自动发送刚才保存的 Cookie，预期 200。
+curl -i -b /tmp/shiro-session.cookies \
+  https://app.example.invalid/api/orders
+
+# 退出：服务端应销毁 Session，并返回删除 Cookie 的响应。
+curl -i -b /tmp/shiro-session.cookies \
+  -X POST https://app.example.invalid/api/auth/logout
+
+# 再次使用旧 Cookie：预期 401。
+curl -i -b /tmp/shiro-session.cookies \
+  https://app.example.invalid/api/orders
+```
+
+Cookie 文件包含可复用的会话秘密，只能放在受控临时位置，测试完成后应安全清理且绝不能提交到仓库。成功判据不是“浏览器里出现 Cookie”，而是正确 Cookie 能恢复同一主体，随机或篡改的 Session ID 被拒绝，退出和超时后旧 Session ID 都不能再恢复登录态。
+
+#### 5.10.5 Bearer Token：每次请求携带访问令牌
+
+Bearer Token（持有者令牌）通过 `Authorization: Bearer <token>` 发送。“持有者”表示服务端主要根据谁拿到了令牌来接受调用，因此令牌泄露通常就等于访问能力泄露。它可以是服务端保存映射关系的不透明随机 Token，也可以是采用 JWT 格式的自包含 Token。
+
+```http
+GET /api/orders HTTP/1.1
+Host: api.example.invalid
+Authorization: Bearer <access-token>
+```
+
+Shiro 3 的 `authcBearer` 使用 `BearerHttpAuthenticationFilter` 读取请求头并创建 `BearerToken`。在这个尚未验证的 `BearerToken` 中，原始令牌值同时作为临时 Principal 和 Credentials；这不代表原始令牌已经是可信业务 Principal。Realm 必须先验证令牌，再返回稳定用户 ID、租户等最小 Principal。
+
+第 5.3 节的 `DatabaseRealm` 面向 `UsernamePasswordToken`，不能直接承担 Bearer 校验。项目同时支持两种 Token 时，应为 Bearer 单独实现 Realm，并让两个 Realm 的 `supports(token)` 只接受各自类型；不要让所有 Realm 都无条件返回 `true`，否则多 Realm 策略可能重复验证、选错身份源或产生难以解释的失败结果。
+
+```mermaid
+flowchart LR
+    H["Authorization: Bearer"] --> F["BearerHttpAuthenticationFilter"]
+    F --> T["BearerToken：不可信原始值"]
+    T --> R["supports(BearerToken) 的 Realm"]
+    R --> V{"验证格式、签名或内省、有效期、受众、撤销"}
+    V -->|失败| E["HTTP 401"]
+    V -->|成功| P["稳定 Principal"]
+    P --> Z["角色、权限与数据归属"]
+    Z -->|权限不足| D["HTTP 403"]
+```
+
+Bearer 的价值是适合移动端、服务调用和多个资源服务，且不会在每次请求中重复发送用户长期密码。代价取决于令牌类型：不透明 Token 通常需要查询服务端状态或执行令牌内省；自包含 JWT 可以本地验证，但撤销、权限变化、时钟、签名算法和密钥轮换更复杂。详细的 JWT 校验闭环见第 8.3 至 8.5 节。
+
+无状态 API 的典型链路是：
+
+```java
+chain.addPathDefinition(
+    "/api/**",
+    "noSessionCreation, authcBearer"
+);
+```
+
+测试时不能只证明“JWT 能解码”，而要证明签名、签发者、受众、有效期、账号状态和撤销策略都生效：
+
+```bash
+# 有效访问令牌：有权限时预期 200。
+curl -i \
+  -H 'Authorization: Bearer <valid-access-token>' \
+  https://api.example.invalid/api/orders
+
+# 缺少或篡改令牌：预期 401。
+curl -i \
+  https://api.example.invalid/api/orders
+
+curl -i \
+  -H 'Authorization: Bearer <tampered-token>' \
+  https://api.example.invalid/api/orders
+
+# 令牌有效但没有 order:delete 权限：预期 403。
+curl -i -X DELETE \
+  -H 'Authorization: Bearer <reader-access-token>' \
+  https://api.example.invalid/api/orders/1001
+```
+
+访问令牌不得放在查询参数中，否则容易进入浏览器历史、访问日志和 Referer；也不得记录完整请求头。Bearer 的标准传递与错误语义见 [RFC 6750：OAuth 2.0 Bearer Token Usage](https://www.rfc-editor.org/rfc/rfc6750)。
+
+#### 5.10.6 三种方案如何选择
+
+| 对比项 | HTTP Basic | Session-Cookie | Bearer Token |
+| --- | --- | --- | --- |
+| 每次请求携带什么 | 用户名和密码的 Base64 编码 | Session ID Cookie | Access Token |
+| Shiro 入口 | `authcBasic` | 登录时 `UsernamePasswordToken`，后续由 SessionManager 恢复 | `authcBearer` |
+| Shiro 请求 Token | `UsernamePasswordToken` | 登录请求是 `UsernamePasswordToken`；恢复阶段通常不重新创建登录 Token | `BearerToken` |
+| 服务端状态 | 可无状态 | 有状态，需要 Session | 不透明 Token 常有状态；JWT 可自包含 |
+| 主动撤销 | 禁用或轮换长期凭证 | 删除服务端 Session | 不透明 Token 删除记录；JWT 需短有效期或撤销机制 |
+| 浏览器自动携带 | 通常由客户端或浏览器认证缓存决定 | 是 | 放在 `Authorization` 头时通常由客户端代码添加 |
+| 主要风险 | 长期密码重复暴露、Base64 被误当加密 | 会话劫持、固定、CSRF、集群一致性 | 令牌泄露、撤销、JWT 校验和密钥轮换 |
+| 典型场景 | 受控内部接口、简单工具 | 同源或受控跨源 Web 应用 | 移动端、服务 API、统一身份平台签发的访问令牌 |
+
+选择时不要先问“哪种最先进”，而要先确定客户端类型、是否需要立即撤销、集群状态成本、跨服务验证需求、凭证保护能力和团队是否具备密钥轮换与安全监控能力。普通浏览器业务系统若没有明确的跨服务令牌需求，服务端 Session 往往更容易形成可靠撤销闭环；服务间调用也不应因为 Basic 简单就长期共享人工账号密码。
+
+三种方案共同遵守四条底线：
+
+1\. 全程使用 HTTPS，任何认证头和 Session Cookie 都按秘密处理。
+
+2\. 认证成功只建立可信身份，访问业务资源仍要继续检查权限、租户和数据归属。
+
+3\. 认证失败返回 HTTP 401；身份有效但权限不足返回 HTTP 403。
+
+4\. 测试必须覆盖缺失、格式错误、篡改、过期、撤销和越权，日志不得出现密码、完整 Token、Cookie 或 Session ID。
 
 ### 5.11 注解语义速查
 
@@ -2241,6 +2478,7 @@ Future<Report> future = executorService.submit(securedTask);
 | 指标 | 价值 |
 | --- | --- |
 | 登录成功率与失败率 | 发现攻击、依赖故障和发布回归 |
+| 按 Basic、Session、Bearer 分组的认证结果 | 识别某一种入口、客户端或身份源的局部故障 |
 | 各认证异常数量 | 区分密码错误、锁定、后端不可用 |
 | 401 与 403 比例 | 发现登录态丢失或权限配置错误 |
 | Realm 查询耗时 | 发现数据库或目录服务瓶颈 |
@@ -2285,6 +2523,20 @@ Future<Report> future = executorService.submit(securedTask);
 
 5\. 通过同一 Session ID 的匿名摘要串联日志，不输出原值。
 
+### 11.5 请求持续返回 401
+
+先确定请求实际使用哪一种认证入口，再沿对应链路排查，不能看到 401 就一律要求用户“重新登录”。
+
+| 入口 | 首先检查 | 常见根因 |
+| --- | --- | --- |
+| HTTP Basic | `Authorization` 是否为 Basic、是否全程 HTTPS、Realm 是否支持 `UsernamePasswordToken` | 代理删除请求头、Base64 内容或冒号格式错误、密码轮换后客户端仍用旧值 |
+| Session-Cookie | 登录响应是否真正创建 Session、后续请求是否带回正确 Cookie、服务端 Session 是否仍存在 | Cookie 域或路径不匹配、`Secure` 与部署协议不一致、共享 Session 丢失、会话超时 |
+| Bearer Token | 方案是否为 Bearer、Realm 是否支持 `BearerToken`、签名或内省与声明校验是否通过 | 令牌过期、错误签发者或受众、密钥轮换未同步、账号或令牌已撤销 |
+
+HTTP Basic 和 Bearer 缺少凭证时应检查响应是否包含正确的 `WWW-Authenticate` 挑战头；Session-Cookie 方案通常由 REST 过滤器返回约定的 JSON 401，或由页面过滤器重定向登录页。若网关把后端 401 改成 200 或统一 HTML 页面，客户端和监控都会误判，应同时抓取网关前后状态码与响应头。
+
+排查日志只能记录认证方案、Realm 名称、失败类别、请求 ID 和脱敏主体标识。禁止输出完整 `Authorization`、Cookie、Session ID、密码或访问令牌。
+
 ## 12 测试策略
 
 ### 12.1 测试金字塔
@@ -2307,6 +2559,17 @@ Future<Report> future = executorService.submit(securedTask);
 | 操作其他租户订单 | 401 | 403 | 403 |
 
 矩阵应成为自动化测试数据，而不是只存在于设计文档中。
+
+同一项业务权限若允许通过多种认证入口访问，还要增加认证方案维度：
+
+| 场景 | HTTP Basic | Session-Cookie | Bearer Token |
+| --- | --- | --- | --- |
+| 凭证缺失 | 401 + Basic 挑战 | 401 或跳转登录页，取决于接口契约 | 401 + Bearer 挑战 |
+| 凭证有效且有权限 | 200 | 200 | 200 |
+| 身份有效但无权限 | 403 | 403 | 403 |
+| 凭证失效或已撤销 | 401 | 旧 Session ID 返回 401 | 401 |
+
+这张表验证的是统一对外语义，不表示一个 URL 应同时接受三种认证。生产系统应为每组路径明确唯一或可控的认证入口，避免客户端意外降级到更弱方案。
 
 ### 12.3 使用 MockMvc 验证安全边界
 
@@ -2393,6 +2656,14 @@ class OrderSecurityTest {
 
 8\. 过滤链新增接口未显式公开时仍被兜底保护。
 
+9\. Basic 凭证缺失、格式错误和密码错误都安全失败，并返回正确挑战头。
+
+10\. Session Cookie 被篡改、过期、退出或服务端撤销后都不能恢复 Subject。
+
+11\. Bearer Token 的签名或内省失败、过期、签发者或受众错误、账号撤销时都返回 401。
+
+12\. 有效 Basic、Session 或 Bearer 身份没有业务权限时统一返回 403，而不是误报 401。
+
 ### 12.5 测试隔离注意事项
 
 Shiro 的 Subject 具有执行作用域。使用 JDK 17～24 等基于线程局部状态的运行环境，或测试代码曾手工绑定 `ThreadContext` 时，测试结束必须在 `finally` 或测试框架的清理钩子中解绑 Subject 与 SecurityManager；JDK 25+ 的 `ScopedValue` 也应通过 Shiro 提供的受控作用域执行，不能把测试状态泄漏到下一用例。
@@ -2458,6 +2729,7 @@ public byte[] exportOrders() {
 | 缓存 | 缓存什么，多久过期，权限变更如何失效 |
 | Realm | 支持什么 Token，查询什么数据，失败如何分类 |
 | 过滤链 | 哪些公开，哪些认证，是否有 `/**` 兜底 |
+| HTTP 认证入口 | 哪些路径使用 Basic、Session-Cookie 或 Bearer，能否被已有 Session 意外放行 |
 | 密码 | 算法、成本、盐、升级与泄露响应 |
 
 具体属性名会随集成方式和版本变化，但这些问题不会变化。配置前先回答安全语义，再查当前版本的属性名称。
@@ -2480,6 +2752,14 @@ public byte[] exportOrders() {
 
 8\. 加了注解不等于代理一定生效，必须通过请求测试验证。
 
+9\. Base64 不是加密，HTTP Basic 必须依赖 HTTPS 保护传输。
+
+10\. Cookie 不是 Session；它只是常用于携带 Session ID。
+
+11\. Token 不等于 JWT；Bearer Token 可以是不透明随机串。
+
+12\. `noSessionCreation` 只禁止新建 Session，不代表忽略已经存在的 Session。
+
 ## 14 项目落地模板
 
 ### 14.1 需求阶段
@@ -2490,7 +2770,9 @@ public byte[] exportOrders() {
 
 3\. 明确登录方式、会话时长、多因素认证和风险操作重认证。
 
-4\. 明确单点登录、移动端、第三方授权与服务间调用边界。
+4\. 为浏览器、移动端、内部工具和服务调用分别确定 Basic、Session-Cookie 或 Bearer 入口，明确是否允许多种方案共存。
+
+5\. 明确单点登录、第三方授权与服务间调用边界。
 
 ### 14.2 设计阶段
 
@@ -2537,6 +2819,8 @@ public byte[] exportOrders() {
 11\. 完成水平越权、垂直越权、暴力破解、CSRF 和会话固定测试。
 
 12\. 依赖漏洞扫描无不可接受风险，并准备回滚方案。
+
+13\. Basic、Session-Cookie 与 Bearer 路径不存在意外降级或互相借用登录态，并完成缺失、篡改、过期和撤销测试。
 
 ## 15 复习路线与官方资料入口
 
@@ -2586,9 +2870,13 @@ WWH 不是给每段机械添加三个标题，而是一条完整理解链。复�
 
 3\. [Spring Boot 官方集成指南](https://shiro.apache.org/spring-boot.html)：Web Starter、Realm、过滤链、注解和配置属性。
 
-4\. [Apache Shiro 安全报告](https://shiro.apache.org/security-reports.html)：上线和升级前检查受影响版本与修复建议。
+4\. [Apache Shiro Web 支持](https://shiro.apache.org/web.html)：默认过滤器、HTTP Basic、Bearer、Session 与 Cookie 的 Web 集成入口。
 
-5\. [Apache Shiro 安全模型](https://shiro.apache.org/security-model.html)：确认 Shiro 负责与不负责的安全边界。
+5\. [RFC 7617：HTTP Basic](https://www.rfc-editor.org/rfc/rfc7617) 与 [RFC 6750：Bearer Token](https://www.rfc-editor.org/rfc/rfc6750)：核对两种 `Authorization` 方案的标准请求和响应语义。
+
+6\. [Apache Shiro 安全报告](https://shiro.apache.org/security-reports.html)：上线和升级前检查受影响版本与修复建议。
+
+7\. [Apache Shiro 安全模型](https://shiro.apache.org/security-model.html)：确认 Shiro 负责与不负责的安全边界。
 
 不要仅凭博客文章决定依赖版本或安全配置。版本号、已知漏洞和集成方式可能变化，应以当前官方文档和组织安全基线为准。
 
@@ -2608,7 +2896,11 @@ WWH 不是给每段机械添加三个标题，而是一条完整理解链。复�
 
 7\. 解释 Session 与 JWT 的取舍，而不是只说“是否有状态”。
 
-8\. 用测试证明未登录是 401、无权限是 403、跨租户始终被拒绝。
+8\. 画出 HTTP Basic、Session-Cookie 与 Bearer Token 进入 Shiro 的三条链路，并说明何时会调用 Realm。
+
+9\. 解释 Cookie 与 Session、Bearer Token 与 JWT、AuthenticationToken 与 Access Token 的区别。
+
+10\. 用测试证明未登录是 401、无权限是 403、跨租户始终被拒绝。
 
 ## 16 Shiro 概念词典（按需查阅）
 
@@ -2672,6 +2964,11 @@ WWH 不是给每段机械添加三个标题，而是一条完整理解链。复�
 | FilterChainResolver | 根据请求路径选择过滤器链 |
 | AccessControlFilter | 自定义访问控制过滤器的常用基类 |
 | SavedRequest | 登录前暂存的原请求信息 |
+| HTTP Basic | 每次请求通过 Authorization 头携带 Base64 编码用户名与密码的认证方案 |
+| Session Cookie | 浏览器用于携带 Session ID、让服务端恢复已有会话的 Cookie |
+| Bearer Token | 谁持有谁即可使用的访问令牌，常放在 Authorization 请求头 |
+| `authcBasic` | Shiro 的 HTTP Basic 过滤器名称，创建 `UsernamePasswordToken` 发起认证 |
+| `authcBearer` | Shiro 的 Bearer 过滤器名称，创建 `BearerToken` 发起认证 |
 
 ### 16.6 基础设施类概念
 
@@ -2686,7 +2983,7 @@ WWH 不是给每段机械添加三个标题，而是一条完整理解链。复�
 | Lifecycle | 组件初始化与销毁约定 |
 | ThreadContext | Shiro 的线程上下文工具；主要用于较早 JDK 的作用域关联，业务代码不应手工长期绑定 Subject |
 
-### 16.7 最容易混淆的十组概念
+### 16.7 最容易混淆的概念
 
 1\. Subject 与 User：Subject 是安全视角下的当前主体，User 通常是业务实体。
 
@@ -2707,3 +3004,11 @@ WWH 不是给每段机械添加三个标题，而是一条完整理解链。复�
 9\. Shiro SecurityManager 与 Java SecurityManager：名称相同但不是同一个体系。
 
 10\. Shiro Filter 与 Spring AOP 注解：前者拦截 Web URL，后者拦截受代理的方法调用。
+
+11\. Cookie 与 Session：Cookie 是客户端传输容器，Session 是服务端会话状态；Cookie 常携带 Session ID，但二者不是同一对象。
+
+12\. HTTP Basic 与 Session 登录：前者通常每次请求重复携带用户名密码，后者只在登录时校验原始凭证，后续按 Session ID 恢复主体。
+
+13\. Bearer Token 与 JWT：Bearer 是令牌的 HTTP 使用方案，JWT 是可能采用的一种令牌格式。
+
+14\. `AuthenticationToken` 与 Access Token：前者是 Shiro 统一认证请求接口，后者是调用受保护资源的访问凭据；Shiro 可以用 `BearerToken` 包装 Access Token。
