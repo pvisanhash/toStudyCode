@@ -11,111 +11,144 @@
 | 主要 IDE | IntelliJ IDEA；补充 Visual Studio Code（VS Code） |
 | 示例业务 | `shop-platform` 用 Maven 多模块组织 `common-domain` 与 `order-service`；`order-platform` 通过 Submodule 引用 `risk-sdk`，通过 Subtree 导入 `risk-rules` |
 | 安全约定 | 示例不包含真实 Token、密码、内网地址或个人信息 |
-| 资料核对日期 | 2026-08-02；版本相关界面以所用 IDE 的官方文档为准 |
+| 资料核对日期 | 2026-08-06；版本相关界面以所用 IDE 的官方文档为准 |
 
-## 1 学习路径与核心结论
+## 1 从一个并行开发现场建立主线
 
-### 1.1 先用四个问题建立心智模型
+### 1.1 具体问题：同一天出现四种“多代码”需求
+
+假设订单团队在同一天收到四个任务：支付超时要紧急热修复，风控 SDK（Software Development Kit，软件开发工具包）由另一个仓库维护，统一风控规则需要连源码一起导入，订单接口与公共领域模型又经常同时修改。团队还希望让两个编程 Agent 并行工作，但不能覆盖开发者尚未提交的文件。
+
+这些需求看起来都在处理“多份代码”，实际分属五层问题。选错层次，常见结果是用 Submodule 代替 Java 依赖管理、把 Maven 多模块误叫成多个 Git 仓库，或误以为 Worktree 已经隔离数据库和凭据。
+
+| 层次 | 要回答的问题 | 本文中的机制 |
+| --- | --- | --- |
+| 仓库边界 | 哪些代码共享一套提交历史、权限和评审入口 | Monorepo（单体仓库）、Polyrepo（多仓库）、Submodule、Subtree |
+| 构建边界 | 哪些模块参加同一次编译、测试和依赖排序 | Maven Reactor、Gradle Multi-Project Build（多项目构建） |
+| 工作区边界 | 同一仓库的多个分支如何同时出现在磁盘上 | Worktree 或独立 clone |
+| 运行时边界 | 端口、数据库、消息队列、缓存和凭据如何互不污染 | 独立配置、容器、沙箱或虚拟机 |
+| 协作边界 | 谁能改什么、从哪个提交开始、怎样验收和集成 | Agent 任务契约、唯一写入者、Pull Request（PR，拉取请求）与持续集成 |
+
+先记住一个总原则：仓库组合、构建依赖、并行工作目录和安全隔离是四种不同能力；一种工具不会自动补齐其他层。
+
+### 1.2 第一个可观察结果：五分钟识别当前项目的真实边界
+
+本节只读取状态，不创建提交、不切换分支、不访问远程，适合在任意已有 Git 项目中执行。输入是“当前项目目录”，动作是依次询问 Git 和构建文件，输出是仓库根、工作树管理区、子模块定义和构建入口。
+
+~~~bash
+# 确认当前 Shell 位置；目录开错是很多误操作的起点
+pwd
+
+# 输出当前 Git 仓库根；失败通常表示当前目录不在 Git 工作树中
+git rev-parse --show-toplevel
+
+# 当前工作树自己的管理目录与所有 Worktree 共享的公共管理目录
+git rev-parse --git-dir
+git rev-parse --git-common-dir
+
+# 列出同一仓库已经登记的所有 Worktree；普通 clone 通常只有一项
+git worktree list --porcelain
+
+# 只有 HEAD 提交包含 .gitmodules 时才读取，不受暂存区新增或删除影响
+if git cat-file -e HEAD:.gitmodules 2>/dev/null; then
+  git config --blob HEAD:.gitmodules \
+    --get-regexp '^submodule\..*\.(path|url)$'
+fi
+
+# 只检查常见构建入口是否被 Git 跟踪，不把“目录存在”误当成构建已接入
+git ls-files pom.xml settings.gradle settings.gradle.kts
+~~~
+
+命令结果按下面方式解释。
+
+| 观察结果 | 能证明什么 | 不能证明什么 |
+| --- | --- | --- |
+| `--show-toplevel` 输出一个路径 | 找到了当前 Git 仓库根 | 该路径一定也是 Maven 或 Gradle 构建根 |
+| `--git-dir` 与 `--git-common-dir` 不同 | 当前目录通常是 Linked Worktree（链接工作树） | 进程、端口、数据库已经隔离 |
+| `.gitmodules` 被跟踪且能读出配置 | 当前提交定义了 Submodule 获取关系 | 所有子模块都已初始化或提交匹配 |
+| 没有 `.gitmodules` | 当前提交没有标准 Submodule 定义 | 仓库一定没有 Subtree；Subtree 没有标准标记文件 |
+| 根目录跟踪 `pom.xml` | 存在一个候选 Maven 入口 | POM 一定是聚合根，或所有模块都能构建 |
+
+成功判据是你能明确写出“Git 仓库根在哪里、是否处于 Linked Worktree、是否存在 Submodule、候选构建入口是什么”。某条命令失败时先保留输出：`not a git repository` 通常表示目录不对；读取 `.gitmodules` 无结果可能只是项目没有 Submodule，不应因此执行初始化或清理命令。
+
+Subtree 只能通过团队清单、提交历史或已知 Prefix（前缀目录）识别，不能靠 `.gitmodules`。已知候选路径时，用 `git ls-tree HEAD <path>` 验证：`160000 commit` 是 gitlink，`040000 tree` 是父仓库普通目录；普通目录可能是 Subtree，也可能只是项目自身代码。
+
+### 1.3 从观察结果回看五层方案
 
 Monorepo、普通多模块项目、Submodule、Subtree 与 Worktree 都可能让一个目录中出现多组代码，但它们解决的不是同一层问题。
 
-1\. Monorepo 或普通多模块项目回答的是：“同一个 Git 仓库里的多组 Java 代码，如何按业务和构建模块组织？”
+1\. Monorepo 或普通多模块项目回答：“同一个 Git 仓库里的多组代码，如何组织？”其中 Monorepo 描述仓库边界，Maven 多模块或 Gradle 多项目描述构建边界，二者不能画等号。
 
-2\. Submodule 回答的是：“一个仓库如何固定引用另一个独立仓库的某个版本？”
+2\. Submodule 回答：“父仓库如何用 gitlink 固定另一个独立仓库的精确提交？”它不是 Maven 依赖管理器，也不会自动跟踪子仓库 `main` 的最新提交。
 
-3\. Subtree 回答的是：“如何把另一个项目导入普通子目录，并在需要时继续与上游双向同步？”
+3\. Subtree 回答：“如何把上游源码导入父仓库的普通目录，并保留显式拉取和回推能力？”普通 clone 能直接得到文件，但 Git 不会保存类似 `.gitmodules` 的标准上游清单。
 
-4\. Worktree 回答的是：“同一个仓库如何同时检出多个分支，并让它们在不同目录中并行工作？”
+4\. Worktree 回答：“同一个仓库如何同时检出多个分支？”每个 Worktree 有独立工作文件、Index（索引/暂存区）和 `HEAD`，但共享对象库、分支、标签、远程跟踪引用和默认仓库配置。
 
-Monorepo 不是新的 Git 对象或 Git 子命令。它是一种仓库边界：多个应用、库或工具共享一个 Git 历史。普通 Maven 多模块或 Gradle 多项目则首先是一种构建结构；它可以位于 Monorepo 中，也可以只是一个规模较小、统一发布的普通仓库。
-
-可以把 Submodule 类比为 Maven `pom.xml` 中一个被锁定版本的依赖，但它锁定的是另一个 Git 仓库的提交，并把源码检出到项目目录。这个类比只用于理解“固定版本”；Submodule 不具备 Maven 的传递依赖解析、版本冲突仲裁、制品缓存和仓库发布能力。
-
-可以把 Subtree 类比为“带同步记录的源码导入”：文件真正进入父仓库，普通克隆即可使用；但它不是自动同步，上游地址、分支、导入策略和回推权限仍需团队治理。
-
-可以把 Worktree 类比为“共享 Git 历史数据库的多个项目副本”。每个副本有自己的源码文件、暂存区和 `HEAD`，但它们共享分支引用与对象库。它不是完整 `git clone`，也不是容器级隔离。
+5\. Agent 工作流回答：“谁从哪个不可变基线修改哪些路径，运行什么验证，如何交付和清理？”Worktree 只是其中的工作区隔离手段，不是任务调度器或安全沙箱。
 
 ~~~mermaid
-flowchart LR
-    Z["需要组织多组 Java 代码"] --> Y{"是否放在同一个 Git 仓库？"}
-    Y -->|"是"| X["Monorepo 或普通多模块项目"]
-    Y -->|"否"| A["需要组合独立仓库"]
-    A --> B{"父仓库保存什么？"}
-    B -->|"只保存子提交指针"| C["Submodule"]
-    B -->|"直接保存导入文件"| D["Subtree"]
-    E["同一仓库并行多个任务"] --> F["Worktree"]
-    C --> G["含 Submodule 时默认独立 clone"]
-    D --> H["可像普通文件一样进入 Worktree"]
-    F --> H
-    H --> I["一任务一分支、一 Agent 一隔离目录"]
+flowchart TD
+    A["先确定代码与权限边界"] --> B{"能否放入同一 Git 仓库？"}
+    B -->|"能，且经常原子修改"| C["Monorepo 或普通同仓项目"]
+    B -->|"不能，需要独立历史"| D{"消费制品还是组合源码？"}
+    D -->|"只消费已发布 Java 库"| E["Maven/Gradle 制品依赖"]
+    D -->|"父仓库只固定外部提交"| F["Submodule"]
+    D -->|"父仓库直接保存导入文件"| G["Subtree"]
+    C --> H{"是否需要并行检出多个任务？"}
+    G --> H
+    H -->|"是"| I["一任务一分支一 Worktree"]
+    F --> J["含 Submodule 时默认一任务一独立 clone"]
+    I --> K["再隔离端口、数据、凭据与进程"]
+    J --> K
 ~~~
 
-### 1.2 一页结论
+可以把 Submodule 类比为“源码层被锁定版本的依赖”，但这个类比只解释固定版本。Submodule 不提供传递依赖解析、版本冲突仲裁、制品缓存和仓库发布能力。
 
-| 判断问题 | 推荐选择 | 原因 |
+可以把 Subtree 类比为“带同步历史的源码导入”。文件确实进入父仓库，但同步不会自动发生，上游地址、分支、导入策略和回推权限必须另外治理。
+
+可以把 Worktree 类比为“共享 Git 数据库的多个检出目录”。类比在工作文件隔离上成立，在安全隔离上失效：它不隔离凭据、网络、进程、数据库或操作系统权限。
+
+### 1.4 一页选型表与生产不变量
+
+| 判断问题 | 推荐选择 | 直接原因 |
 | --- | --- | --- |
-| Java 库已经按版本发布到 Maven 仓库 | Maven/Gradle 依赖 | 具备标准版本管理、缓存和供应链工具 |
-| 多个 Java 模块经常一起修改、评审和验证 | Monorepo 或普通多模块项目 | 一个提交可同时修改接口与调用方，构建工具维护模块依赖图 |
-| 必须把另一个独立仓库的源码固定在当前源码树中 | Submodule | 父仓库精确记录子仓库提交 |
-| 临时把上游源码合入并希望后续保留普通文件历史 | `git subtree` 或供应商代码导入流程 | 使用者不需要初始化子模块 |
-| 同一仓库同时做功能、热修复、代码审查 | Worktree | 无需频繁 stash 或切换分支 |
-| 多个 Agent 并行修改不含 Submodule 的仓库 | 每个 Agent 独立 Worktree 与独立分支 | 隔离工作目录、暂存区和构建输出 |
-| 多个 Agent 修改包含 Subtree 的仓库 | 独立 Worktree、独立分支，加一个 Subtree 同步所有者 | 文件能隔离，但上游拉取和回推必须串行治理 |
-| 多个 Agent 并行修改包含 Submodule 的父仓库 | 默认使用独立 clone；组合方案需专项验证 | Git 官方仍提示多 Worktree 的 Submodule 支持不完整 |
-| 需要隔离端口、数据库、凭据和操作系统资源 | Worktree 加容器或独立运行配置 | Worktree 只隔离文件工作区 |
+| Java 库已经按版本发布到制品仓库 | Maven/Gradle 依赖 | 具备标准版本、缓存、校验和供应链工具 |
+| 多个模块经常一起修改、评审和验证 | Monorepo 或普通同仓多模块项目 | 一个提交可原子修改接口与调用方 |
+| 必须在源码树中固定另一个独立仓库的提交 | Submodule | 父仓库 gitlink 精确记录子提交 |
+| 普通 clone 必须直接获得外部源码，且需要后续双向同步 | Subtree | 导入文件成为父仓库普通 Tree 与 Blob |
+| 同一仓库同时进行功能、热修复或代码审查 | Worktree | 不用反复 stash 或切换工作目录 |
+| 多个 Agent 修改不含 Submodule 的仓库 | 每个任务独立分支与 Worktree | 隔离工作文件、Index 和构建输出 |
+| 多个 Agent 修改包含 Subtree 的仓库 | 独立 Worktree，加一个 Subtree 同步所有者 | 文件可隔离，上游同步仍要串行治理 |
+| 多个 Agent 修改包含 Submodule 的父仓库 | 默认每任务独立 `clone --recurse-submodules` | Git 2.55.0 手册仍说明该组合支持不完整 |
+| 需要隔离端口、数据、凭据或不可信代码 | Worktree/clone 加容器、沙箱或独立运行配置 | Git 工作区不是安全边界 |
 
-最重要的生产结论如下。
+贯穿全文的生产不变量如下。
 
-1\. Submodule 的父仓库记录的是子仓库的提交对象标识，而不是“永远跟踪某个分支的最新代码”。
+1\. 父仓库记录 Submodule 的精确提交，不记录“永远使用某分支最新代码”。消费子模块时出现 detached HEAD（分离头指针）通常是正确的可复现状态。
 
-2\. Monorepo 是仓库组织方式，多模块是构建组织方式；二者经常同时出现，但不能画等号。
+2\. 修改自研 Submodule 时，先让子仓库提交通过评审并远程可达，再提交和推送父仓库 gitlink。`git push --recurse-submodules=check` 是带校验的推送，不是只读检查。
 
-3\. `git submodule update` 默认把子模块检出到父仓库记录的提交，出现 detached HEAD（分离头指针）通常是正常状态。
+3\. Subtree 文件属于父仓库普通快照，但上游来源不是 Git 标准元数据；Prefix、上游提交、历史策略和同步所有者必须版本化记录。
 
-4\. 更新自研 Submodule 时，先提交并推送子仓库，再提交并推送父仓库中的指针变化。
+4\. 多 Agent 使用“一任务、一分支、一个隔离目录、一个写入者”，所有并行任务从协调者冻结的同一个精确 Commit 开始，而不是各自在不同时间读取会移动的 `origin/main`。
 
-5\. Subtree 文件是父仓库的普通 Tree 与 Blob，不需要 `.gitmodules` 或递归初始化，普通 clone 就能获得完整文件。
+5\. 路径白名单和任务 YAML 只有在编排器、文件系统权限或审查门禁真正执行时才是强约束；只写在提示词中仍属于协作约定。
 
-6\. Subtree 不会自动跟踪上游；`add`、`pull`、`split`、`push` 都应由明确的同步所有者执行并记录来源版本。
+6\. IDE（Integrated Development Environment，集成开发环境）是 Git 与构建工具的操作界面，不是另一套状态真相。排障时回到可复制的命令输出。
 
-7\. Worktree 中不同目录通常必须使用不同本地分支；一个普通分支不能同时在两个 Worktree 中检出。
+### 1.5 推荐学习顺序与阶段门槛
 
-8\. Worktree 隔离了工作目录和暂存区，却共享分支、标签、远程跟踪引用、对象库以及默认仓库配置。
+| 学习阶段 | 阅读范围 | 完成标志 | 可暂时跳过 |
+| --- | --- | --- | --- |
+| 第一次学习 | 第 1～3 章、4.1、5.4、6.1～6.4、7.1～7.4、8.1 | 能识别边界，并用本地实验验证 gitlink、普通 Tree 和两个 Worktree | IDE、复杂同步、生产治理 |
+| Java 项目实战 | 4.2～4.10、5.5～5.9、第 6 章、8.2～8.6、第 9 章 | 能完成接入、构建、同步、并行运行和安全清理 | 面试追问与迁移高级选项 |
+| Agent 编程 | 第 10～11 章、16.3～16.6 | 能冻结基线、分配隔离目录、执行任务契约并提交证据 | Subtree 高级拆分参数 |
+| 生产与排障 | 第 12～17 章 | 能处理供应链、CI、冲突、故障恢复和技术选型 | 无 |
 
-9\. 多 Agent 协作采用“一任务、一分支、一个隔离目录、一个写入者”；普通仓库、Monorepo 和含 Subtree 的仓库可用 Worktree，含 Submodule 的父仓库默认用独立 clone。
+初学者的最短执行路径是：先完成第 1.2 节只读识别，再理解第 2 章 Git 状态模型；随后分别完成第 4.1 节 Submodule、第 5.4 节 Subtree、第 6.3 节 Maven 多模块和第 8.1 节 Worktree 实验。四个实验都能在本地观察结果，失败时也都有第一步证据入口。
 
-10\. IDE 是 Git 命令的可视化入口，不是新的状态源；排查时以 Git 和构建工具的命令输出为准。
-
-11\. Git 当前官方手册仍不推荐对包含 Submodule 的 Superproject 建立多个 Worktree；生产 Agent 默认改用独立 `clone --recurse-submodules`。
-
-### 1.3 推荐学习顺序
-
-本文同时包含入门教程、项目做法和生产治理，不要求第一次从头到尾记住全部内容。
-
-| 学习阶段 | 建议内容 | 完成标志 |
-| --- | --- | --- |
-| 第一次学习 | 第 1～3 章、4.1 本地 Submodule、5.4 本地 Subtree、第 6～7 章、8.1 本地 Worktree | 能区分仓库边界、构建模块和并行工作目录，并能验证基本状态 |
-| Java 项目实战 | 4.2～4.10、5.5～5.9、第 6 章、8.2～8.6、第 9 章 | 能在命令行和 IDE 中完成添加、构建、同步与并行开发 |
-| Agent 编程 | 第 10 章 | 能给每个 Agent 分配独立分支、目录、模块范围、任务契约和验证命令 |
-| 生产与排障 | 第 11～17 章 | 能处理组合限制、安全、CI、冲突、清理与技术选型 |
-
-推荐按下面的节奏学习。
-
-1\. 先掌握第 2 章的工作目录、暂存区、Commit、Branch 与 `HEAD`，不必立即记住全部底层命令。
-
-2\. 完成第 4.1 节的无网络实验，亲眼看到父仓库的 `160000` gitlink。
-
-3\. 完成第 5.4 节的本地 Subtree 实验，对比普通目录的 `040000 tree`。
-
-4\. 完成第 6.3 节的 Maven 多模块实验，观察 Reactor 按依赖顺序构建模块。
-
-5\. 完成第 8.1 节的无远程实验，验证两个目录能同时检出不同分支。
-
-6\. 再把这些机制迁移到 Java、IntelliJ IDEA 或 VS Code 项目。
-
-7\. 最后学习 Agent 协作和生产治理。第一次阅读可以先跳过第 11～15 章，遇到组合、排障或面试需求时再回来查。
-
-### 1.4 小白如何阅读和复制代码示例
+### 1.6 小白如何阅读和复制代码示例
 
 本文在代码块中直接解释关键命令与配置。复制示例前先认识以下约定。
 
@@ -737,19 +770,18 @@ mvn -B -ntp clean verify
 git add components/risk-sdk
 git commit -m "build: use risk timeout fix"
 
-# 最后才推送父仓库分支，避免 CI 找不到它引用的子提交
-git push -u origin chore/add-risk-sdk
+# 先预演：检查父分支与子提交，但不把父分支更新发送到远程
+git push --dry-run \
+  --recurse-submodules=check \
+  origin chore/add-risk-sdk
+
+# 预演通过后执行真实推送，并在推送时再次检查子提交可达性
+git push -u \
+  --recurse-submodules=check \
+  origin chore/add-risk-sdk
 ~~~
 
-顺序非常重要。父仓库一旦公开引用尚未推送的子仓库提交，其他开发者和 CI 会得到“找不到目标提交”之类的失败。可在父仓库推送前检查：
-
-~~~bash
-# 推送父仓库前检查：它引用的所有子仓库提交是否已存在于远程
-# 检查失败时不会自动替你推送或修复子仓库
-git push --recurse-submodules=check
-~~~
-
-团队也可以评估 `--recurse-submodules=on-demand`，但仍应把“子仓库先可获取”作为评审和发布准则。
+顺序非常重要。父仓库一旦公开引用尚未推送的子仓库提交，其他开发者和 CI 会得到“找不到目标提交”之类的失败。`git push --recurse-submodules=check` 本身仍是推送命令：检查通过后会发送父仓库更新；只有同时加 `--dry-run` 才是不发送更新的预演。`check` 失败时不会替你推送子仓库提交，而且它只证明相关子提交出现在当前克隆认识的至少一个子仓库远程跟踪分支上，不能证明 CI 身份能读取预期远程。团队也可以评估 `on-demand`，但仍应把“子仓库先经过独立验证并可由全新 CI 获取”作为评审和发布准则。
 
 ### 4.7 跟踪远程分支的正确理解
 
@@ -1679,8 +1711,8 @@ Monorepo 对 Agent 的优势是一个提交可以同时修改提供方与使用�
 # 人与 Agent 共用的任务编号，用于分支、Worktree 和交付记录。
 task_id: ORDER-231
 
-# 所有 Agent 从同一个精确提交开始，避免“最新 main”在执行中漂移。
-base_commit: 4f2a9c1
+# 所有 Agent 从同一个完整提交标识开始，避免“最新 main”在执行中漂移。
+base_commit: 4f2a9c1e8d7b6a5049382716f5e4d3c2b1a09876
 
 # writable_paths 是允许写入的白名单；公共根配置默认不开放。
 writable_paths:
@@ -1724,13 +1756,17 @@ name: java-verify
 on:
   pull_request:
 
+# 当前流水线只需读取仓库内容，不授予默认写权限。
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      # 检出当前 Pull Request 的完整仓库快照。
+      # 检出当前 Pull Request 的文件快照；默认不会获取完整提交历史。
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # 固定 JDK 主版本；真实项目还应按组织规则校验发行版和校验和。
       - name: Set up Java
@@ -1744,6 +1780,8 @@ jobs:
       - name: Verify all modules
         run: ./mvnw -B -ntp verify
 ~~~
+
+示例中的 `actions/checkout@v7` 与 `actions/setup-java@v5` 是截至 2026-08-06 的当前主版本写法，便于阅读但主版本标签仍可移动。高保障项目应按组织供应链策略固定到已审查的完整 Commit 标识，并用受控自动化提交升级 PR；`setup-java` v5 基于 Node.js 24，自托管 Runner（运行器）当前至少需要 `2.327.1`。`checkout` v7 会默认阻止 `pull_request_target` 或 `workflow_run` 在高信任上下文中检出 Fork PR 代码；不要为了沿用旧流水线而直接设置 `allow-unsafe-pr-checkout: true`。固定 Action（操作）实现版本与固定 JDK 主版本解决的是不同输入，二者都不能省略。
 
 规模变大后的优化不能只做“哪些目录变了”的字符串判断，还要考虑依赖方向。
 
@@ -2227,7 +2265,7 @@ Subtree 目录没有独立 Git 管理区，因此 IDE 通常只显示父仓库�
 
 ### 9.5 IntelliJ IDEA 使用 Worktree
 
-当前 JetBrains 官方文档提供 `Git | New Worktree` 和 Git 工具窗口中的 Worktrees 视图。创建后，新 Worktree 会作为独立项目打开。官方文档同时说明当前 Worktree 界面主要支持只包含单个仓库的项目。含 Submodule 的项目属于多仓库场景，而且 Git 官方本身仍不推荐 Superproject 的多 Worktree 检出；改用命令行并不能消除这一底层限制，生产 Agent 默认应使用独立 clone。
+JetBrains IntelliJ IDEA 2026.2 官方文档提供 `Git | New Worktree` 和 Git 工具窗口中的 Worktrees 视图。创建后，新 Worktree 会作为独立项目打开。官方文档同时说明当前 Worktree 界面支持包含单个仓库的项目。含 Submodule 的项目属于多仓库场景，而且 Git 官方本身仍不推荐 Superproject 的多 Worktree 检出；改用命令行并不能消除这一底层限制，生产 Agent 默认应使用独立 clone。
 
 推荐步骤如下。
 
@@ -2262,6 +2300,8 @@ VS Code 当前官方文档提供内置 Worktree 操作：在 Source Control Repo
 ~~~
 
 VS Code 还支持 `git.worktreeIncludeFiles`，可以在新 Worktree 中复制符合模式且被 `.gitignore` 忽略的文件。对 Agent 场景不要默认复制 `.env`、云凭据或生产配置；便利性不能覆盖最小权限原则。
+
+当前 VS Code 的自动检测上限默认值为 50，上例显式改成 20 是团队性能策略，不是产品默认值。VS Code 还提供 Compare with Workspace（与当前工作区比较）与 Migrate Worktree Changes（迁移 Worktree 变更）；后者会把未提交变化带入当前工作区，不应代替 Agent 的提交、PR、测试和审计流程。
 
 ### 9.7 IDE 多窗口的资源隔离
 
@@ -2336,8 +2376,9 @@ task_id: PAY-142
 # 只描述本任务要实现的业务结果，不夹带无关重构
 goal: "为支付回调增加数据库幂等保护"
 
-# 所有执行者从同一个远程基线开始，减少集成时的隐式差异
-base_ref: "origin/main"
+# 协调者先解析远程分支，再把完整、不可变的 Commit 标识写入契约
+# 这里是示意值；真实任务不得填写仍会移动的 origin/main
+base_commit: "4f2a9c1e8d7b6a5049382716f5e4d3c2b1a09876"
 
 # 分支与工作目录都带任务号，便于确认当前写入位置
 branch: "agent/PAY-142-idempotency"
@@ -2366,31 +2407,35 @@ verify:
 
 # deliver 规定 Agent 最终必须提供的审查证据
 deliver:
-  - "提交哈希"
+  - "基线与交付提交标识"
   - "修改摘要"
   - "测试命令与结果"
   - "剩余风险"
 ~~~
 
-`allowed_paths` 降低意外扩散，`forbidden_paths` 保护高风险区域，`acceptance` 定义业务成功，`verify` 定义技术成功。只有“写一个幂等功能”而没有输入边界、并发语义和测试命令，不足以成为 Agent 任务。
+`base_commit` 固定所有并行任务看到的输入快照；若只写 `origin/main`，不同时间启动的 Agent 可能得到不同基线。`allowed_paths` 与 `forbidden_paths` 描述修改边界，`acceptance` 定义业务成功，`verify` 定义技术成功。YAML 本身不会阻止越界写入；强约束还需要编排器、沙箱或文件系统权限执行，集成阶段再用 Diff 和 CI 复核。只有“写一个幂等功能”而没有输入边界、并发语义和测试命令，不足以成为 Agent 任务。
 
 ### 10.5 创建 Agent 工作目录
 
 协调者先执行 `git ls-files .gitmodules`。没有输出时可以按普通仓库创建 Worktree；但还要阅读项目的 Subtree 清单或 Agent 指令，确认哪些普通目录具有上游同步边界。Subtree 不会出现在 `.gitmodules` 中。
 
 ~~~bash
-# 获取最新 origin/main，确保下面的任务分支从约定基线创建
-git fetch origin
+# 协调者先刷新远程跟踪引用；该操作会影响同仓库所有 Worktree
+git fetch origin main
 
-# 反斜杠只是换行；四行组合成一条 git worktree add 命令
-# -b 创建 Agent 专属分支，随后在 ../wt-PAY-142 检出
+# 只冻结一次，并把完整输出写入所有并行任务的 base_commit
+BASE_COMMIT=$(git rev-parse refs/remotes/origin/main)
+printf '%s\n' "$BASE_COMMIT"
+
+# -b 创建 Agent 专属分支；起点使用已冻结提交，而不是移动引用
 git worktree add \
   -b agent/PAY-142-idempotency \
   ../wt-PAY-142 \
-  origin/main
+  "$BASE_COMMIT"
 
-# 检查新目录当前分支和修改状态，确认 Agent 不会写到主工作树
+# 检查新目录的分支、状态和精确基线
 git -C ../wt-PAY-142 status --short --branch
+git -C ../wt-PAY-142 rev-parse HEAD
 
 # 从仓库整体视角确认新工作树已登记且分支没有重复占用
 git worktree list
@@ -2399,21 +2444,24 @@ git worktree list
 以上流程适用于不含 Submodule 的普通仓库，也适用于把 Subtree 当普通文件开发的任务。若仓库根目录存在 `.gitmodules`，生产默认改为独立克隆：
 
 ~~~bash
-# 含 Submodule 的父仓库默认使用独立 clone，提高状态隔离强度
-# --recurse-submodules 会同时初始化父仓库记录的子模块提交
-git clone --recurse-submodules <parent-repo-url> ../clone-PAY-142
+# 必须替换为任务契约中的完整 base_commit，不能重新解析 origin/main
+BASE_COMMIT="<full-base-commit-id>"
 
-# 在独立克隆中创建 Agent 任务分支，起点仍是 origin/main
-git -C ../clone-PAY-142 switch -c agent/PAY-142-idempotency origin/main
+# 含 Submodule 的父仓库默认使用独立 clone；先不检出远程默认分支
+git clone --no-checkout <parent-repo-url> ../clone-PAY-142
 
-# 再显式恢复嵌套子模块，便于日志清楚显示这一阶段
+# clone 完成后先确认契约提交存在，再从该精确提交创建任务分支
+git -C ../clone-PAY-142 cat-file -e "$BASE_COMMIT^{commit}"
+git -C ../clone-PAY-142 switch -c agent/PAY-142-idempotency "$BASE_COMMIT"
+
+# 只在切到冻结基线后初始化，避免先获取远程默认分支的子模块组合
 git -C ../clone-PAY-142 submodule update --init --recursive
 
 # 检查子模块是否未初始化、漂移或冲突
 git -C ../clone-PAY-142 submodule status --recursive
 ~~~
 
-`<parent-repo-url>` 使用父仓库标准远程地址。独立 clone 会牺牲一部分磁盘和网络效率，但换取 Git 官方支持路径下更清晰的子模块仓库状态。将 Agent 的进程工作目录明确设置为实际任务目录。只在提示词中说“请在 PAY-142 分支工作”不够，因为进程可能仍处于主工作树。
+`<parent-repo-url>` 使用父仓库标准远程地址，`BASE_COMMIT` 必须沿用协调者已经写入任务契约的值，不能在每个独立 clone 中重新解析。独立 clone 会牺牲一部分磁盘和网络效率，但换取 Git 官方支持路径下更清晰的子模块仓库状态。将 Agent 的进程工作目录明确设置为实际任务目录。只在提示词中说“请在 PAY-142 分支工作”不够，因为进程可能仍处于主工作树。
 
 ### 10.6 Agent 开工前的自检
 
@@ -2519,7 +2567,7 @@ git rev-parse HEAD
 
 交付包至少包含：
 
-1\. 任务标识、分支、任务目录与提交哈希。
+1\. 任务标识、分支、任务目录、冻结的基线提交与交付提交标识。
 
 2\. 修改的业务行为和关键实现取舍。
 
@@ -2644,7 +2692,7 @@ git worktree prune --dry-run --verbose
 git worktree add \
   -b agent/ORD-230-validation \
   ../wt-ORD-230 \
-  origin/main
+  <full-base-commit-id>
 
 # 在新父工作树中初始化其固定的所有子模块
 git -C ../wt-ORD-230 submodule update --init --recursive
@@ -2762,7 +2810,7 @@ git -C ../wt-PAY-142 diff -- components/risk-rules
 
 # 交付前列出只影响 Prefix 的提交，供同步所有者评审
 git -C ../wt-PAY-142 log --oneline \
-  origin/main..HEAD -- components/risk-rules
+  <full-base-commit-id>..HEAD -- components/risk-rules
 ~~~
 
 若一个仓库同时包含 Submodule 和 Subtree，应按更严格的 Submodule 默认策略选择独立 clone；Subtree 的普通文件性质不能消除同一父仓库中的 Submodule 限制。
@@ -3183,7 +3231,8 @@ git -C components/risk-sdk branch rescue/risk-local-change <commit>
 | `git submodule update --remote <path>` | 按配置的远程分支推进 | 需要父仓库显式提交新指针 |
 | `git submodule set-branch --branch <b> <path>` | 设置远程更新分支 | 不改变“父仓库记录提交”的本质 |
 | `git diff --submodule` | 显示子模块提交范围 | 用于评审依赖升级 |
-| `git push --recurse-submodules=check` | 检查父仓库引用的子提交是否已在子仓库远程可用 | 防止先发布父指针 |
+| `git push --dry-run --recurse-submodules=check <remote> <branch>` | 预演父仓库推送并检查相关子提交 | `--dry-run` 才保证不发送父仓库更新 |
+| `git push --recurse-submodules=check <remote> <branch>` | 推送父仓库，并在发送前检查相关子提交 | 这是实际推送，不是只读检查 |
 | `git submodule foreach --recursive '<cmd>'` | 对所有子模块执行只读检查或维护 | 谨慎执行修改性命令 |
 | `git submodule deinit <path>` | 当前工作树停用子模块 | 不等于从仓库历史删除 |
 | `git rm <path>` | 从父仓库删除子模块定义 | 提交前检查 `.gitmodules` 与 gitlink |
@@ -3226,8 +3275,8 @@ git -C components/risk-sdk branch rescue/risk-local-change <commit>
 自动化脚本应尽量使用稳定、机器可读的输出：
 
 ~~~bash
-# 文件修改状态：固定字段格式，适合脚本读取
-git status --porcelain=v1
+# v2 提供结构化字段；-z 用 NUL 分隔记录，可安全处理空格和换行文件名
+git status --porcelain=v2 -z
 
 # 所有 Worktree：每个字段独占一行，适合自动化盘点
 git worktree list --porcelain
@@ -3242,11 +3291,11 @@ git ls-tree HEAD components/risk-rules
 # 该命令会计算合成历史，不能把它当成廉价的每秒状态探针
 git subtree split --quiet --prefix=components/risk-rules
 
-# 只输出未暂存变化涉及的文件名
-git diff --name-only
+# 文件名供脚本消费时也使用 NUL 分隔，不能再按文本行读取
+git diff --name-only -z
 
-# 只输出已经进入暂存区的文件名
-git diff --cached --name-only
+# 只输出已经进入暂存区的文件名，同样使用 NUL 分隔
+git diff --cached --name-only -z
 
 # 输出当前工作树根目录
 git rev-parse --show-toplevel
@@ -3258,7 +3307,7 @@ git rev-parse --git-dir
 git rev-parse --git-common-dir
 ~~~
 
-不要解析带颜色、国际化文本或面向人的默认 `git status` 来做关键自动化决策。
+不要解析带颜色、国际化文本或面向人的默认 `git status` 来做关键自动化决策。使用 `-z` 后，消费者必须按 NUL（Null Character，空字符）拆分，不能用普通的逐行读取；人工查看时再使用 `git status --short --branch`。
 
 ### 14.5 团队可选配置
 
@@ -3433,23 +3482,25 @@ BRANCH="agent/PAY-142-idempotency"
 # Worktree 放在主仓库同级目录，不嵌套进主工作树
 WORKTREE="../wt-PAY-142"
 
-# 所有并行任务从相同远程基线开始
-BASE="origin/main"
+# 协调者在创建第一项任务前刷新一次远程跟踪引用
+git fetch origin main
 
-# 先刷新 BASE 指向的远程跟踪引用
-git fetch origin
+# 冻结完整 Commit 标识，并把同一个值写入所有并行任务契约
+BASE_COMMIT=$(git rev-parse refs/remotes/origin/main)
+printf '%s\n' "$BASE_COMMIT"
 
-# 使用变量创建分支和工作树；双引号可安全保留路径中的空格
-git worktree add -b "$BRANCH" "$WORKTREE" "$BASE"
+# 从不可变提交创建分支；不要让各任务重新解析移动的 origin/main
+git worktree add -b "$BRANCH" "$WORKTREE" "$BASE_COMMIT"
 
-# 检查新工作树分支与状态
+# 检查新工作树分支、状态与精确基线
 git -C "$WORKTREE" status --short --branch
+git -C "$WORKTREE" rev-parse HEAD
 
 # 从仓库整体确认任务工作树已登记
 git worktree list
 ~~~
 
-这段模板只用于不含 Submodule 的普通仓库；包含 Subtree 但不含 Submodule 的仓库也属于这一类，因为 Subtree 是普通文件。模板不负责自动删除已有目录或已有分支。若命令失败，协调者先检查 `git worktree list`、`git branch --list` 与实际路径，不能通过强制覆盖继续。
+这段模板只用于不含 Submodule 的普通仓库；包含 Subtree 但不含 Submodule 的仓库也属于这一类，因为 Subtree 是普通文件。协调者只冻结一次 `BASE_COMMIT`，后续任务复用该值；若希望更新基线，应创建新一批任务或明确执行集成更新，不能让正在并行的任务静默漂移。模板不负责自动删除已有目录或已有分支。若命令失败，协调者先检查 `git worktree list`、`git branch --list` 与实际路径，不能通过强制覆盖继续。
 
 包含 Submodule 的父仓库默认使用：
 
@@ -3458,19 +3509,23 @@ git worktree list
 TASK_ID="PAY-142"
 BRANCH="agent/PAY-142-idempotency"
 
+# 必须与任务契约中的完整 base_commit 相同
+BASE_COMMIT="<full-base-commit-id>"
+
 # 含 Submodule 时使用独立克隆目录，而不是默认创建 Worktree
 TASK_CLONE="../clone-PAY-142"
 
 # 必须替换为团队可访问的真实父仓库地址
 PARENT_URL="<parent-repo-url>"
 
-# 递归克隆父仓库及其固定的所有子模块
-git clone --recurse-submodules "$PARENT_URL" "$TASK_CLONE"
+# 先建立独立 clone，但不检出可能已移动的远程默认分支
+git clone --no-checkout "$PARENT_URL" "$TASK_CLONE"
 
-# 在独立克隆中创建任务分支
-git -C "$TASK_CLONE" switch -c "$BRANCH" origin/main
+# 确认契约提交可获取，再从该不可变提交创建任务分支
+git -C "$TASK_CLONE" cat-file -e "$BASE_COMMIT^{commit}"
+git -C "$TASK_CLONE" switch -c "$BRANCH" "$BASE_COMMIT"
 
-# 显式初始化可让日志更清楚，也能补齐可能缺失的嵌套子模块
+# 只初始化冻结基线定义的 Submodule，并递归恢复嵌套模块
 git -C "$TASK_CLONE" submodule update --init --recursive
 
 # 交给 Agent 前确认子模块状态
@@ -3486,7 +3541,7 @@ git -C "$TASK_CLONE" submodule status --recursive
 Task: PAY-142
 Branch: agent/PAY-142-idempotency
 Commit: <parent-commit>
-Base: <base-commit>
+Base: <full-base-commit-id>
 Build root: <repository-root-or-subdirectory>
 Changed modules: <changed-modules>
 Affected modules: <affected-modules>
@@ -3579,7 +3634,7 @@ Subtree changes: none
 
 4\. 从普通克隆恢复所有嵌套 Submodule，并验证状态前缀。
 
-5\. 安全更新自研子模块并遵守“先子后父”的推送顺序。
+5\. 安全更新自研子模块，遵守“先子后父”的推送顺序，并解释为什么 `--recurse-submodules=check` 只有配合 `--dry-run` 才是预演。
 
 6\. 完成第 5.4 节实验，并用 `git ls-tree` 证明 Subtree 是 `040000 tree`，普通 clone 无需初始化即可得到文件。
 
@@ -3595,7 +3650,7 @@ Subtree changes: none
 
 12\. 为两个 Spring Boot Worktree 分配不同端口和数据库隔离。
 
-13\. 为普通仓库或 Monorepo Agent 定义任务契约、模块范围、构建根，创建 Worktree，收集测试证据并安全清理。
+13\. 为普通仓库或 Monorepo Agent 冻结完整基线提交，定义任务契约、模块范围与构建根，创建 Worktree，收集测试证据并安全清理。
 
 14\. 解释为何包含 Submodule 的父仓库默认使用独立 clone，而含 Subtree 的仓库可以按普通仓库使用 Worktree。
 
@@ -3625,7 +3680,7 @@ Subtree changes: none
 
 9\. 公共模块、根构建配置和 Wrapper 变化已覆盖下游或执行全量验证。
 
-10\. Agent 修改经过 Diff 审查、测试复跑和主线 CI。
+10\. 所有并行 Agent 任务记录同一个冻结基线提交；修改经过 Diff 审查、测试复跑和主线 CI。
 
 11\. 数据库迁移、端口、Topic、缓存和 SNAPSHOT 冲突已隔离。
 
@@ -3656,6 +3711,8 @@ Git Submodule：
 4\. [Git Book：Submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)：从添加、克隆、更新到发布子模块提交的完整示例。
 
 5\. [git-clone 命令手册](https://git-scm.com/docs/git-clone)：`--recurse-submodules`、浅克隆、并行任务等克隆选项。
+
+6\. [git-push 命令手册](https://git-scm.com/docs/git-push)：`--dry-run` 与 `--recurse-submodules=check|on-demand|only|no` 的推送语义。
 
 Git Subtree：
 
@@ -3699,7 +3756,9 @@ IDE：
 
 ### 17.4 本文验证边界
 
-本文命令语义已对照上述 Git、Maven、Gradle、JetBrains 与 VS Code 官方资料。当前编写环境可用 Git 2.55.0；第 4.1 节的本地 `submodule add` 与递归克隆、第 5.4～5.6 节的本地 `subtree add`、`pull`、`split`、向裸仓库 `push` 与普通克隆，以及第 8.1 节的 `worktree add`、合并和安全移除核心流程，已在临时本地仓库实际验证。
+本文命令语义已于 2026-08-06 对照上述 Git、Maven、Gradle、JetBrains 与 VS Code 官方资料。当前编写环境可用 Git 2.55.0；第 4.1 节的本地 `submodule add` 与递归克隆、第 5.4～5.6 节的本地 `subtree add`、`pull`、`split`、向裸仓库 `push` 与普通克隆，以及第 8.1 节的 `worktree add`、合并和安全移除核心流程，已在临时本地仓库实际验证。
+
+本次 Review 另外使用本地裸父仓库与子仓库验证了第 4.6.2 节：`git push --dry-run --recurse-submodules=check` 检查通过后，父仓库远程引用保持不变；移除 `--dry-run` 执行真实推送后，远程引用才移动到新的父提交。这项验证证明了示例中的“预演”和“实际推送”差异，不代表远程托管平台的权限、保护分支和服务端 Hook（钩子）已经通过。
 
 第 6.3～6.4 节的 Maven 示例已在 Apache Maven 3.8.9 与 Java 8 环境实际执行：全量 `clean verify`、`-pl order-service -am verify` 和 Java 入口运行均成功。该验证证明示例结构、模块依赖和命令闭环可执行，不代表推荐新生产项目继续使用 Java 8；生产版本应遵守团队支持矩阵。
 
