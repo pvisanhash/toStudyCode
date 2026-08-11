@@ -1,70 +1,41 @@
 # Open Policy Agent（OPA）知识体系
 
-> 本文首先面向掌握 Java 基础语法、刚开始接触 Spring Boot 和权限设计的读者，同时兼顾面试理解与生产落地。你不需要会 Go、Kubernetes 或策略语言；只要理解 Java 类、方法、JSON 和基本 HTTP 请求，就能完成前五章。示例采用当前 Rego v1 风格语法。命令参数和框架 API 可能随版本演进，上线前应以当前官方文档、`opa <command> --help` 和项目锁定的依赖版本为准。
+> 本文面向掌握 Java 基础语法、刚开始接触 Spring Boot 和权限设计的读者，同时兼顾面试理解与生产落地。前五章只要求读者能阅读 Java 类、方法、JSON 和基本 HTTP 请求，不要求 Go 或 Kubernetes 经验。Rego 示例采用 v1 语法，Java 主线以 Java 17 和 Spring Boot 4.x 为基线，并单独标明 Spring Boot 3.2–3.5 的差异。版本敏感内容已按 2026-08-12 的 OPA 与 Spring 官方文档核验；实际项目仍应锁定工具与依赖版本，并以对应版本的文档和 `opa <command> --help` 为准。
 
-## 1 学习路径与核心心智模型
+## 1 从一次文档读取理解策略决策
 
-### 1.1 OPA 解决什么问题
+### 1.1 先看要解决的业务问题
 
-Java 业务系统经常散落着大量“是否允许”的判断，例如 `if (user.isAdmin())`、`@PreAuthorize(...)` 或 Service 中的租户比较。少量固定规则直接写在 Java 中很自然；当多个服务和语言需要共享规则、规则由独立团队维护或必须独立审计发布时，硬编码会带来规则重复、发布耦合和行为不一致。
+假设 Java 服务要读取文档 `doc-1`。当前用户 Alice 具有 `reader` 角色，属于 `tenant-a`；目标文档也属于 `tenant-a`。系统需要对下面的请求给出可观察结果：
 
-OPA 是一个通用策略引擎。应用把待判断的结构化事实交给 OPA，OPA 使用 Rego 策略和参考数据计算决策；真正执行“放行、拒绝、告警或修改”的仍是调用方。OPA 因而把策略决策从业务执行中分离出来。
+```text
+主体：alice / reader / tenant-a
+动作：read
+资源：doc-1 / document / tenant-a
+期望决策：允许
+```
 
-| 角色 | 常用术语 | 职责 | OPA 场景中的例子 |
+若把资源租户改成 `tenant-b`，期望决策应变为拒绝。第 2 章会把这组事实交给 OPA（Open Policy Agent，开放策略代理），用 Rego 规则得到 `true` 和 `false`。先看见这两个结果，再学习策略角色、文档模型和语言语义。
+
+Java 业务系统经常使用 `if (user.isAdmin())`、`@PreAuthorize(...)` 或 Service 中的租户比较完成这类判断。少量且稳定的规则直接写在应用中更易维护。当多个服务或语言需要共享规则、策略需独立审计发布、或资源属性组合快速增长时，OPA 可以把“如何决定”从“如何执行业务”中分离出来。
+
+### 1.2 按可验证结果分阶段学习
+
+| 阶段 | 阅读范围 | 学习目标 | 成功判据 |
 | --- | --- | --- | --- |
-| 策略执行点 | PEP（Policy Enforcement Point） | 拦截操作、调用决策、执行结果 | API 网关、业务服务、Kubernetes API Server |
-| 策略决策点 | PDP（Policy Decision Point） | 根据事实和策略计算结果 | OPA 进程或嵌入式 OPA |
-| 策略管理点 | PAP（Policy Administration Point） | 编写、审核、发布策略 | Git 仓库、CI/CD（Continuous Integration/Continuous Delivery）流水线、Bundle 服务 |
-| 策略信息点 | PIP（Policy Information Point） | 提供用户、资源、组织等属性 | 身份服务、资产目录、同步到 OPA 的参考数据 |
+| 最小闭环 | 第 1–2 章 | 建立“事实、规则、查询、决策”的联系 | 能通过改变租户得到 `true` 与 `false` |
+| Rego 与工程基础 | 第 3–4 章 | 理解文档、规则、未定义与测试 | 格式、编译、Schema 类型检查和策略测试全部通过 |
+| Java 接入 | 第 5 章 | 让 Spring Boot 调用 OPA 并执行决策 | 允许请求返回 200，跨租户请求返回 403，OPA 故障时不放行 |
+| 生产治理 | 第 6–9 章 | 管理发布、安全、性能与故障 | 能通过 revision、Status、Decision Logs 和指标证明生效版本及故障影响 |
+| 复盘与落地 | 第 10–12 章 | 用决策链说明设计取舍并完成上线验收 | 能解释决策边界，并独立检查一份策略发布方案 |
 
-```mermaid
-flowchart LR
-    A["调用者发起操作"] --> B["PEP：拦截并构造 input"]
-    B --> C["PDP：OPA 评估 Rego"]
-    D["策略与参考 data"] --> C
-    C --> E["结构化决策"]
-    E --> B
-    B --> F{"执行决策"}
-    F -->|允许| G["继续业务操作"]
-    F -->|拒绝| H["返回错误或阻断"]
-    F -->|审计| I["记录决策与指标"]
-```
+第一次阅读可以在完成第 5 章后暂停；当项目开始使用 Bundle 发布、多副本 OPA 或参考数据同步时，再进入第 6–9 章。
 
-关键边界是：OPA 只计算决策，不替应用完成鉴权拦截，也不天然负责用户认证、策略审批、策略存储和全局事实实时查询。
+### 1.3 判断 OPA 是否适合当前系统
 
-### 1.2 用四类文档理解一次评估
+OPA 适合策略需跨服务或跨语言复用、规则发布周期与应用不同、审计与回滚要求高，或判断同时依赖主体、资源与环境属性的场景。这些收益会带来新的策略语言、发布链路、输入契约、可观测性和运行时依赖。
 
-一次 OPA 评估主要涉及四类数据：
-
-1\. `input`：单次请求提供的临时事实，例如当前用户、HTTP 方法和目标资源；不同请求的 `input` 可以不同。
-
-2\. `data`：OPA 已加载的基础文档与虚拟文档。基础文档通常来自 JSON、YAML 或 Bundle；虚拟文档由 Rego 规则计算。
-
-3\. `policy`：Rego 模块，定义如何从 `input` 和 `data` 推导决策。
-
-4\. `decision`：查询某个文档路径后得到的 JSON 值。它不一定是布尔值，也可以是对象、集合、数组或字符串。
-
-```mermaid
-flowchart TD
-    I["input：本次请求事实"] --> Q["查询 data.authz.decision"]
-    D["data：长期参考事实"] --> Q
-    P["policy：Rego 推导规则"] --> Q
-    Q --> R["decision：JSON 可序列化结果"]
-```
-
-初学者最容易混淆 `input` 与 `data`：前者属于一次评估，后者属于 OPA 当前内存状态。把高频变化、请求专属的内容放进 `input`，把可接受一定同步延迟的共享参考信息放进 `data`。
-
-### 1.3 推荐学习顺序
-
-1\. 先完成第 2 章的命令行最小闭环，建立“输入、规则、查询、结果”的联系。
-
-2\. 再学习第 3 章的文档模型、变量、安全性和默认值语义。
-
-3\. 用第 4 章建立测试、格式化、静态检查和调试习惯。
-
-4\. 完成第 5 章的 Java 17 与 Spring Boot 实战，让 Java 应用真正调用 OPA 并执行决策。
-
-5\. 完成入门闭环后按第 6 至第 9 章继续学习发布、生产模式、原理和可靠性，再用第 10 章做面试复盘，最后参考第 11、12 章落地。
+对只有少数固定角色的单体应用，Spring Security 或应用内部权限库通常路径更短。如果决策必须在每次请求中同步查询多个业务系统，应先重新设计输入与参考数据的获取方式；OPA 评估阶段适合基于已提供的结构化事实计算决策。
 
 ## 2 从零完成第一个策略闭环
 
@@ -150,15 +121,65 @@ opa eval --data authz.rego --input input.json --format pretty \
   'data.example.authz.missing'
 ```
 
-查询可能得到 `undefined`，它与 JSON 的 `false`、`null` 和空集合都不同。若调用方把未定义误当成允许，便会造成绕过。因此入口决策通常需要确定的默认值，PEP 也应校验返回值的类型和完整性。
+查询可能得到 `undefined`，它与 JSON 的 `false`、`null` 和空集合都不同。若调用方把未定义误当成允许，便会造成绕过。因此入口决策通常需要确定的默认值，调用方作为策略执行点（Policy Enforcement Point，PEP）也应校验返回值的类型和完整性。
 
 ## 3 Rego 核心语义与数据建模
 
-### 3.1 Rego 是声明式查询语言
+### 3.1 从第一次评估回看四类数据
+
+第 2 章的命令包含四个必要对象，它们的来源、生命周期和输出不同：
+
+1\. `input`：单次请求提供的临时事实，例如当前用户、动作和目标资源。每次评估都可以有不同的 `input`。
+
+2\. `data`：OPA 已加载的基础文档与虚拟文档。基础文档通常来自 JSON、YAML 或 Bundle；虚拟文档由 Rego 规则推导。
+
+3\. `policy`：Rego 模块，定义如何从 `input` 和 `data` 推导结果。`authz.rego` 就是第一份策略模块。
+
+4\. `decision`：查询某个文档路径后得到的 JSON 可序列化值。它可以是布尔值、对象、集合、数组或字符串。
+
+```mermaid
+flowchart TD
+    I["input：本次请求事实"] --> Q["查询 data.example.authz.allow"]
+    D["data：OPA 当前的参考事实"] --> Q
+    P["policy：Rego 推导规则"] --> Q
+    Q --> R["decision：true、false 或其他 JSON 值"]
+```
+
+`input` 属于一次评估，`data` 属于 OPA 当前内存状态。请求专属且高频变化的事实适合放入 `input`；由权威来源管理、可接受一定同步延迟的共享参考信息适合放入 `data`。时效性超出业务容忍范围的数据不应仅依赖异步 Bundle 同步。
+
+### 3.2 决策链中的角色与职责边界
+
+OPA 是通用策略引擎。应用把待判断的结构化事实交给 OPA，OPA 使用 Rego 与参考数据计算决策；调用方负责执行放行、拒绝、告警或修改。这条链路中常用四个角色定位责任：
+
+| 角色 | 全称 | 职责 | OPA 场景中的例子 |
+| --- | --- | --- | --- |
+| 策略执行点（PEP） | Policy Enforcement Point | 拦截操作、调用决策、执行结果 | API 网关、Java 业务服务、Kubernetes API Server |
+| 策略决策点（PDP） | Policy Decision Point | 根据事实和策略计算结果 | OPA 进程或嵌入式 OPA |
+| 策略管理点（PAP） | Policy Administration Point | 编写、审核与发布策略 | Git 仓库、CI/CD（Continuous Integration/Continuous Delivery，持续集成/持续交付）流水线、Bundle 服务 |
+| 策略信息点（PIP） | Policy Information Point | 提供主体、资源和组织属性 | 身份服务、资产目录、同步到 OPA 的参考数据 |
+
+```mermaid
+flowchart LR
+    A["调用者发起操作"] --> B["PEP：认证后构造 input"]
+    B --> C["PDP：OPA 评估 Rego"]
+    D["PAP：发布策略"] --> C
+    E["PIP：提供可信属性"] --> B
+    E --> F["OPA data"]
+    F --> C
+    C --> G["结构化决策"]
+    G --> B
+    B --> H{"执行决策"}
+    H -->|允许| I["继续业务操作"]
+    H -->|拒绝或故障| J["阻断并记录"]
+```
+
+OPA 不替应用完成鉴权拦截，也不自动提供用户认证、策略审批、策略存储或业务属性的实时查询。例如 OPA 返回 `false` 后，Java Service 仍然继续返回文档，问题出在 PEP 没有执行决策，而不是 Rego 没有给出结果。
+
+### 3.3 Rego 是声明式查询语言
 
 Rego 受 Datalog 启发，面向 JSON 等层级数据。策略作者描述“哪些条件成立时能推导出什么”，而不是编写逐行修改状态的命令。规则求值没有依赖源码书写顺序的业务控制流，不应把规则体当作普通命令式程序理解。
 
-### 3.2 包、模块、规则与文档
+### 3.4 包、模块、规则与文档
 
 一个 `.rego` 文件是模块；模块通过 `package` 放入逻辑命名空间；规则产生虚拟文档。多个文件可以属于同一个包，但团队应避免同名规则的无意组合。
 
@@ -189,7 +210,7 @@ decision := {
 
 本文显式保留 `import rego.v1`，便于读者识别这些模块采用 v1 语义，也方便策略被较新的 OPA v0 版本读取。对 OPA 1.x 来说，`if`、`in`、`contains` 和 `every` 已是默认语法，`import rego.v1` 不再是必需条件；它仍是合法写法。不要把 `import rego.v1` 误解为下载依赖。
 
-### 3.3 完整规则、集合规则与对象规则
+### 3.5 完整规则、集合规则与对象规则
 
 完整规则为路径计算一个值：
 
@@ -221,7 +242,27 @@ headers["x-tenant-id"] := input.subject.tenant if {
 
 集合适合表达多个违规项；布尔 `allow` 适合快速授权；对象决策适合需要原因、约束和上下文的生产接口。
 
-### 3.4 变量、统一与迭代
+### 3.6 增量定义、完整规则冲突与求值顺序
+
+同名规则可以分成多个增量定义。第 2 章的两个布尔 `allow` 规则都只能产生 `true`，因此可以按“管理员路径或读者路径成立”理解。集合规则则会合并每个定义产生的元素。
+
+完整规则的同一文档在一次评估中只能有一个值。如果多个定义同时匹配并产生不同值，OPA 会返回冲突错误，不会根据源码顺序随意选一个：
+
+```rego
+max_results := 100 if {
+    "premium" in input.subject.plans
+}
+
+max_results := 20 if {
+    input.resource.classification == "internal"
+}
+```
+
+如果某个 premium 用户同时请求 internal 资源，两个规则分别产生 `100` 和 `20`，评估将失败。正确建模方式取决于业务语义：可以使各分支生成同一布尔值，可以收集到集合后再明确选择，也可以在确实需要优先级时使用 `else`。
+
+`else` 链按书写顺序评估，首个匹配分支产生结果后停止后续分支。它适合从顺序敏感系统迁移的少数场景，大量使用会让规则形成紧耦合控制流。`default` 只在所有同名完整规则都未产生值时作为回退，不会解决已经发生的多值冲突。
+
+### 3.7 变量、统一与迭代
 
 `:=` 用于赋值，`==` 用于比较，`=` 表示统一。统一会寻找使两边相等的变量绑定，能力强但也更容易令初学者误读。业务策略中可以优先使用意图清晰的 `:=` 与 `==`。
 
@@ -234,7 +275,7 @@ trusted_image if {
 
 执行过程为：`some image in input.images` 逐一绑定候选镜像；内置函数 `startswith` 检查前缀；至少一个候选满足时，`trusted_image` 成立。
 
-### 3.5 否定、未定义与安全变量
+### 3.8 否定、未定义与安全变量
 
 `not expression` 表示无法证明表达式成立，而不是传统意义上对某个布尔值直接取反。表达式中使用的变量必须先在肯定表达式中得到安全绑定。
 
@@ -247,7 +288,7 @@ deny contains "MFA is required" if {
 
 这个例子存在数据语义风险：字段缺失和字段为 `false` 都会触发拒绝，也许符合默认拒绝目标，但必须由输入契约明确规定。若业务必须区分“缺失”和“显式 false”，应先检查键是否存在或在 PEP 完成输入校验。
 
-### 3.6 数组、集合与对象的选择
+### 3.9 数组、集合与对象的选择
 
 | 类型 | 特点 | 适用场景 | 常见代价 |
 | --- | --- | --- | --- |
@@ -257,7 +298,7 @@ deny contains "MFA is required" if {
 
 如果每个实体都有唯一 ID（Identifier，标识符）且策略经常按 ID 查找，优先把参考数据建模为对象，避免每次扫描大数组。
 
-### 3.7 推导式与 every
+### 3.10 推导式与 every
 
 推导式用于从已有数据构造新数组、集合或对象：
 
@@ -280,7 +321,7 @@ all_images_trusted if {
 
 需要注意空集合上的“全称条件”通常成立。如果业务要求至少有一个镜像，应额外检查 `count(input.images) > 0`。
 
-### 3.8 函数与内置函数
+### 3.11 函数与内置函数
 
 ```rego
 is_owner(subject, resource) if {
@@ -291,7 +332,7 @@ is_owner(subject, resource) if {
 
 自定义函数适合封装稳定、可复用的判断，但不要把策略拆成过度细碎的调用链。字符串、时间、JWT（JSON Web Token）、正则表达式、集合和对象操作可使用内置函数；具体签名与可用于 WebAssembly 的范围应查询当前内置函数参考。
 
-### 3.9 with：局部替换评估上下文
+### 3.12 with：局部替换评估上下文
 
 `with` 常用于测试时临时替换 `input`、`data` 或函数：
 
@@ -305,7 +346,7 @@ test_admin_allowed if {
 
 替换只在相关表达式的评估范围内生效，不会永久修改 OPA 存储。生产策略中过度使用 `with` 会增加理解和优化难度，应优先让数据依赖显式。
 
-### 3.10 默认拒绝与决策契约
+### 3.13 默认拒绝与决策契约
 
 授权策略推荐 fail closed，即异常或信息不足时拒绝。一个更完整的契约可以是：
 
@@ -339,7 +380,27 @@ opa fmt -w .
 
 此命令会改写文件，适合本地或明确允许自动修改的流水线阶段。升级 OPA 后应单独审查格式和语义变化。
 
-### 4.2 编写单元测试
+### 4.2 用 JSON Schema 增强策略静态类型检查
+
+Rego 可以查询形状灵活的 JSON，但字段拼错也可能只表现为规则未匹配。例如策略误写为 `input.subject.role`，而 Java 实际发送 `roles`，默认拒绝会阻止越权，却可能把发布错误带到生产。
+
+可以用 JSON Schema 向 Rego 类型检查器提供 `input` 的预期形状。当 `--schema` 指向单个 Schema 文件时，OPA 会把它作为所有包的全局 `input` Schema：
+
+```bash
+opa check --strict \
+  --schema contracts/input.schema.json \
+  policy/
+
+opa test \
+  --schema contracts/input.schema.json \
+  policy/
+```
+
+如果不同包使用不同输入，可以向 `--schema` 传入 Schema 目录，并通过 `# METADATA` 注解把包、文档或规则关联到对应 Schema。注解引用的 Schema 只有在命令实际传入 `--schema` 时才会参与类型检查。
+
+这项能力用于提高策略的静态类型精度，不会自动验证每次运行时 `input` 是否完全符合 Schema。Java PEP 仍应在调用 OPA 前完成必要的非空、枚举、长度与结构校验，Rego 则继续检查影响授权的安全不变量。
+
+### 4.3 编写单元测试
 
 `authz_test.rego`：
 
@@ -375,17 +436,17 @@ opa test . -v
 
 成功判据是退出码为 `0` 且测试全部通过。测试至少覆盖允许、拒绝、字段缺失、空值、未知动作、租户边界和数据类型错误。拒绝测试不能只证明“某个表达式没匹配”，还要证明入口决策确实返回预期的拒绝值。
 
-### 4.3 覆盖率与测试边界
+### 4.4 覆盖率与测试边界
 
 ```bash
-opa test . --coverage
+opa test . --coverage --threshold 85
 ```
 
-该命令会计算并展示覆盖率，但不会仅因覆盖率低于团队期望值就自动失败。若流水线要求最低覆盖率，应由 CI（Continuous Integration，持续集成）脚本读取 JSON 报告并显式比较阈值，或使用已验证的质量工具完成门禁。
+`--coverage` 计算规则覆盖率，`--threshold 85` 在覆盖率低于 85% 时直接返回非零退出码，因此 CI 可以直接以命令退出码作为门禁。团队若还需要趋势报表或按包分析，可以保存 JSON 输出，但不需要重复实现阈值判定。
 
 覆盖率能发现从未执行的规则，但高覆盖率不代表策略正确。同一行规则可以被错误样例执行，却仍然遗漏关键业务组合。还需要契约测试验证 PEP 构造的真实 `input`，集成测试验证网络和故障行为，端到端测试验证拒绝是否真的阻断了业务副作用。
 
-### 4.4 使用 explain 与 trace 排查
+### 4.5 使用 explain 与 trace 排查
 
 ```bash
 opa eval \
@@ -409,20 +470,20 @@ opa eval \
 
 5\. 为故障添加回归测试，而不是只修当前样例。
 
-### 4.5 静态分析与团队规则
+### 4.6 静态分析与团队规则
 
 除 OPA 自带检查外，可采用 Regal 等 Rego 静态分析工具发现惯用法、可维护性和潜在错误。工具版本与规则集应锁定在仓库中；升级时审查新增诊断，避免开发机与流水线行为漂移。
 
-### 4.6 CI/CD 质量门禁
+### 4.7 CI/CD 质量门禁
 
 ```mermaid
 flowchart LR
     A["提交 Rego 与测试"] --> B["格式检查"]
-    B --> C["严格编译检查"]
+    B --> C["严格编译与 Schema 类型检查"]
     C --> D["静态分析"]
     D --> E["单元与契约测试"]
     E --> F["覆盖率与性能回归"]
-    F --> G["构建并签名 Bundle"]
+    F --> G["构建并签名 Snapshot Bundle"]
     G --> H["分阶段发布"]
     H --> I["观察状态、决策日志与指标"]
 ```
@@ -445,7 +506,7 @@ flowchart LR
 
 4\. 已完成第 2 章，手边有同一份 `authz.rego`。
 
-本章使用 Java 17 语法和 Spring `RestClient`。`RestClient` 从 Spring Framework 6.1 开始提供，Spring Boot 从 3.2 开始自动配置 `RestClient.Builder`；更旧的 Spring Boot 项目不能直接复制本章代码。新项目可通过 [Spring Initializr](https://start.spring.io/) 生成，选择当前稳定版、Maven、Java 17 或项目要求的更高长期支持版本，并加入 Spring Web 依赖。不要盲目复制一个已过时的 Spring Boot 版本号。
+本章的可运行主线使用 Java 17、Spring Boot 4.x 和同步 `RestClient`。`RestClient` 从 Spring Framework 6.1 开始提供，Spring Boot 从 3.2 开始自动配置 prototype 作用域的 `RestClient.Builder`，因此 3.2–3.5 项目也能使用本章的 Java 调用代码，但第 5.4 节的全局 HTTP 属性不能直接照搬。新项目可通过 [Spring Initializr](https://start.spring.io/) 生成，选择组织已验证的 Spring Boot 版本、Maven、Java 17 或更高长期支持版本，并加入 Spring Web 依赖。复制配置前先核对项目锁定版本的官方参考。
 
 ### 5.2 先理解 Java 与 OPA 的职责边界
 
@@ -540,7 +601,7 @@ opa-java-demo/
 
 策略放在独立的 `policy` 目录，是因为本教程让 OPA 作为单独进程加载策略，而不是让 Spring Boot 从 classpath 读取它。
 
-### 5.4 配置 OPA 地址
+### 5.4 按 Spring Boot 版本配置 OPA 地址与超时
 
 `application.yml`：
 
@@ -548,7 +609,7 @@ opa-java-demo/
 opa:
   base-url: ${OPA_BASE_URL:http://127.0.0.1:8181}
 
-# 以下是当前 Spring Boot 4.x 的全局命令式 HTTP 客户端配置。
+# Spring Boot 4.x 的全局命令式 HTTP 客户端配置。
 spring:
   http:
     clients:
@@ -557,9 +618,21 @@ spring:
       redirects: dont-follow
 ```
 
-`${OPA_BASE_URL:...}` 的含义是：环境变量存在时使用环境变量，否则使用冒号后的本地默认值。生产环境不得依赖本地默认地址，应显式配置 Sidecar 或受控 OPA 服务地址。
+Spring Boot 3.5 已提供对应的全局属性，但键名是单数 `spring.http.client`，与 4.x 的复数 `spring.http.clients` 不同：
 
-超时不是越短越好：它必须大于健康实例在高分位负载下的正常响应时间，又要小于业务请求剩余预算。上述值只用于演示。Spring Boot 3.x 的 HTTP 客户端属性与扩展类可能不同，应按项目锁定版本，通过 `ClientHttpRequestFactory` 配置并用故障测试证明超时真的生效。
+```yaml
+# Spring Boot 3.5
+spring:
+  http:
+    client:
+      connect-timeout: 500ms
+      read-timeout: 1s
+      redirects: dont-follow
+```
+
+`${OPA_BASE_URL:...}` 的含义是：环境变量存在时使用环境变量，否则使用冒号后的本地默认值。生产环境应显式配置 Sidecar 或受控 OPA 服务地址，避免因环境变量缺失而误连本机的其他进程。
+
+超时需要大于健康实例在高分位负载下的正常响应时间，同时小于业务请求的剩余时间预算。上述值只用于教学。Spring Boot 3.2–3.4 项目可以在构建 `RestClient` 时显式提供 `ClientHttpRequestFactory`，或使用该版本支持的客户端定制扩展。无论使用哪种方式，都应通过连接拒绝、延迟响应和 3xx 重定向测试确认连接超时、读取超时和禁止跟随重定向都在实际底层 HTTP 实现中生效。
 
 ### 5.5 用 Java record 表示 input
 
@@ -1132,6 +1205,8 @@ public class ApiExceptionHandler {
 
 ### 5.14 选择 Java 集成模式
 
+下表中的 REST 指 Representational State Transfer（表述性状态转移）风格的 HTTP API；Wasm 和 IR 则把评估放入 Java 进程或自定义运行时。
+
 | 模式 | Java 调用路径 | 优点 | 代价 | 初学建议 |
 | --- | --- | --- | --- | --- |
 | Sidecar REST | Java 调用同 Pod 或同主机 OPA | 常见、低延迟、策略独立更新 | 需要运行两个进程 | 首选学习路径 |
@@ -1143,7 +1218,7 @@ OPA 官方最成熟的进程内 API 和高层 SDK 面向 Go。Java 初学者应�
 
 ### 5.15 Query API 与管理 API 的权限边界
 
-Java 业务服务通常只需要调用特定 Data API 决策路径。Query API 能执行临时查询，Policy API 和 Data API 的写操作能修改 OPA 当前状态，不能与普通决策权限混为一谈。若使用 Bundle 管理策略，应关闭或限制其他写入路径，避免 Java 服务意外覆盖策略数据。
+Java 业务服务通常调用特定 Data API 决策路径，其权限也应限定在这些路径。Query API 能执行临时查询，Policy API 和 Data API 的写操作能修改 OPA 当前状态，不能与普通决策权限混为一谈。若使用 Bundle 管理策略，应关闭或限制其他写入路径，避免 Java 服务意外覆盖策略数据。
 
 ## 6 策略与数据的分发管理
 
@@ -1191,19 +1266,23 @@ Delta Bundle 只携带对 `data` 的增量补丁，根目录必须包含 `patch.
 }
 ```
 
+Delta Bundle 的一个高风险边界是：`patch.json` 中的 `"data": []` 不表示“没有变更”，它会移除 OPA 内存中的全部基础 `data`。没有操作可发布时，Bundle 服务应通过相同 ETag（Entity Tag，实体标签）让 OPA 得到“内容未变”的响应，而不是发布空操作列表。必须用专门的回归测试覆盖这个语义，因为一个看似无变更的制品可以使依赖参考数据的决策全部转为未定义或默认拒绝。
+
 | 判断维度 | Snapshot | Delta |
 | --- | --- | --- |
 | 制品能否独立还原状态 | 能 | 依赖正确基线和变更顺序 |
 | 传输体积 | 通常较大 | 数据局部变化时较小 |
 | 策略文件更新 | 支持 | 不支持 |
+| Bundle 签名 | 支持 | 当前不支持 |
+| `persist: true` 持久化 | 支持已激活 Bundle 的恢复 | 当前不会将已激活 Delta 持久化到磁盘 |
 | 故障恢复 | 重新激活已知快照较直接 | 需要确认基线、顺序和已应用位置 |
 | 初学与中小规模系统 | 首选 | 容量数据证明有必要后再采用 |
 
-引入 Delta 前应先用生产规模数据测量快照的大小、下载时间、编译激活时间和内存峰值。验收时不能只看补丁下载成功，还要查询受影响数据、核对 active revision，并验证漏发、重复和乱序时不会产生静默错误。
+引入 Delta 前应先用生产规模数据测量快照的大小、下载时间、编译激活时间和内存峰值。需要强制签名验证或依赖本地持久化恢复时，Snapshot 是当前可验证的发布模式。Delta 验收不能只看补丁下载成功，还要查询受影响数据、核对 active revision，并验证空补丁、断线重连、补丁应用失败和错误基线不会产生静默错误。
 
 ### 6.3 roots 与所有权冲突
 
-Bundle manifest 的 `roots` 声明 Bundle 管理的 `data` 子树。未声明时默认值是 `[""]`，表示该 Bundle 管理整个 `data` 命名空间；这对单一 Bundle 简单，但会阻止其他来源安全地管理局部数据。
+Bundle manifest 的 `roots` 声明 Bundle 管理的策略与 `data` 命名空间。未声明时默认值是 `[""]`，表示该 Bundle 管理整个命名空间；这对单一 Bundle 简单，但会阻止其他来源安全地管理局部策略或数据。
 
 ```json
 {
@@ -1222,7 +1301,7 @@ Bundle manifest 的 `roots` 声明 Bundle 管理的 `data` 子树。未声明时
 
 ### 6.4 Bundle 签名与供应链
 
-策略决定生产权限，本质上属于高价值软件供应链制品。TLS（Transport Layer Security，传输层安全）保护传输连接，数字签名则让 OPA 验证 Bundle 是否由受信任密钥签发、文件集合是否一致、内容摘要是否匹配；两者解决的问题不同，应组合使用。
+策略决定生产权限，属于高价值软件供应链制品。TLS（Transport Layer Security，传输层安全）保护传输连接，数字签名则让 OPA 验证 Snapshot Bundle 是否由受信任密钥签发、文件集合是否一致、内容摘要是否匹配；两者解决的问题不同，应组合使用。当前 Delta Bundle 不支持 Bundle 签名，因此下面的签名流程只适用于 Snapshot Bundle。
 
 开发环境可以用下面的流程理解签名与验证。私钥只属于受控构建环境，公钥才分发给 OPA：
 
@@ -1237,7 +1316,7 @@ opa run \
   --bundle signed-bundle.tar.gz
 ```
 
-`opa build` 把 `.signatures.json` 写入生成的归档；`opa run` 用公钥验证后再加载归档。生产 OPA 也必须在启动参数或配置中启用相应公钥验证。只有“Bundle 内含签名”和“OPA 配置为验证签名”同时成立，才能形成预期的信任链。签名缺失、密钥不匹配、文件被修改或验证配置缺失都应使新 Bundle 激活失败，OPA 继续使用原有已激活版本，并通过错误日志和 Status 报告失败。
+`opa build` 把 `.signatures.json` 写入生成的归档；`opa run` 用公钥验证后再加载归档。生产 OPA 也必须在启动参数或配置中启用相应公钥验证。只有“Bundle 内含签名”和“OPA 配置为验证签名”同时成立，才能形成预期的信任链。启用验证后，签名缺失、密钥不匹配或文件被修改应使新 Bundle 激活失败，OPA 继续使用原有已激活版本，并通过错误日志和 Status 报告失败。“完全未配置验证”是部署配置缺陷，不会自动等价为一次验签失败；应通过配置门禁与篡改 Bundle 的集成测试发现它。
 
 生产流程还应记录源码提交、构建器身份、不可变 revision、制品摘要和签名密钥 ID。密钥轮换要先让验证端信任新公钥，再由构建端切换签名密钥，最后移除旧公钥；顺序相反会让所有新制品无法激活。
 
@@ -1564,7 +1643,11 @@ opa eval \
 }
 ```
 
-Java 端必须把 `filter` 当作受约束的决策契约，只允许映射到预先定义的查询构造器，不应把 OPA 返回的字符串直接拼接成 SQL（Structured Query Language，结构化查询语言）。更复杂的策略可使用部分求值留下依赖资源行的条件，再由经过验证的翻译层转成数据库过滤表达式。
+Java 端必须把 `filter` 当作受约束的决策契约，只允许映射到预先定义的查询构造器，不应把策略中的自由文本直接拼接成 SQL（Structured Query Language，结构化查询语言）。更复杂的策略可使用部分求值留下依赖资源行的条件，再由经过验证的翻译层转成数据库过滤表达式。
+
+当前 REST Compile API 还可以通过 `POST /v1/compile/{path}` 和 `Accept` 请求头，将符合支持子集的过滤规则生成特定数据库方言的 SQL `WHERE` 子句，或 UCAST（Universal Conditions Abstract Syntax Tree，通用条件抽象语法树）。这一能力仍需要固定目标方言、表列映射和可用内置函数，并在真实数据库上做等价性与性能测试。
+
+Compile API 的结果契约需要特别测试两个边界：`result` 中没有 `query` 表示无条件拒绝；`query` 是空字符串表示无条件包含。后者会产生最广的数据范围，消费端不能把“空过滤器”统一解释为拒绝或忽略；它必须按契约分支处理，并为无条件包含建立显式测试。
 
 正确性测试要比较两条路径：对一组固定记录逐条执行原始授权策略得到允许集合，同时执行生成的数据库过滤得到结果集合；两者必须完全相等。还要覆盖分页、排序、聚合、关联查询和策略升级。任何无法翻译、字段缺失或契约版本不匹配都应拒绝查询，而不是退化为无过滤全表查询。
 
@@ -1638,7 +1721,7 @@ opa eval \
   'data.example.authz.allow'
 ```
 
-这个示例把 `input.resource` 视为未知，适合观察在主体等其他信息已知时，剩余条件如何约束资源。真实数据过滤通常通过 Compile API（编译接口）获得结构化结果，再由受控翻译层消费；命令行输出更适合学习和调试。
+这个示例把 `input.resource` 视为未知，适合观察在主体等其他信息已知时，剩余条件如何约束资源。真实数据过滤可以通过 Compile API（编译接口）取得 JSON AST（Abstract Syntax Tree，抽象语法树）形式的剩余查询，再由受控翻译层消费；对官方已支持的目标，也可以使用第 7.6 节介绍的 SQL/UCAST 过滤编译结果。命令行 `--partial` 输出更适合学习和调试。
 
 部分求值可用于生成数据过滤条件或减少运行时工作量，但并不自动保证更快。策略包含目标翻译层不支持的内置函数、剩余规则数量膨胀或已知数据频繁变化时，收益可能消失。验收必须同时比较原策略与剩余查询的决策等价性、生成制品大小、生成耗时和端到端查询延迟。
 
@@ -1704,15 +1787,21 @@ Java 侧可以为授权 DTO 设置非空约束和枚举白名单，在进入 OPA
 
 ### 9.3 OPA 接口保护
 
-1\. 仅在受控网络监听，限制入口来源。
+OPA 服务默认不执行客户端认证或 API 授权。如果直接把默认端口暴露到不受信网络，调用者可能访问临时查询、策略读写和数据读写等管理接口。服务端加固应同时处理网络可达性、传输身份与路径权限：
 
-2\. 使用 TLS 或双向 TLS（Mutual TLS）保护传输与服务身份。
+1\. Sidecar 或同主机模式优先绑定本地接口或 Unix Domain Socket（Unix 域套接字），并限制能够连接的进程。
 
-3\. 将只读决策查询与策略、数据写入权限隔离。
+2\. 跨主机访问使用 TLS 验证 OPA 服务身份；需要服务端验证客户端时，可以使用双向 TLS（Mutual TLS，mTLS）与 `--authentication=tls`，或使用 `--authentication=token` 将 Bearer Token 交给授权策略校验。
 
-4\. 配置 CPU（Central Processing Unit）、内存、并发和请求大小限制。
+3\. 启动 `--authorization=basic` 后，OPA 会查询 `data.system.authz.allow` 来授权每个 API 请求。这里的 `basic` 是 OPA 的 Rego API 授权模式，不是 HTTP Basic Authentication（HTTP 基本认证）。授权策略应默认拒绝，并只开放业务需要的 Data API 决策路径。
 
-5\. 禁止把调试、profiling 或管理能力无条件暴露到公网。
+4\. 将只读决策查询与 Query、Policy 以及 Data 写入能力隔离。使用 Bundle 时，普通 Java 业务服务不应获得策略与参考数据写入权限。
+
+5\. 使用 `--diagnostic-addr` 可以在独立监听地址暴露只读 `/health` 与 `/metrics`，便于在不开放主 REST API 的情况下进行监控。诊断端口仍应受网络访问控制。
+
+6\. 配置 CPU（Central Processing Unit，中央处理器）、内存、并发、请求体和数组长度限制，并对代价过高的输入进行故障演练。
+
+7\. 调试、profiling（性能剖析）与管理能力只向必要的管理主体开放，不在公网提供默认可达路径。
 
 ### 9.4 健康检查与就绪检查
 
@@ -1749,7 +1838,7 @@ curl --fail 'http://127.0.0.1:8181/health?plugins'
 | OPA 超时 | 拒绝高风险操作 | Sidecar、本地缓存、容量冗余 |
 | 新 Bundle 激活失败 | 保留最后已知良好版本 | 告警、停止扩大发布 |
 | 决策日志不可用 | 决策与日志解耦但记录丢失风险 | 缓冲、采样、背压策略 |
-| 参考数据过期 | 依数据敏感度拒绝或降级 | 数据新鲜度字段、TTL（Time To Live）检查 |
+| 参考数据过期 | 依数据敏感度拒绝或降级 | 数据新鲜度字段、TTL（Time To Live，生存时间）检查 |
 
 缓存决策时，缓存键必须包含所有影响决策的输入属性、策略 revision 和参考数据版本；否则权限变更后会继续错误放行。高风险拒绝或允许的缓存时长应由安全语义决定。
 
@@ -1783,47 +1872,43 @@ curl --fail 'http://127.0.0.1:8181/health?plugins'
 
 常见根因是生产输入字段缺失或类型不同、查询路径拼错、Bundle 未包含模块、package 被修改、入口点未导出或参考数据根不同。应增加从真实 PEP 契约生成的测试样本，并在发布制品上而非源码目录上执行烟雾查询。
 
-## 10 面试递归追问与回答框架
+## 10 面试复盘：用决策链解释设计取舍
 
-### 10.1 OPA 与传统权限库有什么不同
+面试中的可验证证据来自一条完整决策链：PEP 从可信来源构造 `input`，OPA 用已发布的 Rego 和 `data` 计算决策，PEP 校验契约并执行结果，运维链路再用 revision、Status、Decision Logs 和指标证明当时实际运行的版本与结果。下面各节用这条链区分概念边界、选型条件和生产后果。
 
-回答主线：OPA 是与领域无关的策略决策引擎，通过结构化输入、Rego 和 API 解耦决策与执行。继续说明它能统一多语言和多层策略、独立发布并增强审计，但引入了策略分发、输入契约、网络或运行时依赖以及新的治理成本。
+### 10.1 OPA 与应用内权限库的边界
 
-追问角度：
+OPA 是与领域无关的策略决策引擎，通过结构化输入、Rego 和 API 分离决策与执行。它的价值通常出现在多语言、多服务、独立策略发布和强审计场景；代价是新增策略分发、输入契约、网络或嵌入式运行时、故障模式与管理成本。少数稳定角色的单体系统可以先使用 Spring Security 或应用内权限库；引入 OPA 应由跨服务一致性、发布独立性或属性规则复杂度等具体证据支持。
 
-1\. 为什么“解耦”不等于 OPA 自动执行权限？
+运行形态体现了不同故障域：Sidecar 把评估放在本地网络，共享 OPA 服务集中运维但扩大网络与共享故障域，Wasm 嵌入避免网络调用却将制品更新、ABI 兼容、指标和调试责任交给宿主。选型应同时评估延迟、故障半径、策略更新时效与团队维护能力。
 
-2\. 哪些低复杂度场景用应用内简单判断反而更合适？
+### 10.2 `input`、基础 `data` 与虚拟文档的生命周期
 
-3\. Sidecar、共享服务和进程内嵌入如何取舍？
+`input` 是单次查询事实；基础 `data` 是 OPA 当前已加载的共享参考文档；虚拟文档是 Rego 规则推导的结果。这三者需要同时说明数据来源、新鲜度和信任边界。当前 HTTP 请求和资源属性通常进入 `input`；可接受分发延迟的组织目录适合进入基础 `data`；如何从两者得到 `allow` 或 `decision` 由虚拟文档表达。如果撤权要求在数秒内生效，还必须证明 JWT、应用缓存和 Bundle 同步的最大过期时间符合这一目标。
 
-### 10.2 input、data 和虚拟文档的区别
+### 10.3 `undefined`、`false` 与 `null` 的契约差异
 
-回答主线：`input` 是单次查询事实；基础 `data` 是已加载的共享参考文档；虚拟文档是 Rego 规则推导结果。进一步说明各自生命周期、新鲜度和信任来源，最后落到“请求专属数据放 input，可接受同步延迟的参考数据放 data”。
+`undefined` 表示查询无法产生值；`false` 是已定义的布尔值，在授权入口中通常表示明确拒绝；`null` 是已存在的 JSON 空值。Data API 在路径未定义时仍可返回 HTTP 200，但响应中没有 `result`。因此入口规则要有确定默认值，PEP 还要校验 HTTP 状态、`result` 存在性、字段类型和契约版本。Java 中使用 `Boolean` 而不是 `boolean`，就是为了在契约边界保留“缺失”这个状态。
 
-### 10.3 undefined、false、null 为什么不能混用
+### 10.4 默认拒绝覆盖策略与执行点
 
-回答主线：`undefined` 表示查询无法产生值；`false` 是确定的布尔拒绝；`null` 是存在的 JSON 空值。调用方若默认转换，会产生授权绕过或难以诊断的拒绝，因此入口规则要有默认值，响应还要做类型与契约校验。
+Rego 入口可以使用 `default allow := false`，使所有允许规则都未匹配时得到明确拒绝。这只覆盖正常评估语义：OPA 超时、网络不可达、响应损坏、评估冲突或契约版本错误都由 PEP 处理。完整的 fail closed（安全失败）要求 Rego 和 PEP 同时安全失败，并用故障测试证明拒绝后不会产生业务副作用。
 
-### 10.4 OPA 如何实现默认拒绝
+### 10.5 同名规则的增量组合与多值冲突
 
-回答主线：在入口规则上使用 `default allow := false`，只有明确规则成立才允许；PEP 对超时、未定义、解析失败和类型错误也拒绝。继续追问时应指出仅在 Rego 中写默认拒绝不够，执行点的错误处理同样属于安全边界。
+多个只产生 `true` 的同名布尔 `allow` 规则可以按逻辑“或”理解，单个规则体的表达式形成逻辑“且”，`deny contains message` 则收集每个匹配的违规原因。对于能产生任意值的完整规则，多个分支同时产生不同值会导致评估冲突；源码顺序不会默认提供优先级。业务需要拒绝优先、最高级别或其他合并规则时，应在 Rego 中建模并测试，而不是让 PEP 对冲突结果做推测。
 
-### 10.5 多个 allow 或 deny 规则如何组合
+### 10.6 Bundle 的生产价值与边界
 
-回答主线：多个同名布尔规则通常形成“或”；单个规则体内表达式形成“且”；`deny contains msg` 收集所有违规原因。结构化决策应显式定义冲突处理，而不是让 PEP 随意选择一个结果。
+Snapshot Bundle 提供策略与数据的版本化分发、范围化 roots 和原子激活，新制品校验或编译失败时保留已激活版本。签名、不可变 revision、Status、决策日志和灰度回滚把“制品已构建”连接到“每个实例已安全使用”。Delta Bundle 节省局部数据更新的传输量，却依赖正确基线和顺序，当前不支持 Bundle 签名或已激活 Delta 的本地持久化。这些差异使 Snapshot 成为更适合首次生产落地的基线。
 
-### 10.6 Bundle 为什么适合生产
+### 10.7 慢策略的定位证据与优化顺序
 
-回答主线：Bundle 提供策略与数据的版本化分发和原子激活，校验失败时保留已有版本，并能结合签名、status 和 revision 做供应链与发布治理。深入可谈 roots、Snapshot/Delta、缓存头、灰度发布与回滚判据。
+性能优化从 profiler（性能剖析器）、benchmark（基准测试）和端到端分段计时开始。证据指向大数组扫描时，可以把有唯一键的参考数据改为对象索引；指向重复编译时，应复用已编译或已准备查询；数据过滤成本过高时，再评估部分求值或 Compile API。本地单次评估不能代表生产延迟，因为真实链路还包含网络、JSON 编解码、日志、连接池和 Bundle 激活竞争。
 
-### 10.7 如何优化慢策略
+### 10.8 OPA 在 Kubernetes 准入链中的位置
 
-回答主线：先用 profiler 和 benchmark 定位，再检查大数组扫描、数据形状、规则索引和重复工作；把有唯一键的数组转换为对象，复用准备查询，必要时评估部分求值。最后强调用生产代表性输入做端到端基准，不能凭语法猜测。
-
-### 10.8 OPA 在 Kubernetes 中处于什么位置
-
-回答主线：API Server 是请求编排与最终执行方，准入 Webhook 是 PEP，OPA 是 PDP；Gatekeeper 在此基础上提供 Kubernetes 原生策略模板、约束和审计。继续讨论 failurePolicy、Webhook 可用性、CREATE/UPDATE 差异和后台审计不等于实时阻断。
+Kubernetes API Server 负责编排请求并最终持久化资源，准入 Webhook 是拦截和执行结果的 PEP，OPA 是评估准入策略的 PDP。Gatekeeper 在这条链上提供 Kubernetes 原生的 ConstraintTemplate、Constraint 和审计能力。生产分析还需要追到 `failurePolicy`、`timeoutSeconds`、Webhook 副本可用性、CREATE/UPDATE/DELETE 输入差异，以及后台审计发现违规并不会回溯阻止已完成的准入请求。
 
 ## 11 Java 项目落地模板
 
@@ -1920,7 +2005,7 @@ public record AuthorizationDecision(
 
 1\. 构建环境使用锁定版本的 OPA 与静态分析工具。
 
-2\. 格式、严格编译、单元测试、契约测试和敏感信息扫描全部通过。
+2\. 格式、严格编译、Schema 静态类型检查、单元测试、契约测试和敏感信息扫描全部通过。
 
 3\. Bundle 能在空白 OPA 实例激活，目标入口能用允许与拒绝样例查询。
 
@@ -1946,17 +2031,21 @@ public record AuthorizationDecision(
 
 4\. CREATE、UPDATE、DELETE 或不同业务动作的语义均已覆盖。
 
+5\. JSON Schema 已参与 Rego 静态类型检查，运行时输入校验另有明确的 PEP 责任和失败测试。
+
 #### 12.1.2 安全与隐私
 
 1\. 身份、角色、租户和资源属性均来自可信来源。
 
 2\. OPA 管理接口没有暴露给普通调用者或公网。
 
-3\. Bundle 传输、认证、签名与回滚链路已验证。
+3\. Bundle 传输、认证与回滚链路已验证；使用 Snapshot 时已强制签名验证，使用 Delta 时已评审当前无法签名的风险。
 
 4\. Decision Logs 已脱敏并设置访问控制与保留期限。
 
 5\. 超时、未定义、解析失败和数据过期的 fail-open/fail-closed 行为已获确认。
+
+6\. OPA 主 REST API 不依赖默认无认证状态；网络绑定、TLS、客户端身份与 `system.authz` 路径授权已按部署模式验证。
 
 #### 12.1.3 可靠性与性能
 
@@ -1969,6 +2058,8 @@ public record AuthorizationDecision(
 4\. Bundle 激活失败时会保留最后已知良好版本并告警。
 
 5\. 缓存键包含所有决策属性及策略、数据版本，且撤权传播时间可接受。
+
+6\. 使用 Delta Bundle 时已测试空补丁、错误基线和断线恢复，并接受它当前不支持签名与已激活 Delta 持久化的边界。
 
 #### 12.1.4 可观测与运维
 
@@ -1992,22 +2083,44 @@ public record AuthorizationDecision(
 
 5\. [Spring Framework REST Clients](https://docs.spring.io/spring-framework/reference/integration/rest-clients.html)：`RestClient`、`WebClient` 和 HTTP Service Client 的当前官方说明。
 
-6\. [Spring Boot System Requirements](https://docs.spring.io/spring-boot/system-requirements.html)：当前 Spring Boot 对 Java、Maven、Gradle 和 Servlet 容器的版本要求。
+6\. [Spring Boot 4.x REST Clients](https://docs.spring.io/spring-boot/reference/io/rest-client.html) 与 [Spring Boot 3.5 REST Clients](https://docs.spring.io/spring-boot/3.5/reference/io/rest-client.html)：用于对照 `spring.http.clients` 与 `spring.http.client` 属性差异。
 
-7\. [OPA CLI Reference](https://www.openpolicyagent.org/docs/cli)：`opa eval`、`fmt`、`check`、`test`、`build` 等命令及当前参数。
+7\. [Spring Boot System Requirements](https://docs.spring.io/spring-boot/system-requirements.html)：当前 Spring Boot 对 Java、Maven、Gradle 和 Servlet 容器的版本要求。
 
-8\. [Bundles](https://www.openpolicyagent.org/docs/management-bundles)：Bundle 格式、roots、签名、下载与激活。
+8\. [OPA CLI Reference](https://www.openpolicyagent.org/docs/cli)：`opa eval`、`fmt`、`check`、`test`、`build` 等命令及当前参数。
 
-9\. [Decision Logs](https://www.openpolicyagent.org/docs/management-decision-logs)：决策日志、上传、遮蔽与敏感数据处理。
+9\. [Bundles](https://www.openpolicyagent.org/docs/management-bundles)：Bundle 格式、roots、签名、下载与激活。
 
-10\. [Status](https://www.openpolicyagent.org/docs/management-status)：Bundle、Discovery、插件与指标状态字段。
+10\. [Decision Logs](https://www.openpolicyagent.org/docs/management-decision-logs)：决策日志、上传、遮蔽与敏感数据处理。
 
-11\. [Discovery](https://www.openpolicyagent.org/docs/management-discovery)：集中生成 OPA 配置的机制。
+11\. [Status](https://www.openpolicyagent.org/docs/management-status)：Bundle、Discovery、插件与指标状态字段。
 
-12\. [Policy Performance](https://www.openpolicyagent.org/docs/policy-performance)：索引、部分求值、profiling 与 benchmark。
+12\. [Discovery](https://www.openpolicyagent.org/docs/management-discovery)：集中生成 OPA 配置的机制。
 
-13\. [OPA for Kubernetes Admission Control](https://www.openpolicyagent.org/docs/kubernetes)：Kubernetes 准入模式与 Gatekeeper 入口。
+13\. [Policy Performance](https://www.openpolicyagent.org/docs/policy-performance)：索引、部分求值、profiling 与 benchmark。
 
-### 12.3 最终记忆框架
+14\. [OPA for Kubernetes Admission Control](https://www.openpolicyagent.org/docs/kubernetes)：Kubernetes 准入模式与 Gatekeeper 入口。
 
-可以用一句话串起全文：PEP 从可信来源构造单次 `input`，OPA 用已验证和已版本化的 Rego 与 `data` 计算有确定契约的决策，PEP 在超时和异常时按既定安全策略执行，同时用 Bundle、status、decision logs、测试、指标和回滚保证策略从提交到生产持续可控。
+15\. [Upgrading to OPA 1.0](https://www.openpolicyagent.org/docs/v0-upgrade)：Rego v1 的 `if`、`contains`、保留关键字与版本化 Bundle 迁移语义。
+
+16\. [OPA Security](https://www.openpolicyagent.org/docs/security)：服务端 TLS、认证、`system.authz` API 授权、诊断端口与加固配置。
+
+### 12.3 复习自测与完整决策链
+
+完成下面的操作与解释，才能证明已经走通从入门到生产的主线：
+
+1\. 使用同一份 Rego，通过修改资源租户得到 `true` 和 `false`，再查询不存在的路径得到 `undefined`，并说明三者对 PEP 的不同含义。
+
+2\. 指出 Java Service、OPA、Git/CI 流水线与身份目录分别承担 PEP、PDP、PAP 和 PIP 中的哪些职责，并说明责任可以由多个组件共同承担。
+
+3\. 构造一个同名完整规则产生两个不同值的输入，观察冲突错误，再把规则重构为无冲突的布尔、集合或明确优先级模型。
+
+4\. 让 JSON Schema 参与 `opa check --strict`，用字段拼错证明静态类型检查生效；再说明为什么这不能取代 Java PEP 的运行时输入校验。
+
+5\. 在 Java 契约测试中分别模拟 `{"result":true}`、`{"result":false}`、`{}`、非 2xx 状态与超时，确认只有明确 `true` 会继续业务。
+
+6\. 解释 Snapshot 与 Delta Bundle 的基线、顺序、签名和持久化差异，并说明为什么 Delta 中的 `"data": []` 是破坏性语义。
+
+7\. 从一次“本地允许、生产返回 403”的故障出发，沿真实 `input`、查询路径、决策契约、revision、Bundle 激活状态与 PEP 后续授权层完成定位。
+
+完整决策链可表述为：PEP 从可信来源构造单次 `input`，OPA 使用已验证、已版本化的 Rego 与 `data` 计算具有确定契约的决策，PEP 对结果和故障执行既定安全策略，团队再用 Bundle、Status、Decision Logs、测试、指标与回滚保证从策略提交到生产决策持续可验证。

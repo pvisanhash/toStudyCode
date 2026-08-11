@@ -2,47 +2,11 @@
 
 > 面向具有 Java 基础、刚接触 GraphQL 的学习者。全文使用同一个“在线图书馆”示例，以 Java、Spring Boot、Spring for GraphQL 和 GraphQL Java 为技术主线，从第一条查询逐步走到可运行服务、性能优化、安全治理和面试追问。
 
-## 1 学习路线与心智模型
+## 1 从图书详情页到第一条可运行查询
 
-### 1.1 GraphQL 是什么
+### 1.1 一个页面为什么会需要 GraphQL
 
-GraphQL 是一种用于 API（Application Programming Interface，应用程序编程接口）的查询语言，也是一套在服务端执行这些查询的规范。
-
-最值得先记住的一句话是：
-
-> 客户端按照服务端公开的类型系统，声明自己需要哪些字段；服务端验证请求，再逐字段计算并返回与请求形状相似的 JSON。
-
-GraphQL 不是数据库，也不要求图数据库。它可以把关系数据库、NoSQL、REST（Representational State Transfer，表述性状态转移）服务、微服务和内存数据统一包装成一张面向业务的“图”。
-
-对于 Java 开发者，可以先建立如下对应关系：
-
-| GraphQL 概念 | Spring for GraphQL 中的常见入口 | 类似的 Java / Spring 经验 |
-| --- | --- | --- |
-| Schema 字段 | `.graphqls` 文件中的字段 | 接口合同，但不是 Java 接口 |
-| Query 根字段 | `@QueryMapping` 方法 | 类似只读 Controller 方法 |
-| Mutation 根字段 | `@MutationMapping` 方法 | 类似执行写操作的 Controller 方法 |
-| 普通对象字段 | `@SchemaMapping` 方法 | 类似按需组装 DTO 的字段 |
-| Resolver | 最终注册成 GraphQL Java `DataFetcher` | 类似 MVC Handler，但粒度可细到字段 |
-| 请求 Context | `GraphQLContext`、Principal | 类似请求作用域上下文 |
-
-Spring for GraphQL 建立在 GraphQL Java 之上：GraphQL Java 负责解析、验证和执行；Spring for GraphQL 提供注解控制器、批量加载、异常处理、传输和测试集成；Spring Boot 再提供自动配置。
-
-```mermaid
-flowchart LR
-    A["Web、App 等客户端"] -->|"发送 GraphQL 文档与变量"| B["GraphQL 服务"]
-    B --> C["Schema：能力合同"]
-    B --> D["Resolver：字段如何取值"]
-    D --> E["数据库"]
-    D --> F["REST / RPC 服务"]
-    D --> G["缓存"]
-    B -->|"返回 data、errors、extensions"| A
-```
-
-### 1.2 为什么需要 GraphQL
-
-假设商品详情页需要图书、作者和最近三条评论。
-
-传统 REST 风格可能需要请求：
+假设图书详情页要展示书名、作者和最近三条评论，而 Web、App 和运营后台使用的字段并不相同。按资源拆分的 REST（Representational State Transfer，表述性状态转移）接口可能需要连续请求：
 
 ```text
 GET /books/1
@@ -50,7 +14,7 @@ GET /authors/8
 GET /books/1/reviews?limit=3
 ```
 
-GraphQL 客户端可以一次声明需要的字段：
+GraphQL 允许客户端在一次操作中声明这次需要的字段：
 
 ```graphql
 query GetBookPage {
@@ -67,7 +31,7 @@ query GetBookPage {
 }
 ```
 
-响应形状与查询形状基本一致：
+服务端返回与选择字段基本同形的 JSON（JavaScript Object Notation，JavaScript 对象表示法）：
 
 ```json
 {
@@ -88,15 +52,196 @@ query GetBookPage {
 }
 ```
 
-它主要缓解两个问题：
+这个页面体现了 GraphQL 常解决的两类问题：过度获取（over-fetching）是接口返回了页面不用的字段；获取不足（under-fetching）是页面必须调用多个接口才能拼齐数据。一次 GraphQL HTTP（Hypertext Transfer Protocol，超文本传输协议）请求不等于一次数据库查询，服务端仍可能产生 N+1 等性能问题，第 7 章会给出可观察的优化方法。
 
-1\. 过度获取（over-fetching）：接口返回了页面根本不用的字段。
+### 1.2 最小闭环：启动服务并读到一本书
 
-2\. 获取不足（under-fetching）：一个页面需要连续调用多个接口才能拼齐数据。
+下面先运行一个只支持 `book(id:)` 的服务。完成后再回看 GraphQL 的术语，读者会先知道每个概念对应哪段代码和哪项结果。
 
-GraphQL 并不会自动减少服务端访问数据库的次数。客户端只发一次 HTTP（Hypertext Transfer Protocol，超文本传输协议）请求，服务端内部仍可能产生许多查询，N+1 问题正来源于此。
+#### 1.2.1 创建项目与依赖
 
-### 1.3 GraphQL、REST 与 RPC 的边界
+新建空目录 `library-graphql`，要求本机已安装 Java 17 或更高版本以及 Maven 3.6.3 或更高版本。创建 `pom.xml`：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.0</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.example</groupId>
+    <artifactId>library-graphql</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-graphql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+
+`spring-boot-starter-graphql` 提供 GraphQL 执行能力；GraphQL 本身不规定只能通过 HTTP 传输，所以还要加入 `spring-boot-starter-webmvc` 暴露 Web 端点。本文按 Spring Boot 4.1.x 与 Spring for GraphQL 2.0.x 编写，示例固定使用已发布的 Spring Boot 4.1.0 以便复现。
+
+#### 1.2.2 写出最小 Schema 与 Java 入口
+
+创建 `src/main/resources/graphql/schema.graphqls`：
+
+```graphql
+type Book {
+  id: ID!
+  title: String!
+}
+
+type Query {
+  book(id: ID!): Book
+}
+```
+
+这份 Schema 是服务端公开的类型合同：客户端可以按 ID 查询图书，并且只有得到 `Book` 后才能继续选择 `id` 与 `title`。
+
+创建 `src/main/java/com/example/library/LibraryApplication.java`：
+
+```java
+package com.example.library;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class LibraryApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(LibraryApplication.class, args);
+    }
+}
+```
+
+创建 `src/main/java/com/example/library/BookController.java`：
+
+```java
+package com.example.library;
+
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.stereotype.Controller;
+
+@Controller
+public class BookController {
+
+    @QueryMapping
+    public Book book(@Argument String id) {
+        return "1".equals(id)
+                ? new Book("1", "GraphQL 入门")
+                : null;
+    }
+
+    public record Book(String id, String title) {
+    }
+}
+```
+
+`@QueryMapping` 把同名 Java 方法映射到 `Query.book`。参数 `id` 来自查询中的 `book(id: ...)`；返回的 `Book` record 提供与 Schema 同名的 `id()` 和 `title()` 访问器。
+
+#### 1.2.3 启动、请求与判断结果
+
+在项目根目录启动应用：
+
+```bash
+mvn spring-boot:run
+```
+
+看到应用监听 8080 端口后，在另一个终端发送请求：
+
+```bash
+curl --request POST \
+  --header 'content-type: application/json' \
+  --header 'accept: application/graphql-response+json' \
+  --data '{"query":"query ReadBook { book(id: \"1\") { title } }"}' \
+  http://localhost:8080/graphql
+```
+
+预期响应为：
+
+```json
+{
+  "data": {
+    "book": {
+      "title": "GraphQL 入门"
+    }
+  }
+}
+```
+
+输入是查询文档，动作是请求 `Query.book` 并继续选择 `Book.title`，输出是 `data.book.title`。成功判据包括 HTTP 响应可以解析、响应没有 `errors`，并且 `data.book.title` 等于 `GraphQL 入门`。若应用启动失败，先检查 Schema 文件路径和启动日志；若响应出现 `Cannot query field`，对照 Schema 字段名；若连接被拒绝，确认 8080 端口与 Spring Boot 进程状态。
+
+把请求改成 `{ book(id: "1") { id } }`，响应只保留 `id`；把 ID 改成 `"404"`，`book` 返回 `null`，因为 Schema 中 `book(id: ID!): Book` 的返回类型允许为空。这两个变化分别验证了“客户端选择字段”和“返回可空性”。
+
+### 1.3 回看刚才运行了什么
+
+GraphQL 是一种用于 API（Application Programming Interface，应用程序编程接口）的查询语言，也是一套类型系统、验证和执行规范。刚才的闭环包含四个角色：
+
+1\. Schema 使用 SDL（Schema Definition Language，模式定义语言）公开 `Query.book` 和 `Book.title`。
+
+2\. 查询文档声明本次要执行的根字段、参数和子字段。
+
+3\. Resolver（解析器）实现字段取值；Spring 的 `@QueryMapping` 方法最终注册为 GraphQL Java `DataFetcher`。
+
+4\. GraphQL 引擎先按 Schema 验证请求，再执行字段并组装 `data`、`errors` 和可选的 `extensions`。
+
+> 客户端按照服务端公开的类型系统声明所需字段；服务端先验证请求，再逐字段计算并返回与请求选择集相对应的数据。
+
+GraphQL 不是数据库，也不要求图数据库。Resolver 可以读取关系数据库、NoSQL、REST 服务、RPC（Remote Procedure Call，远程过程调用）服务、缓存或内存数据，再把它们组织成面向消费者的业务图。
+
+对于 Java 开发者，可以先建立如下对应关系：
+
+| GraphQL 概念 | Spring for GraphQL 中的常见入口 | 类似的 Java / Spring 经验 |
+| --- | --- | --- |
+| Schema 字段 | `.graphqls` 文件中的字段 | 接口合同，但不是 Java 接口 |
+| Query 根字段 | `@QueryMapping` 方法 | 类似只读 Controller 方法 |
+| Mutation 根字段 | `@MutationMapping` 方法 | 类似执行写操作的 Controller 方法 |
+| 普通对象字段 | `@SchemaMapping` 方法 | 类似按需组装 DTO（Data Transfer Object，数据传输对象）的字段 |
+| Resolver | 最终注册成 GraphQL Java `DataFetcher` | 类似 MVC Handler，但粒度可细到字段 |
+| 请求 Context | `GraphQLContext`、`Principal` | 类似请求作用域上下文 |
+
+Spring for GraphQL 建立在 GraphQL Java 之上：GraphQL Java 负责解析、验证和执行；Spring for GraphQL 提供注解控制器、批量加载、异常处理、传输和测试集成；Spring Boot 提供自动配置。
+
+```mermaid
+flowchart LR
+    A["Web、App 等客户端"] -->|"发送 GraphQL 文档与变量"| B["GraphQL 服务"]
+    B --> C["Schema：能力合同"]
+    B --> D["Resolver：字段如何取值"]
+    D --> E["数据库"]
+    D --> F["REST / RPC 服务"]
+    D --> G["缓存"]
+    B -->|"返回 data、errors、extensions"| A
+```
+
+### 1.4 GraphQL、REST 与 RPC 的边界
 
 | 维度 | GraphQL | REST | RPC |
 | --- | --- | --- | --- |
@@ -107,35 +252,30 @@ GraphQL 并不会自动减少服务端访问数据库的次数。客户端只发
 | 缓存 | 多为客户端规范化缓存或应用缓存 | HTTP 缓存天然直观 | 通常自行设计 |
 | 适合场景 | 多端、组合型页面、数据关系丰富 | 简单资源接口、公开下载、HTTP 缓存 | 内部高性能服务调用 |
 
-IDL 是 Interface Definition Language，即接口定义语言。
+IDL 是 Interface Definition Language，即接口定义语言。选择 GraphQL 不要求替换所有 REST 或 RPC，常见架构是在多端客户端与若干后端能力之间增加 GraphQL 聚合层。
 
-选择 GraphQL 不意味着必须替换所有 REST 或 RPC（Remote Procedure Call，远程过程调用）。常见做法是在前端与多个后端之间增加 GraphQL 聚合层。
+可以按需求的主要矛盾选择协议：
 
-可以用需求的主要矛盾来做选择：
+1\. 商品详情页要组合商品、库存、促销和评价，而且各端字段不同：优先评估 GraphQL。
 
-1\. 一个商品详情页要组合商品、库存、促销和评价，而且 Web、App、运营后台需要的字段不同：优先评估 GraphQL，因为它擅长跨数据源组合和按需选择字段。
+2\. 下载电子书文件，希望浏览器、CDN（Content Delivery Network，内容分发网络）和断点续传直接利用标准 HTTP 语义：REST 风格的文件资源通常更自然。
 
-2\. 下载一本电子书文件，希望浏览器、CDN 和断点续传直接利用标准 HTTP 语义：REST 风格的文件资源通常更自然。
+3\. 两个内部 Java 服务进行高频、稳定、强约束的方法调用，而且双方共同发布：RPC 可能更直接。
 
-3\. 两个内部 Java 服务之间进行高频、稳定、强约束的方法调用，并且双方共同发布：RPC 可能更直接。
+4\. 页面数量少、资源关系简单、团队暂时没有 Schema 治理能力：延续现有 REST 的维护成本往往更低。
 
-4\. 只有少量固定页面、资源关系简单、团队没有 GraphQL 治理经验：继续使用现有 REST 往往比引入新执行层更划算。
+落地前应测量客户端请求次数与响应体积、服务端数据库查询数、P95/P99 延迟、缓存命中、鉴权复杂度和团队维护成本。GraphQL 的收益来自解决组合与多端差异问题，把多个 URL 机械合并成 `/graphql` 不会自动改善系统。
 
-落地前不要只比较接口数量。至少验证客户端请求次数与响应体积、服务端数据库查询数、P95/P99 延迟、缓存命中、鉴权复杂度和团队维护成本。GraphQL 的采用价值来自解决真实组合问题，而不是把多个 REST URL 机械改成一个 `/graphql`。
+### 1.5 分阶段学习路线
 
-### 1.4 推荐学习顺序
+| 阶段 | 阅读范围 | 目标 | 成功判据 |
+| --- | --- | --- | --- |
+| 基础闭环 | 第 1～4 章 | 理解 Schema 与查询语法，扩展出可写入的 Java 服务 | 能独立完成查询、创建和局部更新 |
+| 执行与数据 | 第 5～8 章 | 理解 Resolver、错误、N+1、分页、缓存和演进 | 能从响应与 SQL 指标定位问题 |
+| 生产治理 | 第 9～11 章 | 建立授权、资源预算、实时架构、可观测性和测试 | 能写出安全边界、测试与故障排查入口 |
+| 复习与落地 | 第 12～14 章 | 组织面试判断、上线检查和官方资料 | 能解释取舍，并为一次 Schema 变更制定发布计划 |
 
-1\. 先理解 Schema、类型、字段、参数和可空性。
-
-2\. 再掌握 Query、Mutation、变量、别名、Fragment（片段）。
-
-3\. 跟随第 4 章运行一个最小服务。
-
-4\. 理解 Resolver（解析器）的四个参数和执行过程。
-
-5\. 学习错误、分页、N+1、缓存、认证与授权。
-
-6\. 最后学习 Spring Security、订阅、Schema 演进、可观测性和 Federation（联邦）。
+第一次阅读可在完成第 4 章后先停下，确保查询、Mutation（修改操作）和局部更新都能运行，再进入执行原理与生产治理。已有 GraphQL 基础的读者可以从第 5 章开始，但第 1.2 节的成功判据仍可用于检查本地环境。
 
 ## 2 Schema：服务端公开的类型合同
 
@@ -262,11 +402,11 @@ GraphQL Schema 中常见的六种命名类型如下：
 
 2\. `Float`：双精度浮点数；金额通常不应直接依赖二进制浮点运算，可使用分为单位的整数或自定义 `BigDecimal`。
 
-3\. `String`：UTF-8 字符序列。
+3\. `String`：Unicode 码点序列；具体内部编码（例如 UTF-8）由服务实现决定。
 
 4\. `Boolean`：`true` 或 `false`。
 
-5\. `ID`：唯一标识符，序列化外观类似字符串，但表达“用于标识而非给人阅读”的语义。
+5\. `ID`：唯一标识符，输入可接受字符串或整数字面量，输出始终序列化为字符串；它表达“用于标识而非给人阅读”的语义。
 
 日期、长整数、Decimal 和 JSON 不是内置标量，需要选用经过维护的自定义标量实现，并明确序列化格式。
 
@@ -348,7 +488,7 @@ GraphQL 类型默认可空，`!` 表示非空：
 
 `[Book!]!` 仍允许 `[]`。GraphQL 类型系统不能直接表示“至少一个元素”。
 
-非空不是“数据库这一列现在恰好非空”，而是 API 对所有正常执行路径作出的承诺。若 `Book.title: String!` 的 Resolver 返回 `null`，GraphQL 会产生字段错误，并把 `null` 向上冒泡到最近的可空父字段：
+非空不是“数据库这一列现在恰好非空”，而是 API 对所有正常执行路径作出的承诺。若 `Book.title: String!` 的 Resolver 返回 `null`，GraphQL 会产生执行错误（旧版规范称字段错误），并把 `null` 向上冒泡到最近的可空父字段：
 
 ```mermaid
 flowchart BT
@@ -425,7 +565,36 @@ type Mutation {
 
 推荐方案中，服务端生成 `id`，并把新书状态初始化为 `AVAILABLE`。这样输入合同与业务权限一致，而不是照抄输出对象。
 
-### 2.7 Interface、Union 与 `__typename`
+### 2.7 用 `@oneOf` 表达互斥输入
+
+普通 Input Object 允许同时提交多个可选字段，无法表达“这些字段中恰好选择一个”。GraphQL 2025 年 9 月版规范纳入了 OneOf Input Object（互斥输入对象），通过内置 `@oneOf` 指令让这条规则在进入 Resolver 前完成校验。
+
+例如，查询图书时允许使用内部 ID 或 ISBN（International Standard Book Number，国际标准书号）之一：
+
+```graphql
+input BookUniqueCondition @oneOf {
+  id: ID
+  isbn: String
+}
+
+type Query {
+  bookBy(condition: BookUniqueCondition!): Book
+}
+```
+
+下面三组输入会产生不同结果：
+
+| 输入 | 是否合法 | 原因 |
+| --- | --- | --- |
+| `{"condition":{"id":"1"}}` | 是 | 只提供一个非空字段 |
+| `{"condition":{"id":"1","isbn":"9787111111111"}}` | 否 | 同时提供两个字段 |
+| `{"condition":{"id":null}}` | 否 | 被选择的字段必须非空 |
+
+OneOf Input Object 中的成员字段必须声明为可空，并且不能配置默认值；“恰好一个且非空”由 `@oneOf` 统一施加。客户端仍需把外层 `condition` 作为必填参数，才能防止整个条件对象缺失。
+
+它适合查找条件、支付方式、联系方式等互斥输入。若两个字段允许同时出现，或者多个字段需要组合成一个复合条件，就应继续使用普通 Input Object 并在业务层校验组合规则。维护旧版 GraphQL Java 项目时，要先确认运行库和客户端代码生成器是否支持 `@oneOf` 与内省字段 `__Type.isOneOf`，不能只修改 SDL 后假设所有工具都会正确识别。
+
+### 2.8 Interface、Union 与 `__typename`
 
 ```graphql
 interface Node {
@@ -550,6 +719,24 @@ query GetBookDetail {
 
 `query` 是操作类型，`GetBookDetail` 是操作名，`book` 是根字段。匿名简写 `{ book(...) { ... } }` 适合临时探索，不利于日志、指标、持久化查询和排障。
 
+一个文档可以包含多个具名操作：
+
+```graphql
+query ReadBook {
+  book(id: "1") {
+    title
+  }
+}
+
+query ReadBooks {
+  books {
+    title
+  }
+}
+```
+
+此时 HTTP 请求体必须用 `operationName` 指明执行哪一个，例如 `"operationName":"ReadBook"`；若文档只有一个操作，可以省略。服务端不会因为文档中出现两个 Query 就自动把二者都执行。匿名操作只能出现在文档的唯一操作中，因此生产客户端统一命名能同时减少选择歧义，并为日志、指标和受信任文档提供稳定标识。
+
 ### 3.2 参数与变量
 
 不要把用户输入通过字符串拼接塞进查询。应声明变量：
@@ -619,7 +806,7 @@ public record UpdateBookInput(
 }
 ```
 
-应用更新：
+应用更新如下。这里先聚焦 `ArgumentValue` 的三个分支，片段使用的 `BookRepository`、`BookNotFoundException` 和完整 Controller 会在第 4.5～4.6 节创建：
 
 ```java
 @MutationMapping
@@ -704,6 +891,8 @@ query GetBook($id: ID!, $withSummary: Boolean! = false) {
 
 当变量是 `{"withSummary": false}` 时，响应中不出现 `summary`；改成 `true` 后才出现。字段“不出现”和 `"summary": null` 不同：前者表示本次选择集跳过了字段，后者表示请求了字段但结果为空。
 
+GraphQL 还定义了用于 Schema 的指令：`@deprecated` 标记弃用字段、参数、输入字段或 Enum 值，`@specifiedBy` 给自定义 Scalar 关联格式规范，`@oneOf` 表达第 2.7 节的互斥输入。自定义指令只有在服务端注册了对应运行时行为后才会生效；在 SDL 中声明 `directive @auth ...` 本身不会完成权限检查。
+
 ### 3.7 Mutation 表达写操作
 
 ```graphql
@@ -756,27 +945,27 @@ type CreateBookItemResult {
 
 业务失败是预期结果时，建模为数据往往比把所有情况都塞进顶层 `errors` 更便于客户端处理。
 
-## 4 Java 教程：用 Spring Boot 运行第一个 GraphQL 服务
+## 4 Java 实战：把最小服务扩展为图书 API
 
 ### 4.1 目标与前置条件
 
-本章运行一个内存版图书 API，支持查询列表、按 ID 查询、关联作者、创建图书和局部更新图书。
+本章在第 1.2 节的可运行项目上继续扩展，得到一个内存版图书 API，支持查询列表、按 ID 查询、关联作者、创建图书和局部更新图书。
 
 前置条件：
 
-1\. Java 17 或更高版本。
+1\. 已完成第 1.2 节，或者已有等价的 Spring Boot GraphQL 项目。
 
-2\. Maven 3.6.3 或更高版本，或直接使用项目自带的 Maven Wrapper。
+2\. Java 17 或更高版本。
 
-3\. 熟悉 Java `record`、Spring Boot 启动类和依赖注入的基础用法。
+3\. Maven 3.6.3 或更高版本，或直接使用项目自带的 Maven Wrapper。
 
-4\. 推荐使用 IntelliJ IDEA，也可以使用任意编辑器。
+4\. 熟悉 Java `record`、Spring Boot 启动类和依赖注入的基础用法。
 
 本文框架特定示例按当前稳定的 Spring Boot 4.1.x 与 Spring for GraphQL 2.0.x 编写。若维护 Spring Boot 3.x 项目，GraphQL 核心概念和大部分业务代码仍相同，但测试 Starter、自动配置注解包名和少数扩展 API 可能不同，应切换到对应版本的官方文档，不能混用两个大版本的 import。
 
-### 4.2 用 Spring Initializr 创建项目
+### 4.2 确认项目依赖
 
-访问 [Spring Initializr](https://start.spring.io/)，选择：
+若没有复用第 1.2 节的项目，可访问 [Spring Initializr](https://start.spring.io/) 创建项目并选择：
 
 1\. Project：Maven。
 
@@ -786,7 +975,7 @@ type CreateBookItemResult {
 
 4\. Dependencies：Spring for GraphQL、Spring Web、Validation。
 
-下载后解压。Spring Boot 会管理 Spring for GraphQL 与 GraphQL Java 的兼容版本，不要为了“追新”分别覆盖它们。
+下载后解压。复用第 1.2 节项目时，补充 Validation 与 GraphQL Test Starter 即可。Spring Boot 会管理 Spring for GraphQL 与 GraphQL Java 的兼容版本，不要为了“追新”分别覆盖它们。
 
 核心 Maven 依赖结构应类似：
 
@@ -798,16 +987,11 @@ type CreateBookItemResult {
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
+        <artifactId>spring-boot-starter-webmvc</artifactId>
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -817,11 +1001,11 @@ type CreateBookItemResult {
 </dependencies>
 ```
 
-`spring-boot-starter-graphql` 提供 GraphQL 能力，但 GraphQL 与传输协议无关，因此还需要 `spring-boot-starter-web` 才能通过 Spring MVC 暴露 HTTP 端点。
+`spring-boot-starter-graphql` 提供 GraphQL 能力，但 GraphQL 与传输协议无关，因此还需要 `spring-boot-starter-webmvc` 才能通过 Spring MVC 暴露 HTTP 端点。`spring-boot-starter-graphql-test` 会传递引入通用测试 Starter 和 `spring-graphql-test`，不必再重复声明 `spring-boot-starter-test`。
 
-### 4.3 创建 Schema 文件
+### 4.3 扩展 Schema 文件
 
-创建 `src/main/resources/graphql/schema.graphqls`：
+用下面内容替换第 1.2 节的 `src/main/resources/graphql/schema.graphqls`：
 
 ```graphql
 enum BookStatus {
@@ -870,6 +1054,8 @@ type Mutation {
 Spring Boot 默认扫描 `src/main/resources/graphql/**` 下的 `.graphqls` 和 `.gqls` 文件，并在启动时构建 Schema。Schema 语法或类型引用错误会让应用启动失败，这比请求到来后才发现更安全。
 
 第 2 章展示的是包含评论和作者反向关联的完整业务 Schema；本章为了先跑通 Java 最小闭环，暂时只保留图书与作者。学习时不要把两段 Schema 同时复制进同一个文件，否则重复定义 `Book`、`Author` 和根类型会导致启动失败。
+
+第 1.2 节的 `com.example.library.BookController` 只服务最小体验。继续本章前应删除该文件，随后使用 `com.example.library.book.BookController` 和独立的 `Book` 类型替代它；若两个 Controller 同时存在，二者都会映射 `Query.book`，应用会因重复字段映射而启动失败。
 
 ### 4.4 创建 Java 领域对象
 
@@ -1334,11 +1520,12 @@ public class GraphQlContextConfiguration {
 }
 ```
 
-Controller 按需读取：
+用下面的方法替换第 4.6 节 Controller 中原来的同名 `book(...)` 方法，让它按需读取请求 ID：
 
 ```java
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.graphql.data.method.annotation.ContextValue;
 
 private static final Logger log =
         LoggerFactory.getLogger(BookController.class);
@@ -1472,7 +1659,7 @@ Controller 过胖会导致业务逻辑难以复用和单测。Controller 过薄�
 
 ### 6.1 GraphQL 与 HTTP 的关系
 
-GraphQL 规范主要描述类型、验证和执行；GraphQL over HTTP 描述如何通过 HTTP 传输。常见 POST 请求体为：
+GraphQL 核心规范主要描述类型、验证和执行；GraphQL over HTTP 工作草案描述如何通过 HTTP 传输。常见 POST 请求体为：
 
 ```json
 {
@@ -1484,9 +1671,11 @@ GraphQL 规范主要描述类型、验证和执行；GraphQL over HTTP 描述如
 }
 ```
 
-生产客户端发送 JSON 请求时，通常使用 `Content-Type: application/json`，并优先声明 `Accept: application/graphql-response+json`。媒体类型不仅影响序列化，还可能影响 HTTP 状态码：在支持新媒体类型的实现中，无法解析或无法通过验证的请求可返回 4xx；操作进入执行阶段后，即使响应含字段错误，通常仍返回 200，并通过 `errors` 表达执行结果。
+生产客户端发送 JSON 请求时使用 `Content-Type: application/json`。GraphQL over HTTP 工作草案要求客户端在 `Accept` 中包含 `application/graphql-response+json`；不确定服务端是否支持新媒体类型时，可以发送 `application/graphql-response+json, application/json;q=0.9` 兼容旧服务。
 
-GraphQL over HTTP 规范允许实现用 GET 承载只读 Query，以便利用 HTTP 缓存，但并非每个框架默认开启。Spring for GraphQL 当前默认 HTTP 端点文档以 `POST /graphql` 为标准请求方式，因此本教程不要假设把 Query 改成 GET 就一定可用。Mutation 有副作用，不应使用 GET。验证传输边界时，应分别测试错误 JSON、验证失败、Resolver 执行失败和成功请求，同时检查 HTTP 状态与 GraphQL 响应体，不能只检查其中一个。
+媒体类型会影响 Spring for GraphQL 2.0.x 的状态码行为：请求新媒体类型时，文档解析或验证失败会使用 4xx；请求旧的 `application/json` 时，这些 GraphQL 请求错误仍沿用 200。请求通过验证并进入执行后，Spring 当前以 200 返回 GraphQL 响应，执行错误放在 `errors` 中。客户端因此要同时解析 HTTP 状态、响应 `Content-Type` 和 GraphQL 响应体，不能把“GraphQL 的错误都返回 200”写成通用规则。GraphQL over HTTP 仍是演进中的工作草案，其他实现或后续版本可能采用不同的部分成功状态码。
+
+GraphQL over HTTP 工作草案允许 GET 承载 Query，以便利用 HTTP 缓存，并要求拒绝通过 GET 执行 Mutation。并非每个框架默认开放 GET；Spring for GraphQL 2.0.x 默认 HTTP 端点以 `POST /graphql` 为标准请求方式，本教程不能假设把 Query 改成 GET 就一定可用。验证传输边界时，应分别测试错误 JSON、验证失败、Resolver 执行失败和成功请求，同时检查 HTTP 状态与 GraphQL 响应体。
 
 ### 6.2 响应的三个顶层成员
 
@@ -1510,17 +1699,17 @@ GraphQL over HTTP 规范允许实现用 GET 承载只读 Query，以便利用 HT
 }
 ```
 
-1\. `data`：执行结果；发生字段错误时仍可能有部分数据。
+1\. `data`：执行结果；发生执行错误时仍可能有部分数据。
 
 2\. `errors`：错误数组，常含 `message`、`locations`、`path` 与 `extensions`。
 
 3\. `extensions`：实现自定义元数据的扩展位置。
 
-### 6.3 请求错误与字段错误
+### 6.3 请求错误与执行错误
 
-请求错误发生在执行前，例如语法错误、未知字段、变量类型错误。Resolver 不会运行，响应通常没有 `data`。
+请求错误发生在执行前，例如语法错误、未知字段、无法确定要执行的操作或变量类型错误。Resolver 不会运行。GraphQL 2025 年 9 月版规范要求 Request Error Result（请求错误结果）包含非空 `errors` 且不出现 `data`；兼容旧实现时仍可能见到 `"data": null`，两种表示都意味着没有进入字段执行。
 
-字段错误发生在执行中，例如数据库超时或 Resolver 抛错。服务端可能返回部分 `data`，并在 `errors.path` 指出失败字段。
+执行错误发生在字段执行、取值或结果强制转换期间，例如数据库超时、Resolver 抛错或非空字段得到 `null`。服务端可能返回部分 `data`，并在 `errors.path` 指出失败的响应位置。旧版 GraphQL 规范和部分库文档把这类错误称为 Field Error（字段错误）。
 
 对比两个最小例子：
 
@@ -1529,7 +1718,7 @@ GraphQL over HTTP 规范允许实现用 GET 承载只读 Query，以便利用 HT
 | 查询不存在的 `Book.publisherName` | 验证 | 否 | 通常只有 `errors` |
 | `Book.author` 查询数据库时超时 | 执行 | 已执行 | 可能同时有部分 `data` 和 `errors` |
 
-字段错误响应示例：
+执行错误响应示例：
 
 ```json
 {
@@ -1555,7 +1744,7 @@ GraphQL over HTTP 规范允许实现用 GET 承载只读 Query，以便利用 HT
 
 ### 6.4 预期业务失败与异常失败
 
-“用户名已存在”“库存不足”是用户可修复的预期业务结果，可以作为联合类型或 Payload 数据建模：
+“ISBN 已存在”“作者编号不存在”是用户可修复的预期业务结果，可以作为联合类型或 Payload 数据建模：
 
 ```graphql
 type CreateBookSuccess {
@@ -2079,12 +2268,12 @@ query {
 
 Java 服务调用另一个 GraphQL 服务时，可以使用 Spring `HttpGraphQlClient`。它负责 GraphQL 请求和错误结构，比手工拼 JSON 更清晰：
 
-`HttpGraphQlClient` 基于 `WebClient`，若当前应用只有 Spring MVC Starter，需要额外加入 WebFlux Starter 才有该非阻塞客户端：
+`HttpGraphQlClient` 基于 `WebClient`。Spring Boot 4 项目若当前只有 Spring MVC Starter，应加入专门的 WebClient Starter；这样能获得非阻塞客户端，而不必为了客户端引入完整 WebFlux 服务端：
 
 ```xml
 <dependency>
     <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-webflux</artifactId>
+    <artifactId>spring-boot-starter-webclient</artifactId>
 </dependency>
 ```
 
@@ -2153,7 +2342,7 @@ StepVerifier.create(result)
 
 `retrieve("book")` 是读取单个 `data` 路径的快捷方式。目标字段为空且带有错误时会产生 `FieldAccessException`；字段无法反序列化成 `BookView` 时会产生 `GraphQlClientException`。需要同时分析部分数据和多个错误时，改用 `execute()` 获取完整 `ClientGraphQlResponse`，不要只在最外层捕获一个通用异常。
 
-验证失败路径时，可故意查询不存在的 ID 或让服务端返回字段错误，断言 `FieldAccessException.getResponse().getErrors()` 中存在预期错误码。还要单独测试连接拒绝、响应超时和无效 Token，因为它们属于传输或认证失败，不等同于 GraphQL 字段错误。
+验证失败路径时，可故意查询不存在的 ID 或让服务端返回执行错误，断言 `FieldAccessException.getResponse().getErrors()` 中存在预期错误码。还要单独测试连接拒绝、响应超时和无效 Token，因为它们属于传输或认证失败，不等同于 GraphQL 执行错误。
 
 示例中的 Token 只是占位符。生产代码应从安全配置或当前调用上下文取得凭证，并配置连接、响应超时和重试边界。若应用不采用响应式编程，可评估基于 `RestClient` 的 `HttpSyncGraphQlClient`；不要为了拿到一个值就在响应式业务链中随意调用 `block()`。
 
@@ -2183,6 +2372,8 @@ type Book {
 
 `@deprecated` 只是沟通和工具提示，不会阻止客户端继续调用。没有使用量证据就删除字段仍会破坏客户端。
 
+2025 年 9 月版规范允许把 `@deprecated` 用于输出字段、字段参数、Input Object 字段和 Enum 值。必填且没有默认值的参数或输入字段不能直接弃用，因为客户端无法停止提供它；应先把它改为可选或提供兼容默认值，完成消费者迁移后再弃用。可选化本身也要结合服务端业务语义与代码生成结果验证。
+
 ### 8.4 常见破坏性变更
 
 1\. 删除类型、字段、参数或 Enum 值。
@@ -2196,6 +2387,8 @@ type Book {
 5\. 把输入字段从可选改为必填。
 
 6\. 把输出字段从非空改为可空，可能破坏客户端类型假设。
+
+7\. 把现有普通 Input Object 改成 OneOf Input Object，因为过去合法的多字段输入会被拒绝。
 
 新增 Enum 值在 Schema 视角常被视为扩展，但旧客户端若使用穷举分支且没有兜底，运行时仍可能失败。
 
@@ -2700,7 +2893,7 @@ public Book book(@Argument String id) {
 
 2\. 解析、验证、执行各阶段耗时。
 
-3\. 字段错误率和错误码。
+3\. 执行错误率和错误码。
 
 4\. Resolver 及下游数据库、HTTP 调用耗时。
 
@@ -2738,7 +2931,7 @@ curl http://localhost:8080/actuator/metrics
 curl http://localhost:8080/actuator/metrics/graphql.request
 ```
 
-预期能看到 `graphql.request`，并可按操作类型、操作名和结果等低基数维度分析。`graphql.datafetcher` 用于观察非平凡字段取值，`graphql.dataloader` 可观察批加载及批大小。若指标不存在，依次检查 Actuator 是否生效、管理端点是否暴露、应用是否存在 `ObservationRegistry`、是否绕过了 Spring Boot 的 GraphQL 自动配置，以及是否真的执行过对应操作。
+预期能看到 `graphql.request`。Spring for GraphQL 默认把操作类型和执行结果作为低基数 KeyValue，适合聚合指标；操作名与执行 ID 属于高基数 KeyValue，更适合 Trace（追踪）和诊断上下文，不应直接扩展成无限增长的指标标签。`graphql.datafetcher` 用于观察非平凡字段取值，`graphql.dataloader` 可观察批加载及批大小。若指标不存在，依次检查 Actuator 是否生效、管理端点是否暴露、应用是否存在 `ObservationRegistry`、是否绕过了 Spring Boot 的 GraphQL 自动配置，以及是否真的执行过对应操作。
 
 操作名会成为重要诊断维度，这也是生产查询不应长期匿名的原因。用户 ID、完整变量和任意错误文案属于高基数或敏感信息，不应直接作为指标标签，否则会造成时序爆炸和数据泄露。
 
@@ -2866,63 +3059,47 @@ void shouldRejectUnknownAuthor() {
 
 7\. 修复后用同一操作和边界输入验证，并观察错误率与延迟是否恢复。
 
-## 12 面试递归追问
+## 12 面试中的判断链与递进问题
 
-### 12.1 GraphQL 解决了什么问题
+### 12.1 从采用价值追到性能证据
 
-回答主线：它通过强类型 Schema 和客户端字段选择缓解多端场景中的过度获取、获取不足与接口组合问题，并提供验证、内省和工具生态。
+GraphQL 通过强类型 Schema 和客户端字段选择缓解多端场景中的过度获取、获取不足与接口组合问题，并提供验证、内省和工具生态。这些能力不直接等于性能提升：网络往返和无用字段可能减少，服务端也可能新增 N+1、复杂查询、缓存困难和聚合层开销。讨论性能时应给出请求次数、响应体积、SQL 次数、DataLoader 批大小和 P95/P99 延迟等证据，再说明批处理、分页与成本控制如何改变这些指标。
 
-继续追问：是否一定提升性能？
+### 12.2 从 API Schema 追到数据来源
 
-回答角度：不一定。它可能减少网络往返和无用字段，但也可能带来 N+1、复杂查询、缓存困难和聚合层额外开销。必须用批处理、分页、成本控制和指标验证。
+GraphQL Schema 是面向 API 消费者的业务能力合同，数据库 Schema 服务于持久化，两者的数据来源、职责与演进节奏不同。机械地把表映射为 GraphQL 类型会暴露内部结构，并限制跨数据源聚合。实现层也不要求每个字段都手写 Resolver：同名属性可由默认 Property DataFetcher 读取，涉及关联、计算、转换或授权的字段才需要显式实现。
 
-### 12.2 Schema 与数据库 Schema 一样吗
+### 12.3 从 N+1 追到 DataLoader 生命周期
 
-不一样。GraphQL Schema 是面向 API 消费者的业务能力合同；数据库 Schema 是持久化结构。GraphQL 类型不应机械映射数据库表，否则会暴露内部结构、耦合存储设计并难以表达聚合业务。
+父列表返回 N 个对象后，子字段若为每个对象单独访问数据源，就形成 1 + N 次查询。DataLoader 通过收集 key 和批量读取减少往返，其缓存通常绑定当前请求、用户、租户与一致性视图。把同一个 DataLoader 全局复用会引入陈旧数据、内存增长和跨用户泄漏风险，因此面试中还要说明批量结果顺序、缺失值、授权条件和请求级生命周期。
 
-继续追问：Resolver 是否每个字段都必须写？
+### 12.4 从“能否缓存”追到缓存层次
 
-不一定。同名属性常由默认 Resolver 获取；需要计算、关联、授权或转换的字段才显式实现。
+GraphQL 的缓存需要区分 HTTP 响应缓存、持久化查询标识、客户端规范化缓存、服务端数据缓存和 DataLoader 请求级记忆化。`__typename` 与稳定 ID 能让客户端构造实体键，但缓存是否合并、何时失效仍由客户端策略决定；服务端缓存还要把租户与权限纳入 key。完整分析应指出缓存对象、作用域、失效触发和一致性要求。
 
-### 12.3 为什么会出现 N+1
+### 12.5 从 HTTP 状态追到业务成功
 
-父列表先返回 N 个对象，子字段 Resolver 再为每个对象独立访问数据源，于是形成 1 + N 次查询。
+HTTP 状态描述传输与协议层结果，GraphQL 响应中的 `data`、`errors` 和业务 Payload 描述操作结果。Spring for GraphQL 可能以 HTTP 200 返回含部分数据和执行错误的响应，解析或验证错误的状态码还会受响应媒体类型影响。客户端的成功判据应结合 HTTP 状态、`Content-Type`、目标字段、错误码和 Mutation 副作用。
 
-继续追问：DataLoader 为什么通常请求级创建？
+### 12.6 从串行 Mutation 追到事务边界
 
-它的缓存语义常与当前用户、租户、事务和本次请求的数据一致性绑定。全局复用可能产生陈旧数据、无限增长和跨用户泄漏。
+规范保证单个操作内的顶层 Mutation 字段串行执行，使副作用顺序可预测；它不会自动开启数据库事务，也不提供跨服务原子性。共同回滚应由一个业务 Mutation 调用带事务的应用服务；跨服务写入通常还要讨论幂等键、补偿、事件一致性和部分成功语义。
 
-### 12.4 GraphQL 如何做缓存
+### 12.7 从灵活查询追到资源预算
 
-回答不能只说“不能缓存”。应区分 HTTP 响应缓存、持久化查询、客户端规范化缓存、Resolver/数据源缓存和 DataLoader 请求级去重，并说明失效策略与权限维度。
+GraphQL 的安全治理由认证、对象与字段授权、输入校验、分页上限、深度与别名限制、复杂度模型、超时取消、限流、受信任文档、错误脱敏和监控共同组成。关闭内省只能减少能力发现渠道，不能阻止已知字段被越权访问或构造昂贵查询。判断方案是否有效，要看超预算请求能否在访问昂贵数据源前被拒绝。
 
-继续追问：为什么 `__typename` 和 `id` 重要？
+### 12.8 从非空便利追到故障半径
 
-客户端可用它们构造稳定实体键，让不同查询返回的同一对象共享缓存。
+非空字段可以减少客户端判空分支，同时代表服务端对所有正常路径作出的强承诺。底层脏数据或依赖失败导致非空字段得到 `null` 时，执行错误会向最近的可空父位置冒泡，扩大数据缺失范围。设计时应同时检查业务不变量、历史数据、依赖可靠性和客户端类型假设。
 
-### 12.5 HTTP 200 是否表示成功
+### 12.9 从协议比较追到组合架构
 
-不一定。GraphQL 可能返回 HTTP 200，同时 `data` 中有部分结果、`errors` 中有字段执行错误。客户端要结合传输状态、错误数组、目标字段和业务 Payload 判断。
+GraphQL 适合多端组合和关系丰富的数据，REST 适合简单资源、文件下载与标准 HTTP 缓存，RPC 适合内部方法式的高性能通信。实际系统可以让 GraphQL 聚合层面向前端，内部继续调用 REST 或 RPC，并让对象存储承接文件流量。选择依据是消费者需求、传输语义、性能证据和治理成本，而不是统一技术栈。
 
-### 12.6 Mutation 是否天然事务
+### 12.10 从字段弃用追到发布证据
 
-不是。规范只保证单个操作内顶层 Mutation 字段串行执行，不会自动为数据库操作开启事务，也不保证跨服务原子性。事务边界要在应用服务和数据层显式设计。
-
-### 12.7 GraphQL 如何防止恶意查询
-
-组合回答：身份认证、对象与字段授权、输入校验、分页上限、深度/别名/复杂度限制、超时取消、限流、受信任文档、错误脱敏和监控。只关闭内省不够。
-
-### 12.8 非空字段越多越好吗
-
-不是。非空能简化客户端，但也是强承诺。底层数据缺失时会触发错误冒泡，扩大失败范围。应根据业务不变量、历史脏数据和依赖可靠性谨慎设计。
-
-### 12.9 GraphQL 是否取代 REST
-
-不是必然。GraphQL 适合多端组合和关系丰富的数据；REST 适合简单资源、文件下载与 HTTP 缓存；RPC 适合内部方法式、高性能通信。实际系统可以组合使用。
-
-### 12.10 如何安全演进 Schema
-
-先添加替代字段，再弃用旧字段，收集字段使用量，迁移消费者，通过 Schema diff 与真实操作检查风险，最后删除。需要同时关注 Enum 新值、可空性变化和输入必填变化。
+安全演进通常先添加替代字段，再弃用旧字段，收集真实字段使用量，迁移消费者，通过 Schema diff 与已登记操作检查风险，最后删除。评审时还应单独检查 Enum 新值、输入必填、输出可空性、OneOf 语义和灰度期间的新旧实例兼容性；只有源码 diff 无法证明线上客户端已经完成迁移。
 
 ## 13 项目落地模板与上线检查
 
@@ -3058,7 +3235,9 @@ subscription WatchBook($id: ID!) {
 | Query | REST GET | Query 是 GraphQL 操作语义，通常经 POST 或 GET 传输 |
 | Field | Resolver | 前者是合同中的能力，后者是服务端取值实现 |
 | Input Object | Object | 前者只能输入，后者用于输出且可有字段参数 |
+| OneOf Input Object | 普通 Input Object | 前者要求恰好一个成员字段非空，后者允许多个字段组合 |
 | null | 字段缺失 | null 是已返回空值；被指令跳过的字段可能不出现 |
+| 请求错误 | 执行错误 | 前者阻止执行且没有响应数据，后者发生在执行中并可能保留部分数据 |
 | DataLoader 缓存 | 业务缓存 | 前者通常只在请求内去重，后者可跨请求 |
 | Authentication | Authorization | 前者确认身份，后者判断权限 |
 | Subscription | 消息队列 | 前者面向实时 API，后者面向可靠事件基础设施 |
@@ -3076,39 +3255,43 @@ subscription WatchBook($id: ID!) {
 
 5\. [GraphQL 安全最佳实践](https://graphql.org/learn/security/)：查询限制、分页、受信任文档与输入校验。
 
-6\. [GraphQL over HTTP](https://graphql.org/learn/serving-over-http/)：HTTP 方法、请求与响应约定。
+6\. [GraphQL over HTTP 学习文档](https://graphql.org/learn/serving-over-http/)：HTTP 方法、请求与响应的入门说明。
 
-7\. [GraphQL 当前规范入口](https://spec.graphql.org/)：遇到实现差异时以规范和具体库文档为准。
+7\. [GraphQL 2025 年 9 月版规范](https://spec.graphql.org/September2025/)：本文使用的核心规范版本，包含 OneOf Input Object 和当前响应术语。
 
-8\. [Spring 官方 Java GraphQL 入门](https://spring.io/guides/gs/graphql-server)：从 Spring Initializr 到 `@QueryMapping`、`@SchemaMapping` 和测试。
+8\. [GraphQL over HTTP 工作草案](https://graphql.github.io/graphql-over-http/draft/)：媒体类型、方法、状态码和请求格式；草案内容仍可能变化。
 
-9\. [Spring Boot 的 GraphQL 参考文档](https://docs.spring.io/spring-boot/reference/web/spring-graphql.html)：Starter、Schema 扫描、传输端点、GraphiQL 和自动配置。
+9\. [Spring 官方 Java GraphQL 入门](https://spring.io/guides/gs/graphql-server)：从 Spring Initializr 到 `@QueryMapping`、`@SchemaMapping` 和测试。
 
-10\. [Spring for GraphQL 注解控制器](https://docs.spring.io/spring-graphql/reference/controllers.html)：`@QueryMapping`、`@MutationMapping`、`@SchemaMapping`、DataLoader、Validation 和异常处理。
+10\. [Spring Boot 的 GraphQL 参考文档](https://docs.spring.io/spring-boot/reference/web/spring-graphql.html)：Starter、Schema 扫描、传输端点、GraphiQL 和自动配置。
 
-11\. [Spring for GraphQL 测试](https://docs.spring.io/spring-graphql/reference/testing.html)：`GraphQlTester` 及不同传输方式的测试。
+11\. [Spring Boot 4.0 迁移指南](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide)：模块拆分、`spring-boot-starter-webmvc` 与测试 Starter 的版本差异。
 
-12\. [GraphQL Java 官方文档](https://www.graphql-java.com/documentation/)：Spring for GraphQL 底层执行引擎。
+12\. [Spring for GraphQL 注解控制器](https://docs.spring.io/spring-graphql/reference/controllers.html)：`@QueryMapping`、`@MutationMapping`、`@SchemaMapping`、DataLoader、Validation 和异常处理。
 
-13\. [Spring for GraphQL 客户端](https://docs.spring.io/spring-graphql/reference/client.html)：同步与响应式 HTTP 客户端、WebSocket 客户端和文档加载。
+13\. [Spring for GraphQL 测试](https://docs.spring.io/spring-graphql/reference/testing.html)：`GraphQlTester` 及不同传输方式的测试。
 
-14\. [Spring for GraphQL 传输层](https://docs.spring.io/spring-graphql/reference/transports.html)：HTTP、SSE、WebSocket 与请求拦截。
+14\. [GraphQL Java 官方文档](https://www.graphql-java.com/documentation/)：Spring for GraphQL 底层执行引擎。
 
-15\. [Spring for GraphQL 请求执行](https://docs.spring.io/spring-graphql/reference/request-execution.html)：`RuntimeWiringConfigurer`、Scalar 注册和执行配置。
+15\. [Spring for GraphQL 客户端](https://docs.spring.io/spring-graphql/reference/client.html)：同步与响应式 HTTP 客户端、WebSocket 客户端和文档加载。
 
-16\. [Spring for GraphQL 可观测性](https://docs.spring.io/spring-graphql/reference/observability.html)：请求、DataFetcher 和 DataLoader 的 Micrometer Observation。
+16\. [Spring for GraphQL 传输层](https://docs.spring.io/spring-graphql/reference/transports.html)：HTTP、SSE、WebSocket 与请求拦截。
 
-17\. [GraphQL Java Extended Scalars](https://graphql-java.com/documentation/master/scalars/)：扩展 Scalar 依赖、注册方式与支持类型。
+17\. [Spring for GraphQL 请求执行](https://docs.spring.io/spring-graphql/reference/request-execution.html)：`RuntimeWiringConfigurer`、Scalar 注册和执行配置。
 
-18\. [Spring Boot Actuator 指标](https://docs.spring.io/spring-boot/reference/actuator/metrics.html)：指标端点、Meter 与 Observation 基础设施。
+18\. [Spring for GraphQL 可观测性](https://docs.spring.io/spring-graphql/reference/observability.html)：请求、DataFetcher 和 DataLoader 的 Micrometer Observation。
 
-19\. [Spring Boot 系统要求](https://docs.spring.io/spring-boot/system-requirements.html)：当前稳定版本支持的 Java、Maven、Gradle 和 Servlet 容器版本。
+19\. [GraphQL Java Extended Scalars](https://graphql-java.com/documentation/master/scalars/)：扩展 Scalar 依赖、注册方式与支持类型。
 
-20\. [Spring Boot 应用测试](https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html)：Boot 4 的 `@GraphQlTest`、`@AutoConfigureHttpGraphQlTester` 和测试模块说明。
+20\. [Spring Boot Actuator 指标](https://docs.spring.io/spring-boot/reference/actuator/metrics.html)：指标端点、Meter 与 Observation 基础设施。
 
-21\. [GraphQL Java 查询限制](https://graphql-java.com/documentation/limits/)：解析器默认限制、深度限制和复杂度限制。
+21\. [Spring Boot 系统要求](https://docs.spring.io/spring-boot/system-requirements.html)：当前稳定版本支持的 Java、Maven、Gradle 和 Servlet 容器版本。
 
-22\. [Spring for GraphQL Federation](https://docs.spring.io/spring-graphql/reference/federation.html)：`FederationSchemaFactory`、`@EntityMapping` 和实体批量加载。
+22\. [Spring Boot 应用测试](https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html)：Boot 4 的 `@GraphQlTest`、`@AutoConfigureHttpGraphQlTester` 和测试模块说明。
+
+23\. [GraphQL Java 查询限制](https://graphql-java.com/documentation/limits/)：解析器默认限制、深度限制和复杂度限制。
+
+24\. [Spring for GraphQL Federation](https://docs.spring.io/spring-graphql/reference/federation.html)：`FederationSchemaFactory`、`@EntityMapping` 和实体批量加载。
 
 ### 14.4 学完后的自测任务
 
@@ -3146,10 +3329,14 @@ subscription WatchBook($id: ID!) {
 
 17\. 为 `SearchResult` 同时返回 `Book` 和 `Author`，断言 `__typename`，再故意返回名称不匹配的 Java 类观察 TypeResolver 错误。
 
-18\. 用 `HttpGraphQlClient` 分别验证正常字段、字段错误、无效 Token 和连接超时，并说明 `retrieve()` 与 `execute()` 的选择。
+18\. 用 `HttpGraphQlClient` 分别验证正常字段、执行错误、无效 Token 和连接超时，并说明 `retrieve()` 与 `execute()` 的选择。
 
 19\. 配置深度与复杂度限制，证明超预算查询在进入 Repository 前被拒绝。
 
 20\. 用不同 Profile 切换内省，确认关闭内省后普通业务查询仍可执行。
 
 21\. 仅在独立练习项目中创建两个最小子图，验证 `_service`、`_entities`、Schema 组合和一条跨子图查询。
+
+22\. 使用 `@oneOf` 定义按 ID 或 ISBN 查书的互斥条件，分别验证合法输入、同时提供两个字段、提供 `null` 和空对象。
+
+23\. 在同一文档中放入两个具名操作，验证缺少、写错和正确传入 `operationName` 时的响应差异。
