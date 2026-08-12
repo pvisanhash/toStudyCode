@@ -12,11 +12,11 @@
 
 只输入“总结这段投诉”，模型可能返回“用户反馈咖啡机漏水并要求处理”。这句话没有错，却不能直接驱动业务，因为它遗漏了订单号、历史处理、首选诉求、备选方案和时间限制。
 
-问题不只是模型“聪不聪明”，而是任务没有定义成功标准。人类同事也会追问：总结给谁看、用于什么动作、哪些字段不能漏、无法判断时怎么办、输出能否被系统解析？提示词工程就是把这些隐含要求显式化，并用测试确认模型在目标场景中稳定满足要求。
+根因在于任务没有定义成功标准。人类同事同样会追问：总结给谁看、用于什么动作、哪些字段不能漏、无法判断时怎么办、输出能否被系统解析？提示词工程负责把这些隐含要求显式化，再用测试确认模型在目标场景中能否稳定满足要求。
 
 ### 1.2 本文要建立的心智模型
 
-提示词不是“咒语”，而是一份给概率模型执行的任务协议。一个可用协议至少回答五个问题：
+可以把提示词理解为一份交给概率模型执行的任务协议。一个可用协议至少回答五个问题：
 
 1\. 要完成什么任务，什么结果算成功？
 
@@ -159,7 +159,7 @@ LLM（Large Language Model，大语言模型）的核心行为可以粗略理解
 
 API（Application Programming Interface，应用程序编程接口）调用失败时，先判断问题属于哪一层。格式字段遗漏可能是提示词或模型问题；查不到订单可能是工具或权限问题；回答引用过期政策可能是检索数据问题。把所有故障都归因于“提示词不够好”会导致无效迭代。
 
-### 3.5 上下文窗口与注意力预算
+### 3.5 上下文窗口与信息利用率
 
 上下文窗口是单次推理可容纳的输入、对话历史、工具结果和输出预算的总空间，具体计数和限制取决于模型。窗口足够大不代表信息利用率恒定：重复规则、无关文档和过长历史会增加成本，还可能让关键信息被噪声淹没。
 
@@ -168,6 +168,8 @@ API（Application Programming Interface，应用程序编程接口）调用失�
 ### 3.6 消息角色与指令优先级
 
 支持消息角色的接口通常把应用方规则和用户请求分开。以当前 OpenAI Responses API 为例，`instructions` 用于高层行为说明，并优先于 `input` 中的普通请求；不同模型和接口的角色名称、持续范围与优先级可能不同，必须查所用提供方文档。[OpenAI 提示词工程指南](https://developers.openai.com/api/docs/guides/prompt-engineering)
+
+`instructions` 还有一个容易遗漏的作用域边界：在 Responses API 中，它只作用于当前响应请求。即使通过 `previous_response_id` 延续对话，上一次请求的 `instructions` 也不会自动进入当前上下文；应用需要为每次调用重新提供仍然有效的高层规则。[OpenAI 文本生成指南](https://developers.openai.com/api/docs/guides/text#message-roles-and-instruction-following)
 
 | 层级 | 典型来源 | 适合放置的内容 | 不应放置的内容 |
 | --- | --- | --- | --- |
@@ -579,6 +581,8 @@ Multimodal Prompting（多模态提示）把文本与图像、音频等输入共
 
 稳定规则应作为受版本控制的模板；订单号、用户文本、检索片段等动态值由程序注入。不要用字符串替换让用户控制标题、角色或工具权限，也不要把完整提示词散落在多个业务方法中。
 
+截至 2026-08-12，OpenAI 已把“生产提示词保存在应用代码中”作为新文本生成项目的推荐方式：使用类型化参数构建 `instructions` 与 `input`，通过代码审查、测试和部署流程管理变更。旧的可复用 Prompt 对象已进入弃用流程，官方计划从 2026-06-03 起弱化创建入口，并于 2026-11-30 关闭 `v1/prompts`；仍依赖 Prompt ID 或版本的项目需要按迁移指南转为代码管理。[OpenAI 文本生成指南](https://developers.openai.com/api/docs/guides/text#version-prompts-in-code)
+
 下面的 Java 17 示例只负责构建提示词，不绑定某个模型 SDK（Software Development Kit，软件开发工具包）。它需要 JDK（Java Development Kit，Java 开发工具包）17 或更高版本，因为使用了文本块；第 7.2 节的 `record` 也需要现代 Java。若项目仍使用 Java 8，应改用普通字符串和普通不可变类表达相同结构：
 
 ```java
@@ -641,13 +645,13 @@ public record RenderedPrompt(
 
 不要在日志中默认记录完整用户输入、密钥、个人身份信息和隐藏规则。可记录哈希、长度、分类标签、经过脱敏的样本和受控采样日志，并按隐私要求设置保留期。
 
-### 7.3 理解一次 API 调用的边界
+### 7.3 用一次 API 调用验证字段分层
 
-当前 OpenAI 文本生成示例推荐使用 Responses API；高层指令可放在 `instructions`，本次输入放在 `input`。不同提供方的字段和模型标识会变化，接入前应以当前官方文档为准。[OpenAI 文本生成指南](https://developers.openai.com/api/docs/guides/text)
+当前 OpenAI 文本生成示例推荐使用 Responses API；高层指令可放在 `instructions`，本次输入放在 `input`。下面给出完整的最小 Schema，便于区分“请求能被接口接受”“输出结构满足约束”和“字段值符合业务事实”三个成功层次。不同提供方的字段和模型标识会变化，接入前应以当前官方文档为准。[OpenAI 文本生成指南](https://developers.openai.com/api/docs/guides/text)
 
 ```json
 {
-  "model": "<经过评测并固定的模型或快照>",
+  "model": "gpt-5.6",
   "instructions": "将客户消息提取为售后工单。只使用输入事实，严格遵守输出 Schema。",
   "input": "<customer_message>咖啡机漏水，订单号 A1024。</customer_message>",
   "text": {
@@ -655,13 +659,36 @@ public record RenderedPrompt(
       "type": "json_schema",
       "name": "support_ticket",
       "strict": true,
-      "schema": {}
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": ["string", "null"]
+          },
+          "issue": {
+            "type": ["string", "null"]
+          },
+          "preferred_resolution": {
+            "type": ["string", "null"]
+          },
+          "needs_clarification": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "order_id",
+          "issue",
+          "preferred_resolution",
+          "needs_clarification"
+        ],
+        "additionalProperties": false
+      }
     }
   }
 }
 ```
 
-这里的空 `schema` 只是位置示意，实际请求必须填入完整且受接口支持的 JSON Schema。概念示例证明了字段分层方式，不代表已经通过真实 API 验证；真实验证需要有效凭据、目标模型和完整 Schema。
+请求需要使用有效凭据发送到 `/v1/responses`。在当前输入下，结构化内容应接近 `{"order_id":"A1024","issue":"咖啡机漏水","preferred_resolution":null,"needs_clarification":true}`：Schema 通过说明字段、类型和必填规则符合契约；`preferred_resolution=null` 与 `needs_clarification=true` 还需要回看原文，确认模型没有凭空生成处理诉求。示例依据 2026-08-12 的接口文档编写，未在本地使用真实 API 凭据执行；接入时仍需确认目标模型支持 Structured Outputs（结构化输出），并对响应拒绝、截断和业务不变量进行测试。
 
 ### 7.4 对话状态不是自动可靠的长期记忆
 
@@ -832,6 +859,8 @@ OpenAI 当前函数调用指南建议启用严格模式；严格模式要求对�
 生成式模型具有非确定性，同一输入可能产生不同输出；传统软件断言仍然有用，却不足以覆盖语义质量。Evals（Evaluations，评测）是围绕真实任务建立的结构化测试，用来比较准确性、完整性、安全性、延迟和成本。
 
 OpenAI 的评测最佳实践建议尽早且持续评测、使用贴近真实分布的任务集、完整记录日志、尽量自动评分，并用人工反馈校准自动评分；反模式包括只看通用学术指标、数据集不代表生产流量和“凭感觉评测”。[Evaluation best practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices)
+
+评测方法不应绑定某个托管平台。截至 2026-08-12，OpenAI 旧 Evals 平台已进入弃用时间线：官方计划于 2026-10-31 将其设为只读，并于 2026-11-30 关闭。数据集、评分规则、基线结果和发布门禁应保存为团队可迁移的制品，并能在持续集成流程或其他评测工具中重放。[OpenAI 评测最佳实践](https://developers.openai.com/api/docs/guides/evaluation-best-practices)
 
 ### 10.2 建立评测驱动开发循环
 
@@ -1266,9 +1295,9 @@ P3：不阻塞合并的改进。
 
 ## 13 面试追问、上线检查与复习资料
 
-### 13.1 面试回答提示词工程的主线
+### 13.1 在面试中呈现完整工程判断
 
-当被问“如何优化一个效果不好的提示词”时，不要只背“加角色、加背景、加示例”。更完整的回答主线是：
+当讨论“如何优化一个效果不好的提示词”时，可以沿着故障定位和发布验证展开，让每个判断都有可观察证据：
 
 1\. 先定义业务目标、错误代价和可观察成功标准，收集代表性失败样本。
 
@@ -1280,22 +1309,22 @@ P3：不阻塞合并的改进。
 
 5\. 在完整回归集上比较质量、最差结果、安全、延迟和成本；通过门禁后小流量发布并监控。
 
-这个回答体现了工程闭环，而不是把模型输出波动归结为措辞玄学。
+这条分析链把提示词放回完整系统中：需求定义决定验收目标，分层归因决定修改位置，评测和发布门禁决定修改能否进入生产。
 
-### 13.2 高频递归追问与回答角度
+### 13.2 容易混淆的概念边界
 
-| 追问 | 第一层回答 | 继续追问时展开 |
+| 主题 | 核心判断 | 支撑判断的证据与边界 |
 | --- | --- | --- |
-| Prompt 与 Prompt Engineering 区别？ | 前者是输入，后者是全生命周期工程 | 上下文、评测、版本、安全、监控 |
-| 零样本与少样本怎么选？ | 先零样本建基线，边界不清再用少量高价值示例 | 示例覆盖、偏置、动态检索和成本 |
-| temperature=0 是否确定？ | 更集中但不保证完全确定 | 模型更新、基础设施、工具和上下文变化 |
-| JSON 提示与结构化输出区别？ | 前者是软指令，后者由接口约束 Schema | 业务正确性仍需服务端校验 |
-| 如何降低幻觉？ | 权威上下文、引用、允许未知、工具和验证 | 检索质量、引用支持度、人工复核 |
-| 如何防提示注入？ | 假设注入会成功，用分层与最小权限限制后果 | 间接注入、权限前置、确认、审计和红队 |
-| CoT、Self-Consistency、ToT 区别？ | 单路径中间步骤、多路径聚合、显式搜索回溯 | 适用任务、验证器和 Token 成本 |
-| RAG 与提示词工程关系？ | RAG 构造外部事实上下文，提示词定义如何使用 | 召回、排序、冲突、引用和权限 |
-| 何时微调而不是继续改提示词？ | 当任务稳定、有高质量数据且提示/检索达到瓶颈 | 成本、延迟、风格一致性、评测与回滚 |
-| 如何上线？ | 版本化、离线回归、小流量、监控、回滚 | 安全门禁、影子流量、漂移和事故流程 |
+| Prompt 与 Prompt Engineering | Prompt 是一次调用的输入；Prompt Engineering 覆盖设计、上下文、评测、版本、安全和监控 | 观察系统是否还有检索、工具、校验与发布环节 |
+| 零样本与少样本 | 先用零样本建立基线，稳定出现边界错误时再加入少量高价值示例 | 比较加入示例前后的边界集结果、偏置、Token 和延迟 |
+| `temperature=0` 与确定性 | 较低温度让采样更集中，无法承诺完全确定 | 模型更新、基础设施、动态上下文和工具结果都可能改变输出 |
+| JSON 提示与结构化输出 | 文本指令只能提高格式命中率；结构化输出由接口约束受支持的 Schema | 服务端仍需验证事实、权限和业务不变量 |
+| 幻觉与事实治理 | 权威上下文、可核对引用、未知状态、工具查询和外部验证共同降低风险 | 同时测检索召回、引用存在性、引用支持度和人工复核结果 |
+| 提示注入与权限控制 | 系统按注入可能成功设计，用分层和最小权限限制后果 | 覆盖间接注入、检索前权限、写操作确认、审计与红队样本 |
+| CoT、Self-Consistency 与 ToT | 三者分别强调单路径中间步骤、多路径聚合和显式搜索回溯 | 根据任务是否可验证、能否投票、是否需要回退评估 Token 与延迟成本 |
+| RAG 与提示词工程 | RAG 构造外部事实上下文，提示词规定模型如何使用这些资料 | 评估召回、排序、冲突、引用、时效和数据权限 |
+| 提示词、RAG 与微调 | 任务稳定、有高质量数据且提示词或检索已达到经评测确认的瓶颈时，再评估微调 | 比较质量、成本、延迟、风格一致性、训练数据风险与回滚难度 |
+| 生产发布 | 版本化制品经过离线回归、安全门禁和小流量观察后发布 | 需要监控漂移、保留回滚点并把事故样本加入回归集 |
 
 ### 13.3 进一步追问：提示词能否替代微调
 
@@ -1355,29 +1384,31 @@ P3：不阻塞合并的改进。
 
 ### 13.6 权威资料与延伸阅读
 
-以下入口按“当前产品文档 → 经典方法论文 → 本地入门材料”排列。产品接口会变化，本文核对日期为 2026-08-11，使用时应再次确认目标模型与接口文档。
+以下入口按“当前产品文档 → 经典方法论文 → 本地入门材料”排列。产品接口会变化，本文核对日期为 2026-08-12，使用时应再次确认目标模型与接口文档。
 
 1\. [OpenAI Prompt Engineering Guide](https://developers.openai.com/api/docs/guides/prompt-engineering)：消息角色、Markdown/XML 结构、少样本与缓存建议。
 
-2\. [OpenAI Structured Outputs Guide](https://developers.openai.com/api/docs/guides/structured-outputs)：JSON Schema、JSON 模式与函数调用的职责区别。
+2\. [OpenAI Text Generation Guide](https://developers.openai.com/api/docs/guides/text)：Responses API、消息角色、`instructions` 作用域与提示词代码管理迁移。
 
-3\. [OpenAI Function Calling Guide](https://developers.openai.com/api/docs/guides/function-calling)：工具契约、严格模式和调用循环。
+3\. [OpenAI Structured Outputs Guide](https://developers.openai.com/api/docs/guides/structured-outputs)：JSON Schema、JSON 模式与函数调用的职责区别。
 
-4\. [OpenAI Evaluation Best Practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices)：评测驱动开发、数据集与评分器设计。
+4\. [OpenAI Function Calling Guide](https://developers.openai.com/api/docs/guides/function-calling)：工具契约、严格模式和调用循环。
 
-5\. [OpenAI Safety Best Practices](https://developers.openai.com/api/docs/guides/safety-best-practices)：对抗测试、人工复核和输入输出限制。
+5\. [OpenAI Evaluation Best Practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices)：评测驱动开发、数据集与评分器设计，以及旧 Evals 平台的弃用时间线。
 
-6\. [OpenAI Images and Vision Guide](https://developers.openai.com/api/docs/guides/images-vision)：图像输入、细节级别、成本与已知限制。
+6\. [OpenAI Safety Best Practices](https://developers.openai.com/api/docs/guides/safety-best-practices)：对抗测试、人工复核和输入输出限制。
 
-7\. [Chain-of-Thought Prompting](https://arxiv.org/abs/2201.11903)：少样本中间推理步骤的经典研究。
+7\. [OpenAI Images and Vision Guide](https://developers.openai.com/api/docs/guides/images-vision)：图像输入、细节级别、成本与已知限制。
 
-8\. [Self-Consistency Improves Chain of Thought Reasoning](https://arxiv.org/abs/2203.11171)：多路径采样与答案聚合。
+8\. [Chain-of-Thought Prompting](https://arxiv.org/abs/2201.11903)：少样本中间推理步骤的经典研究。
 
-9\. [ReAct: Synergizing Reasoning and Acting](https://arxiv.org/abs/2210.03629)：推理、工具动作与观察的交替过程。
+9\. [Self-Consistency Improves Chain of Thought Reasoning](https://arxiv.org/abs/2203.11171)：多路径采样与答案聚合。
 
-10\. [Tree of Thoughts](https://arxiv.org/abs/2305.10601)：候选状态、评估、搜索与回溯。
+10\. [ReAct: Synergizing Reasoning and Acting](https://arxiv.org/abs/2210.03629)：推理、工具动作与观察的交替过程。
 
-11\. 本地参考 `ChatGPTPrompt提示词工程.pdf`：提供了角色、背景、格式、零/少样本、学习类提示和早期生成参数的入门案例。本文保留其有价值的入门线索，并依据当前文档修正了结构化输出、参数定义和生产边界。
+11\. [Tree of Thoughts](https://arxiv.org/abs/2305.10601)：候选状态、评估、搜索与回溯。
+
+12\. 本地参考 `ChatGPTPrompt提示词工程.pdf`：提供了角色、背景、格式、零/少样本、学习类提示和早期生成参数的入门案例。该资料制作于 2024 年；本文保留其中仍适用的入门线索，并依据当前文档修正了 `max_tokens`、`frequency_penalty`、`presence_penalty`、结构化输出和生产边界。
 
 ### 13.7 最终掌握标准
 
