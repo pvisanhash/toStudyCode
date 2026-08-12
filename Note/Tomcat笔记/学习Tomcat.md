@@ -1,12 +1,23 @@
 # Java 初学者学习 Tomcat
 
-> 本笔记面向掌握 Java 基础语法、准备学习 Java Web 的初学者。主线采用 Apache Tomcat 11。技术事实复核基线为 2026-07-26，对应当时最新稳定补丁版 Tomcat 11.0.24；补丁版本会持续更新，安装和升级时仍应以官方版本选择页、安全公告与迁移指南为准。Tomcat 11 要求 Java 17 或更高版本。若维护使用 `javax.servlet.*` 的旧项目，应先阅读 2.4 节的版本兼容说明。
+> 本笔记面向掌握 Java 基础语法、准备学习 Java Web 的初学者。主线采用 Apache Tomcat 11。技术事实复核基线为 2026-08-13，对应当时最新稳定补丁版 Tomcat 11.0.24；补丁版本会持续更新，安装和升级时仍应以官方版本选择页、安全公告与迁移指南为准。Tomcat 11 要求 Java 17 或更高版本。若维护使用 `javax.servlet.*` 的旧项目，应先阅读 2.4 节的版本兼容说明。
 
 ## 1 学习目标与路线
 
-### 1.1 学完后应该具备的能力
+### 1.1 从一个可观察的请求开始
 
-1\. 能解释 Tomcat、Servlet、JSP、Web 服务器和 Servlet 容器之间的关系。
+假设已经写好一个 Java 类，希望浏览器访问下面的 URL 时收到文本响应：
+
+```text
+输入：GET http://localhost:8080/hello/hello?name=Tomcat
+输出：HTTP 200，响应体为 Hello, Tomcat!
+```
+
+Java 类自身不会监听 8080 端口，也不知道如何把 HTTP（Hypertext Transfer Protocol，超文本传输协议）请求变成方法调用。Tomcat 填补了这个运行时缺口：它监听端口、解析请求、找到应用和 Servlet，再把结果写回网络。第 3 章先验证 Tomcat 本身可访问，第 4 章完成上述请求的第一个完整闭环。
+
+### 1.2 学完后应该具备的能力
+
+1\. 能解释 Tomcat、Servlet、JSP（JavaServer Pages，Java 服务器页面）、Web 服务器和 Servlet 容器之间的关系。
 
 2\. 能独立安装、启动、停止 Tomcat，并判断启动是否真正成功。
 
@@ -20,7 +31,7 @@
 
 7\. 能理解线程池、连接器、类加载、会话、日志、安全和反向代理的生产基础。
 
-### 1.2 推荐学习顺序
+### 1.3 推荐学习顺序
 
 ```mermaid
 flowchart LR
@@ -30,7 +41,7 @@ flowchart LR
     D --> E["请求处理链与配置层级"]
     E --> F["部署、日志与排障"]
     F --> G["安全、性能与生产架构"]
-    G --> H["源码入口与面试追问"]
+    G --> H["项目复盘与面试追问"]
 ```
 
 1\. 第一阶段：完成第 2～4 章，先让第一个 Servlet 跑起来。
@@ -41,7 +52,7 @@ flowchart LR
 
 4\. 第四阶段：用第 11～12 章做项目复盘和面试准备。
 
-### 1.3 学习前置知识
+### 1.4 学习前置知识
 
 1\. Java：类、接口、异常、集合、线程、注解、Maven 基础。
 
@@ -133,7 +144,32 @@ javac -version
 
 从 Apache Tomcat 官方站点下载对应操作系统的二进制压缩包并校验摘要。不要从不明镜像获取生产安装包。
 
-### 3.2 `CATALINA_HOME` 与 `CATALINA_BASE`
+### 3.2 下载、校验并解压
+
+下面以 macOS 或 Linux 上的 `tar.gz` 发行包为例。示例版本与本文复核基线一致；实际操作时，应先从官方下载页确认当前补丁版。
+
+```bash
+TOMCAT_VERSION="11.0.24"
+TOMCAT_ARCHIVE="apache-tomcat-${TOMCAT_VERSION}.tar.gz"
+
+# 进入已下载官方压缩包和 .sha512 文件的目录
+cd /path/to/downloads
+
+# macOS；Linux 可使用 sha512sum --check "${TOMCAT_ARCHIVE}.sha512"
+shasum -a 512 -c "${TOMCAT_ARCHIVE}.sha512"
+
+tar -xzf "$TOMCAT_ARCHIVE"
+export CATALINA_HOME="$PWD/apache-tomcat-${TOMCAT_VERSION}"
+export CATALINA_BASE="$CATALINA_HOME"
+
+"$CATALINA_HOME/bin/catalina.sh" version
+```
+
+校验命令应输出 `OK`，它表示本地 SHA-512（Secure Hash Algorithm 512-bit，512 位安全散列算法）结果与官方 `.sha512` 文件一致。摘要不一致时停止解压和运行，重新从官方镜像下载。生产制品还可验证 OpenPGP（开放式 PGP 加密标准，PGP 为 Pretty Good Privacy 的缩写）签名，用发布管理员的官方公钥确认文件来源。
+
+`catalina.sh version` 应输出 Tomcat 版本、安装目录和 Java 运行时信息。若提示权限不足，先检查压缩包解压后的脚本权限；若显示了错误的 Java 版本，检查当前终端的 `JAVA_HOME` 与 `PATH`。
+
+### 3.3 `CATALINA_HOME` 与 `CATALINA_BASE`
 
 1\. `CATALINA_HOME`：Tomcat 程序安装目录，放置共享二进制文件和脚本。
 
@@ -143,7 +179,7 @@ javac -version
 
 不要误以为 `CATALINA_BASE/conf` 缺少文件时一定会回退到 `CATALINA_HOME/conf`。官方文档明确提示，缺少关键配置可能导致启动失败；至少应确保实例目录包含 `conf/server.xml` 与 `conf/web.xml`。
 
-### 3.3 关键目录速查
+### 3.4 关键目录速查
 
 | 目录 | 作用 | 排查时关注 |
 |---|---|---|
@@ -155,7 +191,7 @@ javac -version
 | `work/` | JSP 编译结果等运行产物 | JSP 缓存、生成源码 |
 | `temp/` | 临时文件 | 上传、磁盘空间、权限 |
 
-### 3.4 启动、前台运行与停止
+### 3.5 启动、前台运行与停止
 
 macOS 或 Linux：
 
@@ -185,7 +221,7 @@ curl -i http://localhost:8080/
 
 预期结果是能够建立连接并收到 HTTP 状态行。若保留默认 ROOT 应用，通常会返回页面；若生产环境已移除 ROOT 应用，404 也能证明端口上存在 HTTP 服务，但仍需结合日志确认它是目标 Tomcat 实例。
 
-### 3.5 Tomcat 生命周期
+### 3.6 Tomcat 生命周期
 
 ```mermaid
 stateDiagram-v2
@@ -246,12 +282,6 @@ hello-tomcat/
             <version>6.1.0</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
-            <version>3.0.0</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -260,9 +290,7 @@ hello-tomcat/
 </project>
 ```
 
-`provided` 表示编译需要该 API，但运行时由 Tomcat 提供，因此不把 Servlet API 重复打进 WAR。若误用默认编译作用域，可能产生规范类重复、类型不一致或升级困难。
-
-当前 `HelloServlet` 只使用 Servlet API，单独运行这个最小示例时可以暂时省略 `jakarta.annotation-api`。本笔记在 8.4 节继续使用 `jakarta.annotation.Resource` 注入 JNDI 数据源，因此提前加入该依赖并保持 `provided`。依赖是否需要应以实际源码导入和 WAR 内容为判据，不要把示例依赖无条件复制到所有项目。
+`provided` 表示编译需要该 API，但运行时由 Tomcat 提供，因此不把 Servlet API 重复打进 WAR。若误用默认编译作用域，可能产生规范类重复、类型不一致或升级困难。最小闭环只使用 Servlet API；后续某个功能引入新 API 时，再在对应章节增加依赖。
 
 ### 4.3 编写 Servlet
 
@@ -276,7 +304,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 @WebServlet("/hello")
 public class HelloServlet extends HttpServlet {
@@ -284,8 +311,6 @@ public class HelloServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType("text/plain;charset=UTF-8");
 
         String name = request.getParameter("name");
@@ -300,7 +325,7 @@ public class HelloServlet extends HttpServlet {
 
 Servlet 实例通常由容器创建和复用。多个请求可能由多个线程同时调用同一实例，因此不要把某次请求的 `name`、请求对象或响应对象保存到 Servlet 实例字段。
 
-`request.setCharacterEncoding("UTF-8")` 主要影响尚未解析的请求体参数，例如 `application/x-www-form-urlencoded` 的 POST 请求；它通常不决定 URL 查询字符串如何解码。查询字符串由 Connector 的 URI 解码规则处理。Tomcat 11 默认按 UTF-8 处理 URI，但旧版本、代理层或显式 Connector 配置可能不同，因此乱码排查必须区分“查询参数”和“请求体参数”。
+`Content-Type` 中的 `charset=UTF-8` 告诉客户端如何解码响应字节。本例的 `name` 来自 URL 查询字符串，由 Connector 的 URI（Uniform Resource Identifier，统一资源标识符）解码规则处理；Tomcat 11 默认使用 UTF-8。`request.setCharacterEncoding("UTF-8")` 主要影响尚未解析的请求体参数，例如 `application/x-www-form-urlencoded` 的 POST 请求，放在这个 GET 示例中会让读者误以为它控制查询字符串。乱码排查时应区分 URI、请求体、响应和数据库四个边界。
 
 ### 4.4 配置 `web.xml`
 
@@ -347,7 +372,7 @@ cp target/hello.war "$CATALINA_BASE/webapps/"
 
 3\. `jar tf` 能看到 `WEB-INF/classes/com/example/tomcat/HelloServlet.class`。
 
-4\. WAR 中不应出现 `WEB-INF/lib/jakarta.servlet-api-*.jar` 或 `WEB-INF/lib/jakarta.annotation-api-*.jar`，它们都由 Tomcat 提供。
+4\. WAR 中不应出现 `WEB-INF/lib/jakarta.servlet-api-*.jar`，它由 Tomcat 提供。
 
 若 Tomcat 开启自动部署，复制后会部署为 `/hello` 上下文。验证：
 
@@ -364,7 +389,7 @@ Content-Type: text/plain;charset=UTF-8
 Hello, Tomcat!
 ```
 
-这个复制动作只用于本地教程：它能证明 WAR 结构、Context 映射和 Servlet 调用链能够走通，不能证明生产发布具备原子性、回滚和多实例一致性。生产发布还要执行 7.2 节与 10.6 节的制品校验、摘流、健康检查和回滚流程。
+这个复制动作只用于本地教程：它能证明 WAR 结构、Context 映射和 Servlet 调用链能够走通，不能证明生产发布具备原子性、回滚和多实例一致性。生产发布还要执行 7.2 节与 10.7 节的制品校验、摘流、健康检查和回滚流程。
 
 ### 4.6 最小闭环失败排查
 
@@ -579,7 +604,7 @@ flowchart LR
     G -->|无| I["等待工作线程"]
 ```
 
-Tomcat 11.0.24 标准 NIO（Non-blocking I/O，非阻塞输入输出）Connector 的常用容量属性如下。默认值是理解初始行为的参考，不是生产推荐值：
+Tomcat 11.0.24 标准 NIO（Non-blocking I/O，非阻塞输入输出）Connector 的常用容量属性如下。默认值是理解初始行为的参考，不是生产推荐值。表中 B 表示字节，KiB 表示 1024 B，MiB 表示 1024 KiB：
 
 | 属性 | Tomcat 11.0.24 默认值 | 控制对象 | 关键边界 |
 |---|---:|---|---|
@@ -588,9 +613,13 @@ Tomcat 11.0.24 标准 NIO（Non-blocking I/O，非阻塞输入输出）Connector
 | `acceptCount` | 100 | 达到 `maxConnections` 后的操作系统连接队列 | 操作系统可能使用不同的实际队列长度 |
 | `keepAliveTimeout` | 继承 `connectionTimeout` | 等待同一持久连接上下一个请求的时间 | 过大可能长期占用连接容量 |
 | `maxParameterCount` | 1000 | 可解析的请求参数总数 | 超限请求被拒绝 |
+| `maxPartCount` | 50 | `multipart/form-data` 请求的分段数 | 与 `maxParameterCount` 同时生效 |
+| `maxPartHeaderSize` | 512 B | 每个 multipart 分段的请求头字节数 | 与分段数、连接数共同决定内存风险 |
 | `maxPostSize` | 2 MiB | Tomcat 转换成参数的请求体数据 | 不是所有 POST 请求体的通用大小限制 |
 | `maxHttpRequestHeaderSize` | 8 KiB | 请求行与请求头总字节数 | 调大后会增加每个并发请求的内存成本 |
 | `URIEncoding` | UTF-8 | URI 百分号解码后的字符解码 | 与请求体字符编码是不同入口 |
+
+对 multipart 请求，官方给出的容量估算是 `maxPartHeaderSize × maxPartCount × maxConnections × 2`。使用上表默认值时约为 400 MiB，它描述大量连接同时提交最大分段头时的内存风险，不表示普通请求会固定占用这些内存。文件上传还要结合 `@MultipartConfig` 的文件大小、整个请求大小和写盘阈值一起设计，单独修改 Connector 属性无法形成完整上传限制。
 
 验证容量配置不能只看 `server.xml`。应在压测或受控流量下同时观察当前线程数、忙线程数、连接数、排队、拒绝或超时、应用延迟以及下游连接池。若配置了共享 Executor（执行器），Connector 上的线程属性即使仍可看到，也不再决定实际线程池容量。
 
@@ -666,7 +695,7 @@ WAR 是符合标准目录结构的 ZIP 格式归档。Tomcat 可以直接运行 
 
 自动部署便于开发，但生产环境频繁扫描、直接覆盖 WAR 可能导致短暂不可用、旧文件残留或发布状态不确定。生产应采用可审计的制品、原子切换、健康检查和回滚流程；高安全环境还会关闭自动部署。
 
-Tomcat 原生的并行部署也能降低版本切换对现有 Session 的影响，但它属于生产发布方案。先理解 8.2 节的 Session，再阅读 10.6 节的版本选择规则。
+Tomcat 原生的并行部署也能降低版本切换对现有 Session 的影响，但它属于生产发布方案。先理解 8.2 节的 Session，再阅读 10.7 节的版本选择规则。
 
 ### 7.3 Tomcat 类加载心智模型
 
@@ -711,6 +740,20 @@ Java 核心类不能被应用覆盖；Tomcat 实现的 Servlet、JSP、EL、WebS
 重新部署时，Tomcat 会停止旧 Context 并创建新的类加载器。若旧应用创建的非守护线程仍在运行，或全局对象仍引用旧应用类，旧类加载器及其所有类和静态数据就可能无法被垃圾回收。
 
 生产中不要把频繁热部署当作无成本操作。应用应在 `ServletContextListener.contextDestroyed()` 或框架关闭钩子中停止线程池、调度器、数据库连接池和其他资源，并结合日志与堆分析确认没有泄漏。
+
+### 7.5 外部 Tomcat 与内嵌 Tomcat 的运行边界
+
+前面的教程使用外部 Tomcat：先独立启动容器，再把 WAR 放入容器。Spring Boot 等框架还常把 Tomcat 作为应用依赖，由 Java 主程序在进程内创建和启动容器。两种方式的 Servlet 请求模型相同，但配置入口、制品和运维责任不同。
+
+| 对比项 | 外部 Tomcat | 内嵌 Tomcat |
+|---|---|---|
+| 常见制品 | WAR | 可执行 JAR（Java Archive，Java 归档） |
+| 启动入口 | `catalina.sh`、Windows 服务或容器进程 | 应用的 `main` 方法 |
+| 容器配置 | `server.xml`、Context XML、启动参数 | 框架配置、定制代码和启动参数 |
+| 发布单元 | Tomcat 实例与应用可分开升级 | 应用与容器依赖一起发布 |
+| 常见隔离 | 一个实例可承载多个 Context | 通常一个进程承载一个应用 |
+
+排查配置时先确认容器由谁创建。内嵌模式通常不读取一套完整的外部 `server.xml`，修改某个未被应用加载的 Tomcat 安装目录不会改变内嵌 Connector。反过来，外部部署时只改框架的内嵌服务器属性，也不会覆盖运维管理的 Connector。可通过进程命令行、启动日志、制品结构和实际监听端口确认当前模式。
 
 ## 8 HTTP、会话、JSP 与资源
 
@@ -916,7 +959,20 @@ $CATALINA_BASE/conf/Catalina/localhost/hello.xml
 
 #### 8.4.4 在 Servlet 中获取和使用数据源
 
-Tomcat 可以向由容器创建和管理的 Servlet 注入资源：
+Tomcat 可以向由容器创建和管理的 Servlet 注入资源。本节使用 `jakarta.annotation.Resource`，因此先在 `pom.xml` 的 `<dependencies>` 中增加 Jakarta Annotations API：
+
+```xml
+<dependency>
+    <groupId>jakarta.annotation</groupId>
+    <artifactId>jakarta.annotation-api</artifactId>
+    <version>3.0.0</version>
+    <scope>provided</scope>
+</dependency>
+```
+
+Tomcat 11 实现 Jakarta Annotations 3.0，运行时由容器提供该 API，所以依赖仍使用 `provided`。重新构建后，`jar tf target/hello.war` 不应出现 `WEB-INF/lib/jakarta.annotation-api-*.jar`。
+
+接着编写数据库健康检查 Servlet：
 
 ```java
 package com.example.tomcat;
@@ -1415,8 +1471,8 @@ jcmd <pid> GC.heap_info
 du -sh "$CATALINA_BASE/logs"
 df -h "$CATALINA_BASE/logs"
 
-# systemd 方式运行时查看最近日志
-journalctl -u tomcat --since "2026-07-25 10:00:00"
+# systemd 方式运行时查看最近 30 分钟日志
+journalctl -u tomcat --since "30 minutes ago"
 
 # 容器方式运行时查看日志，名称应替换为实际容器
 docker logs --since 10m tomcat-order
@@ -1614,7 +1670,9 @@ flowchart LR
 
 线程越多，内存、上下文切换和下游压力也越大。应结合压测、响应时间目标、数据库连接池和实例资源确定。
 
-在 Java 21 或更高版本上，Tomcat 11 也可让内部执行器使用虚拟线程，例如在 Connector 上设置 `useVirtualThreads="true"`，或配置 `StandardVirtualThreadExecutor`。虚拟线程可以降低大量阻塞任务占用平台线程的成本，但不会提高数据库连接数、外部服务配额、CPU 或 `maxConnections`；切换后仍要以端到端延迟、下游饱和度、连接数和内存压测为准。若 Connector 绑定了显式 Executor，Connector 自身的 `useVirtualThreads` 会被忽略，实际线程模型由该 Executor 决定。
+在 Java 21 或更高版本上，Tomcat 11 也可让内部执行器使用虚拟线程，例如在 Connector 上设置 `useVirtualThreads="true"`，或配置 `StandardVirtualThreadExecutor`。标准虚拟线程执行器会为每个任务创建新的虚拟线程，不提供平台线程池的 `maxThreads` 上限，因此切换后不能再把 `maxThreads` 当作业务并发闸门。
+
+虚拟线程能降低大量阻塞任务占用平台线程的成本，但不会提高数据库连接数、外部服务配额、CPU 或 `maxConnections`。应用仍需要通过连接池、限流、隔离舱和超时给下游设置有界并发，并以端到端延迟、下游饱和度、连接数和内存压测验证。若 Connector 绑定了显式 Executor，Connector 自身的 `useVirtualThreads` 会被忽略，实际线程模型由该 Executor 决定。
 
 ### 10.2 超时应形成链路预算
 
@@ -1682,7 +1740,24 @@ openssl s_client -connect localhost:8443 -servername localhost
 
 若握手失败，优先检查密钥库路径、密码、私钥条目、证书别名、证书链以及 Tomcat 运行用户权限，再按需开启 TLS 握手调试日志。
 
-### 10.4 安全基线
+### 10.4 多实例部署中的 Session 选择
+
+反向代理把请求分发给多个 Tomcat 实例后，单机内存中的 Session 不会自动出现在其他实例。例如用户在实例 A 登录，下一个请求到达实例 B 时，B 找不到对应 `JSESSIONID` 就无法还原原会话。
+
+| 方案 | 请求与状态如何匹配 | 主要代价 | 通常适用于 |
+|---|---|---|---|
+| 应用无状态 | 认证和业务状态不依赖本机 Session | 需要重新设计凭据、状态和撤销机制 | REST（Representational State Transfer，表现层状态转换）接口和水平扩展服务 |
+| 粘性会话 | 负载均衡器尽量把同一会话送回原实例 | 实例失效时可能丢会话，流量也可能不均 | 希望低成本改造、可接受会话失效的系统 |
+| Tomcat Session 复制 | 实例之间复制会话数据 | 产生网络、序列化和一致性成本 | 实例数和 Session 规模受控的容器集群 |
+| 外部会话存储 | 各实例访问同一独立状态存储 | 增加网络延迟、序列化和新的可用性依赖 | 需要弹性扩容且愿意由应用或框架管理 Session 的系统 |
+
+选择时先确认业务是否真的需要服务端 Session。对已使用 Session 的系统，还要评估单个会话大小、更新频率、序列化兼容性、失效策略和隔离要求。
+
+Tomcat 原生 Session 复制不会因为启动了多个实例就自动生效。容器需要配置 Cluster，应用的 `web.xml` 需要包含 `<distributable/>`，所有要复制的 Session 属性必须实现 `java.io.Serializable`，新旧应用版本也要能读取对方写入的对象。集群通信按可信网络设计，不应直接暴露到不可信网络。`DeltaManager` 会向所有节点复制，通常只适合较小集群；`BackupManager` 只复制到一个备份节点，可降低较大集群的复制放大。异步复制可减少请求等待，但故障时可能来不及传播最新会话变更；同步复制会把网络确认时间加入请求延迟。
+
+故障演练应先建立一个可观察的会话状态，记录当前实例，然后停止该实例并继续请求。验收结果由设计目标决定：粘性会话可能明确要求用户重新登录；复制或外部存储则应证明会话能在新实例恢复，并同时观察切换延迟、错误率和状态存储负载。
+
+### 10.5 安全基线
 
 1\. 使用受支持的 Tomcat 与 JDK 版本，持续关注安全公告并及时升级。
 
@@ -1712,7 +1787,7 @@ openssl s_client -connect localhost:8443 -servername localhost
 
 14\. Tomcat 11 已移除 Java `SecurityManager` 支持。需要隔离不可信应用时，应采用独立低权限进程、容器或虚拟机等边界；同一 Tomcat 实例内的 Web 应用应被视为可信代码。
 
-### 10.5 JVM 与内存预算
+### 10.6 JVM 与内存预算
 
 Tomcat 进程内存不只包含 Java 堆：
 
@@ -1722,7 +1797,7 @@ Tomcat 进程内存不只包含 Java 堆：
 
 容器内存限制若只略高于 `-Xmx`，仍可能因堆外内存触发操作系统终止。线程数增加也会增加线程栈内存。应通过监控和压力测试预留空间。
 
-### 10.6 优雅停止与发布
+### 10.7 优雅停止与发布
 
 可靠发布流程：
 
@@ -1759,93 +1834,65 @@ orders##20260726-002.war
 
 只看到进程启动不代表发布成功；真正判据是正确版本已加载、实例就绪、关键业务探测成功且观察窗口内指标正常。
 
-## 11 面试递归追问与回答角度
+## 11 面试中的概念边界与判断证据
 
-### 11.1 Tomcat 是 Web 服务器还是应用服务器
+面试中的 Tomcat 问题往往从一个名词继续深入到请求链、并发或故障现象。稳定的分析方法是先界定对象和版本，再说明执行过程，最后给出可观察证据。这样才能区分规范定义、Tomcat 实现和项目自身设计。
 
-回答主线：Tomcat 有 HTTP 服务能力，核心定位是 Servlet 容器；它实现 Jakarta Web 相关规范，但不等同于实现完整 Jakarta EE 平台的应用服务器。
+### 11.1 从实现规范判断 Tomcat 的定位
 
-追问角度：
+Tomcat 能直接处理 HTTP 和静态资源，因此具有 Web 服务器能力；它的核心职责是实现 Jakarta Servlet、Pages、WebSocket 等 Web 规范并管理应用生命周期。它没有完整实现 Jakarta EE 平台的所有企业规范，因此产品定位通常表述为“Web 服务器与 Servlet 容器”，而非完整 Jakarta EE 应用服务器。
 
-1\. Tomcat 和 Nginx 分别擅长什么。
+这个判断可用官方版本映射表验证：Tomcat 11 明确列出 Servlet 6.1、Pages 4.0、EL 6.0 等它实现的规范。与 Nginx 比较时，判断维度应放在请求发生的位置：Nginx 通常在前端处理 TLS、路由、静态资源和负载均衡，Tomcat 在后端执行 Filter 与 Servlet。两者是请求链上职责不同的组件。
 
-2\. 为什么生产中常组合使用。
+### 11.2 用 URL 拆解请求处理链
 
-3\. Spring Boot 为什么可以不单独安装 Tomcat。
+对 `http://localhost:8080/hello/hello?id=1` 的分析应同时包含容器映射和应用执行：8080 选中 Connector，`localhost` 选中 Host，第一个 `/hello` 选中 Context，Context 内的 `/hello` 选中 Servlet，然后请求才进入 Filter 链和 Servlet。`id=1` 是应用参数，不参与 Context 选择。
 
-### 11.2 一次请求如何到达 Servlet
+| 现象 | 请求可能停留的边界 | 用于继续判断的证据 |
+|---|---|---|
+| 连接被拒绝 | 进程、监听端口或网络 | 端口监听、启动日志、代理错误日志 |
+| 访问日志中出现 404 | Host、Context、Servlet 映射或业务资源 | Context 部署日志、有效 `web.xml`、Request ID |
+| Filter 有入口日志但 Servlet 没有 | Filter 链 | 分支是否调用 `chain.doFilter` |
+| 响应头修改失效 | 响应已提交 | `isCommitted()`、缓冲区刷新点、已写出字节数 |
 
-回答主线：Connector 接收并解析请求，经 Engine、Host、Context 完成容器映射，再执行 Filter 链和目标 Servlet，最后提交响应。
+404 只表示当前路径没有找到结果，无法单独证明 Servlet 映射错误。将访问日志、部署日志和应用 Request ID 放在同一时间线上，才能确定最后一个已经通过的边界。
 
-追问角度：
+### 11.3 从对象生命周期推导 Servlet 并发风险
 
-1\. 404 可以在哪些层产生。
+容器通常创建一个 Servlet 实例并让多个工作线程并发调用它。局部变量存在于各次方法调用的栈上；Servlet 实例字段、静态字段和共享对象则可被多线程同时访问。因此，“Servlet 是否线程安全”要看代码是否保存可变共享状态，不能只根据它继承了 `HttpServlet` 就下结论。
 
-2\. Filter 不调用 `chain.doFilter` 会怎样。
+验证时可让并发请求携带不同用户标识，检查响应是否串号，并用代码审查确认请求对象没有被保存到实例字段。`ThreadLocal` 的值属于工作线程，Tomcat 会复用这些线程；代码应在 `finally` 中清理请求级上下文，否则下一个请求可能读到旧值，旧应用类加载器也可能被引用。
 
-3\. 响应提交后为什么不能再修改状态码或响应头。
+### 11.4 从实例隔离理解 `CATALINA_HOME` 与 `CATALINA_BASE`
 
-### 11.3 Servlet 是否线程安全
+`CATALINA_HOME` 指向 Tomcat 程序安装，`CATALINA_BASE` 指向某个运行实例。分离二者后，多个实例可以共享程序文件，同时拥有独立的 `conf`、`logs`、`webapps`、`work` 和 `temp`。各实例的 Connector 端口、关闭端口和其他监听地址也需要避免冲突。
 
-回答主线：容器通常复用一个 Servlet 实例并发处理请求；局部变量属于调用栈，实例可变字段会被共享。优先无状态设计，共享数据需正确同步或使用线程安全组件。
+运行时证据比 Shell 配置文件更可靠。`catalina.sh version` 和启动日志会记录实际的 Home、Base 与 Java 环境；结合进程命令行和监听端口，可以识别“修改了 A 实例配置，流量实际到达 B 实例”这类问题。自定义参数放入 `setenv.sh` 或服务管理配置，可以避免升级 Tomcat 脚本时丢失变更。
 
-追问角度：
+### 11.5 从类的定义者分析类加载故障
 
-1\. `HttpServletRequest` 能否保存到异步线程。
+Tomcat Webapp ClassLoader 默认优先查找应用的 `WEB-INF/classes` 和 `WEB-INF/lib`，Java 核心类以及 Servlet、JSP、EL 等容器规范 API 则优先委派。这个例外模型同时满足应用依赖隔离和容器规范类型一致性。
 
-2\. 单例业务对象为何也有类似问题。
+Java 中类型身份由“全限定类名 + 定义它的类加载器”共同决定，所以 `X cannot be cast to X` 可能表示两个类加载器分别加载了同名类。排查证据包括 WAR 与 Tomcat `lib/` 中的重复 JAR、`getClass().getClassLoader()` 的输出、Context 的 `delegate` 设置和必要时的类加载诊断日志。热部署后若旧线程、ThreadLocal 或驱动仍引用旧应用类，旧 Webapp ClassLoader 便无法回收。
 
-3\. ThreadLocal 使用不当为何在容器线程池中泄漏。
+### 11.6 根据饱和点而非单一参数分析吞吐量
 
-### 11.4 `CATALINA_HOME` 和 `CATALINA_BASE`
+平台线程模式下，`maxThreads` 限制同时执行的请求数，但可持续吞吐量还受请求占用线程时间、CPU、内存、数据库连接池和下游配额约束。增加线程只是增加容器内的并发候选者；当数据库连接池更小时，多出的线程可能只是排队等待连接。
 
-回答主线：前者是程序安装，后者是实例运行目录。分离后可共享二进制、隔离配置和应用，并利于升级。
+| 观察组合 | 更可能的饱和点 | 调整前应补充的证据 |
+|---|---|---|
+| 忙线程接近上限，CPU 不高，数据库等待增加 | 数据库或下游阻塞 | 连接池等待、慢 SQL、多次线程栈 |
+| CPU 持续接近上限，延迟随并发上升 | 计算或垃圾回收 | CPU 剖析、GC（Garbage Collection，垃圾回收）日志、堆与分配速率 |
+| 线程有空闲，连接数达到 `maxConnections` | 长连接或连接容量 | Keep-Alive 分布、连接状态、代理复用策略 |
+| 切换虚拟线程后吞吐量不变 | CPU、连接数或下游限制 | 端到端压测、下游饱和度、并发隔离设置 |
 
-追问角度：
+虚拟线程优化的是阻塞任务对平台线程的占用成本，不会创造新的数据库连接、CPU 或外部配额。容量结论应由压测曲线与多层指标支持，单看 `maxThreads` 的数字无法判断系统吞吐量。
 
-1\. 多实例如何避免端口冲突。
+### 11.7 根据启动主体区分内嵌与外部 Tomcat
 
-2\. 哪些目录必须实例隔离。
+外部模式由独立 Tomcat 进程加载 WAR，内嵌模式由应用 `main` 方法创建 Tomcat，常见制品是可执行 JAR。前者的 Connector 主要来自独立实例的 `server.xml`，后者主要由框架配置和定制代码创建，因此内嵌 Tomcat 通常没有一份与外部安装完全对等的 `server.xml`。
 
-3\. 为什么不能直接改 `catalina.sh` 保存业务参数。
-
-### 11.5 Tomcat 类加载为什么不是简单双亲委派
-
-回答主线：Web 应用需要依赖隔离和自身版本优先，因此 Webapp ClassLoader 通常先查应用类；Java 核心类和规范 API 等仍必须优先委派，保证平台安全与类型一致。
-
-追问角度：
-
-1\. 同一类名为何会出现 `ClassCastException`。
-
-2\. 热部署内存泄漏与类加载器有什么关系。
-
-3\. 公共库应放 `lib` 还是 `WEB-INF/lib`。
-
-### 11.6 Tomcat 线程数越大吞吐量越高吗
-
-回答主线：不一定。线程数受 CPU、内存、阻塞时间、数据库连接和下游容量约束。过大会增加上下文切换、内存和下游拥塞，应通过容量模型与压测确定。
-
-追问角度：
-
-1\. 忙线程达到上限时新请求如何处理。
-
-2\. 数据库连接池小于工作线程池意味着什么。
-
-3\. CPU 密集与 I/O（Input/Output，输入/输出）密集任务的调优差异。
-
-4\. 切换虚拟线程后，为什么仍可能被数据库连接池和 `maxConnections` 限制。
-
-### 11.7 Spring Boot 内嵌 Tomcat 与外部 Tomcat
-
-回答主线：内嵌模式由应用进程创建和配置 Tomcat，通常打包为可执行 JAR（Java Archive，Java 归档）；外部模式由独立 Tomcat 部署 WAR。两者的配置入口、发布单元和运维边界不同。
-
-追问角度：
-
-1\. 为什么内嵌 Tomcat 没有完整的默认 `server.xml`。
-
-2\. `provided` 依赖在两种打包方式中有何差异。
-
-3\. 排查配置时应确认最终由 Spring Boot 还是 Tomcat 原生配置创建 Connector。
+判断证据包括制品是 WAR 还是可执行 JAR、启动命令的主类、启动日志中的容器初始化方式以及实际配置源。外部 WAR 中的 Servlet API 通常使用 `provided`，由容器统一提供；内嵌模式需要把容器实现作为可运行制品的依赖。排查时先确定这条运行边界，然后才能判断某个端口、线程或超时配置是否真正参与了容器创建。
 
 ## 12 项目落地与复习检查
 
@@ -1966,5 +2013,7 @@ orders##20260726-002.war
 18\. [Tomcat JDBC Pool](https://tomcat.apache.org/tomcat-11.0-doc/jdbc-pool.html)：Tomcat JDBC Pool 工厂、属性、验证和 JMX 监控。
 
 19\. [Tomcat 11 Executor](https://tomcat.apache.org/tomcat-11.0-doc/config/executor.html)：共享平台线程池和虚拟线程执行器。
+
+20\. [Tomcat 11 Cluster How-To](https://tomcat.apache.org/tomcat-11.0-doc/cluster-howto.html)：Session 复制、集群组件和故障转移边界。
 
 阅读网络文章时必须核对其 Tomcat 大版本。若示例使用 `javax.servlet.*`、旧版属性或已移除机制，应回到对应版本官方文档确认，不能直接套用到 Tomcat 11。

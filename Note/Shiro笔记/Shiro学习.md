@@ -1,166 +1,231 @@
 # Shiro 学习笔记
 
-> 本文面向 Java 后端初学者、面试候选人与需要在真实项目中维护 Apache Shiro 的工程师。主线是“认证身份、授权访问、管理会话、保护凭证、支撑分布式部署”。
+> 本文面向第一次接触 Apache Shiro 的 Java 后端开发者，也可用于面试复习和存量项目维护。示例版本基线是 Apache Shiro 3.0.0、Java 17+、Spring 6/7 与 Spring Boot 3/4；旧项目应先确认实际主版本，再阅读迁移说明。
 
-> 本文按“先理解安全问题，再认识 Shiro，再完成单机项目，最后进入分布式与生产治理”的顺序组织。第一次学习时先走主线，不必在 JWT、SSO 或源码细节处停留太久。
+> 本文使用 WWH（What-Why-How，即“是什么—为什么需要—怎样应用与验证”）检查每个核心知识点。第一次阅读先完成第 1 章的可运行结果，再读第 2、3、5、6、7 和 12 章；JWT（JSON Web Token，JSON 网络令牌）、SSO（Single Sign-On，单点登录）与源码扩展点可以在项目确有需求时再读。
 
-> 每个核心知识点都按 WWH（What–Why–How，即“是什么—为什么需要—如何使用与验证”）理解。阅读代码时不要只记 API，要同时问清输入、执行路径、失败行为和成功判据。
+## 1 先跑通认证与授权
 
-## 1 学习目标与路线
+### 1.1 从订单接口的访问规则开始
 
-### 1.1 学完后应该具备的能力
+假设订单系统有两个账号：`alice` 是管理员，可以读取和删除订单；`bob` 是只读用户，只能读取订单。程序需要先校验密码，再依据角色和权限决定是否允许操作。
 
-1\. 能区分认证、授权、会话管理、加密和缓存各自解决的问题。
+本章完成后应观察到下面四个结果：
 
-2\. 能解释 Subject、SecurityManager、Realm、Authenticator、Authorizer 与 Session 的协作关系。
+| 输入或动作 | 预期结果 | 证明了什么 |
+| --- | --- | --- |
+| `alice` 使用正确密码登录 | `authenticated=true` | 身份认证成功 |
+| 检查 `alice` 的 `order:delete` | `true` | 已授予权限可以通过 |
+| 检查 `bob` 的 `order:delete` | `false` | 登录成功不等于拥有全部权限 |
+| 使用错误密码登录 | 抛出认证异常 | 凭证错误时不会建立登录态 |
 
-3\. 能在 Spring Boot 项目中完成数据库认证、角色与权限授权、URL（Uniform Resource Locator，统一资源定位符）过滤和注解鉴权。
+这里先记住两个词：Authentication（认证）回答“你是谁”，Authorization（授权）回答“你能做什么”。角色和权限的完整数据模型放在第 2 章解释。
 
-4\. 能设计 RBAC（Role-Based Access Control，基于角色的访问控制）表结构与权限字符串。
+### 1.2 准备运行环境
 
-5\. 能处理密码散列、登录失败、Remember Me、会话固定、越权访问和缓存不一致等风险。
+Shiro 3.0.0 的最低运行基线是 Java 17，并使用 `jakarta.*` 命名空间。先执行下面的命令，确认 Maven 实际使用的 Java 版本；仅在集成开发环境中切换 JDK（Java Development Kit，Java 开发工具包）并不能改变命令行构建环境。
 
-6\. 能解释 HTTP Basic、Session-Cookie 与 Bearer Token 如何把认证材料带入 Shiro，并说明单机 Session、分布式 Session、JWT（JSON Web Token，JSON 网络令牌）、SSO（Single Sign-On，单点登录）、CAS（Central Authentication Service，中央认证服务）与 OAuth 2.0 的边界。
+```bash
+java -version
+./mvnw -version
+```
 
-7\. 能通过日志、异常、缓存、会话存储和线程上下文排查线上鉴权问题。
+两条输出都应显示 Java 17 或更高版本。若项目没有 Maven Wrapper，可把 `./mvnw` 换成 `mvn`。Shiro 3 的版本与运行要求以 [Apache Shiro 3.0.0 发布说明](https://shiro.apache.org/blog/2026/06/apache-shiro-300-released.html)为准。
 
-### 1.2 推荐学习顺序
+### 1.3 添加最小依赖与运行插件
 
-1\. 第一阶段：掌握认证、授权、RBAC 和 Shiro 核心对象。
+下面的依赖用于普通 Java + INI（Initialization File，初始化配置文件）示例，不是 Spring Boot 项目的依赖模板。
 
-2\. 第二阶段：跑通最小示例，再接入 Spring Boot 与数据库 Realm。
+```xml
+<properties>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <shiro.version>3.0.0</shiro.version>
+    <slf4j.version>2.0.18</slf4j.version>
+    <commons-beanutils.version>1.11.0</commons-beanutils.version>
+</properties>
 
-3\. 第三阶段：掌握 HTTP Basic、Session-Cookie、Bearer Token、密码散列、Remember Me、缓存与权限变更。
+<dependencies>
+    <dependency>
+        <groupId>org.apache.shiro</groupId>
+        <artifactId>shiro-core</artifactId>
+        <version>${shiro.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+        <scope>runtime</scope>
+    </dependency>
+    <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${commons-beanutils.version}</version>
+    </dependency>
+</dependencies>
 
-4\. 第四阶段：学习前后端分离、集群 Session、SSO、CAS、JWT 和 OAuth 2.0。
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.15.0</version>
+        </plugin>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.6.3</version>
+            <configuration>
+                <mainClass>ShiroQuickStart</mainClass>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
 
-5\. 第五阶段：补齐生产安全、监控、故障排查、测试与上线检查。
+`shiro-core` 提供 Subject、SecurityManager 和 Realm 等核心类型；`slf4j-simple` 是示例使用的日志实现；BeanUtils 支持 INI 对象属性装配；Maven Compiler Plugin 显式按 Java 17 编译，Exec Maven Plugin 用于直接运行示例主类。已有项目应通过 BOM（Bill of Materials，物料清单）或统一依赖管理控制版本，并用 `dependency:tree` 检查是否混入多个 Shiro 主版本。
 
-### 1.3 一张图建立心智模型
+### 1.4 生成密码摘要并配置两个测试账号
+
+本地练习也应使用 Shiro 当前的密码格式，避免把明文配置复制到真实项目。先下载与 Shiro 主版本一致的命令行 Hasher：
+
+```bash
+./mvnw dependency:get \
+  -DgroupId=org.apache.shiro.tools \
+  -DartifactId=shiro-tools-hasher \
+  -Dclassifier=cli \
+  -Dversion=3.0.0
+```
+
+再通过交互输入测试密码 `change-me`：
+
+```bash
+java -jar \
+  ~/.m2/repository/org/apache/shiro/tools/shiro-tools-hasher/3.0.0/\
+shiro-tools-hasher-3.0.0-cli.jar -p
+```
+
+分别为 `alice` 和 `bob` 执行一次。默认密码模式会输出以 `$shiro2$` 开头的格式化摘要，其中已经携带算法、成本参数、随机盐和摘要。两次输入相同密码时，随机盐仍应让输出不同。
+
+在 `src/main/resources/shiro.ini` 写入下面的配置，并替换两个占位符：
+
+```ini
+[main]
+passwordMatcher = org.apache.shiro.authc.credential.PasswordMatcher
+iniRealm.credentialsMatcher = $passwordMatcher
+
+[users]
+alice = "<粘贴 alice 的完整 $shiro2$ 摘要>", admin
+bob = "<粘贴 bob 的完整 $shiro2$ 摘要>", reader
+
+[roles]
+admin = order:*
+reader = order:read
+```
+
+`[main]` 把 `PasswordMatcher` 绑定到隐式创建的 `iniRealm`；`[users]` 把账号分配给角色；`[roles]` 把角色映射为权限。摘要必须使用双引号包裹，因为 Argon2 参数中包含逗号，不加引号会被 INI 解析器误认为角色分隔符。`order:*` 表示订单资源上的任意动作，`order:read` 只允许读取。
+
+这个文件只适合本地学习，不能承载真实账号。第 4 章会拆解格式化摘要、`PasswordMatcher` 和版本迁移，第 6 章再把密码生成、验证与渐进升级收敛到正式项目的密码服务。
+
+### 1.5 编写最小 Java 程序
+
+```java
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.env.BasicIniEnvironment;
+import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.subject.Subject;
+
+public final class ShiroQuickStart {
+    public static void main(String[] args) {
+        SecurityManager securityManager = new BasicIniEnvironment(
+            "classpath:shiro.ini"
+        ).getSecurityManager();
+        SecurityUtils.setSecurityManager(securityManager);
+
+        Subject subject = SecurityUtils.getSubject();
+        String username = args.length == 0 ? "alice" : args[0];
+        char[] password = "change-me".toCharArray();
+        UsernamePasswordToken token =
+            new UsernamePasswordToken(username, password);
+
+        try {
+            subject.login(token);
+            System.out.println(
+                "authenticated=" + subject.isAuthenticated()
+            );
+            System.out.println("admin=" + subject.hasRole("admin"));
+            System.out.println(
+                "canDelete=" + subject.isPermitted("order:delete")
+            );
+        } catch (AuthenticationException e) {
+            System.out.println("authenticationFailed=true");
+        } finally {
+            token.clear();
+            subject.logout();
+        }
+    }
+}
+```
+
+`BasicIniEnvironment` 会读取整个 INI：既创建 `SecurityManager` 和隐式 `IniRealm`，也执行 `[main]` 中的 Matcher 装配。若直接 `new IniRealm("classpath:shiro.ini")`，只能载入用户与角色定义，`[main]` 的对象装配不会自动生效。
+
+程序的输入是用户名和密码，`IniRealm` 从配置中取得可信账号资料。`subject.login(token)` 先完成凭证匹配；认证成功后，`hasRole` 与 `isPermitted` 才分别检查角色和权限。`UsernamePasswordToken` 直接持有传入的字符数组，`token.clear()` 会覆盖其中的密码字符并清空 Token；`logout()` 清理本次练习建立的主体状态。
+
+### 1.6 运行、验证与首次排错
+
+```bash
+./mvnw dependency:tree
+./mvnw -q compile exec:java
+```
+
+如果把上面的类配置为可执行主类，运行 `alice` 时应输出：
+
+```text
+authenticated=true
+admin=true
+canDelete=true
+```
+
+按顺序完成四个实验：
+
+1\. 不传参数运行默认账号 `alice`，确认三个结果都是 `true`。
+
+2\. 执行 `./mvnw -q compile exec:java -Dexec.args=bob`，确认认证成功但 `admin=false`、`canDelete=false`。
+
+3\. 使用 `bob` 检查 `order:read`，确认结果为 `true`。
+
+4\. 临时把代码中的密码改错，确认输出 `authenticationFailed=true`，并且没有继续执行权限判断。
+
+配置文件找不到时，先检查 `target/classes/shiro.ini` 是否存在；始终认证失败时，确认两个摘要占位符已经替换、摘要外有双引号、`iniRealm.credentialsMatcher` 名称拼写正确；出现 `UnsupportedClassVersionError` 时，比较 `java -version` 与 `./mvnw -version`；权限结果不符时，逐字符检查资源、动作和冒号。测试之间出现身份串用时，检查是否遗漏 `logout()`，以及是否在同一进程中重复设置了静态 SecurityManager。
+
+### 1.7 从运行结果回看 Shiro 的协作对象
 
 ```mermaid
 flowchart LR
-    U["用户或调用方"] --> S["Subject：当前主体"]
-    S --> SM["SecurityManager：安全总协调器"]
-    SM --> AU["Authenticator：认证"]
-    SM --> AZ["Authorizer：授权"]
-    SM --> SE["SessionManager：会话"]
-    SM --> CA["CacheManager：缓存"]
-    AU --> R["Realm：连接业务身份数据"]
-    AZ --> R
-    R --> DB["数据库、目录服务或外部身份源"]
+    U["用户名与密码"] --> T["UsernamePasswordToken：本次不可信输入"]
+    T --> S["Subject：当前操作主体"]
+    S --> SM["SecurityManager：协调认证和授权"]
+    SM --> R["IniRealm：读取账号、角色和权限"]
+    R --> M["CredentialsMatcher：比较凭证"]
+    M -->|成功| P["Subject 获得可信 Principal"]
+    P --> A["角色和权限判断"]
+    M -->|失败| E["AuthenticationException"]
 ```
 
-一句话记忆：业务代码主要面对 `Subject`，`SecurityManager` 负责调度，`Realm` 负责把 Shiro 与真实用户、角色和权限数据连接起来。
+业务代码主要面对 `Subject`；SecurityManager 负责调度；Realm 把 Shiro 与真实身份数据连接起来。Principal（主体标识）、Credentials（凭证）和各组件的准确边界会在第 2、3 章结合这条执行链展开。
 
-### 1.4 开始前需要掌握什么
+### 1.8 按阶段继续学习
 
-1\. Java 基础：类、接口、异常、集合、泛型与注解。
+| 阶段 | 阅读范围 | 要完成的结果 | 可暂时跳过 |
+| --- | --- | --- | --- |
+| 基础闭环 | 第 1～3 章 | 解释认证、授权、Subject、SecurityManager 与 Realm | 第 3.9～3.19 节的扩展点 |
+| 项目接入 | 第 4～7 章、第 12 章 | 完成密码摘要、数据库 Realm、Spring Boot、Session 和测试 | JWT、SSO、CAS 与源码细节 |
+| 生产治理 | 第 9～14 章 | 处理线程传播、缓存失效、集群、监控和上线检查 | 当前项目未使用的协议实现 |
+| 跨应用身份 | 第 8 章 | 区分 Session、Bearer Token、JWT、OAuth 2.0、OIDC 与 SSO | 自建授权服务器或密码算法 |
 
-2\. Web 基础：HTTP（Hypertext Transfer Protocol，超文本传输协议）、Cookie、状态码、请求与响应。
-
-3\. Spring Boot 基础：依赖注入、Bean、Controller、Service 与配置文件。
-
-4\. 数据库基础：表、主键、外键、索引、事务与多对多关系。
-
-5\. Maven 基础：依赖坐标、版本管理、编译、测试和打包。
-
-如果其中某项尚不熟悉，可以先理解本文概念和图示；遇到代码时重点看“输入、调用链、输出”，暂时不必追源码。
-
-### 1.5 五阶段学习任务
-
-| 阶段 | 要完成的结果 | 先不要做什么 |
-| --- | --- | --- |
-| 入门 | 说清认证、授权、角色、权限 | 不急着研究分布式登录 |
-| 核心 | 跑通 INI 认证授权 | 不把 INI 用于生产 |
-| 项目 | 接入数据库 Realm 与 Spring Boot | 不先引入 JWT |
-| 生产 | 补密码、Session、缓存、审计和测试 | 不忽略负向测试 |
-| 进阶 | 理解集群、SSO、OIDC 与线程传播 | 不自创安全协议 |
-
-### 1.6 初学者阅读分级
-
-本文为了保持知识完整，包含了部分框架内部扩展点和生产进阶内容。初学者不需要一次全部记住，按以下级别阅读。
-
-| 级别 | 学习要求 | 判断标准 |
-| --- | --- | --- |
-| A：必须掌握 | 第一轮精读并能复述 | 能解释概念并完成基础代码 |
-| B：能够实操 | 第二轮跟着项目练习 | 能完成配置、测试和排错 |
-| C：了解即可 | 知道用途和存在位置 | 用到时能回文档查找 |
-| D：进阶再学 | 第一轮可以跳过 | 生产需求或源码学习时再看 |
-
-#### 1.6.1 A 级：第一轮必须掌握
-
-1\. 第 2 章全部内容，特别是 Subject、Principal、Credentials、认证、授权、角色与权限。
-
-2\. 第 3.1 至 3.5 节：核心组件、认证流程、授权流程、Realm 和 Subject 状态。
-
-3\. 第 4 章：亲手跑通最小认证授权闭环。
-
-4\. 第 5.1 至 5.6 节及第 5.10 节：Spring Boot 依赖、分层、Realm、过滤链、注解、异常，以及 HTTP Basic、Session-Cookie、Bearer Token 的统一认证链路。
-
-5\. 第 6.1 至 6.3 节：密码散列、凭证匹配和登录防护。
-
-6\. 第 7.1 至 7.3 节：Session、Remember Me 与授权缓存的基本语义。
-
-7\. 第 12.1、12.2 和 12.4 节：测试策略、权限矩阵和负向测试。
-
-#### 1.6.2 B 级：完成项目时掌握
-
-1\. 第 5.7 至 5.9 节及第 5.11 至 5.20 节：数据库、接口、配置、过滤器、项目目录和运行验证。
-
-2\. 第 6.4 至 6.8 节：注册、改密、PasswordService 与 CredentialsMatcher。
-
-3\. 第 7.4 至 7.10 节：分布式 Session 基础、Session API、缓存清理与 Remember Me。
-
-4\. 第 10 至第 12 章：生产安全、监控排障和自动化测试。
-
-5\. 第 14 章：项目设计和上线检查。
-
-#### 1.6.3 C 级：第一轮知道即可
-
-1\. ACL（Access Control List，访问控制列表）与 ABAC（Attribute-Based Access Control，基于属性的访问控制）的细节。
-
-2\. 多 Realm 认证策略和 PrincipalCollection 的多来源能力。
-
-3\. Web 过滤器内部继承层次、SavedRequest 和自定义过滤器。
-
-4\. SessionDAO、SessionFactory、CacheManager 与 RememberMeManager 的内部协作。
-
-5\. CipherService、Pepper、事件、生命周期和线程传播的具体 API。
-
-#### 1.6.4 D 级：初学阶段可以跳过
-
-1\. `Subject.Builder`、`SubjectFactory`、`SubjectDAO` 与 `SessionStorageEvaluator` 的扩展细节。
-
-2\. Run As 身份切换和 EventBus 自定义事件。
-
-3\. `PermissionResolver` 与 `RolePermissionResolver` 的自定义实现。
-
-4\. `SessionKey`、`SessionContext` 和 SessionListener 的自定义实现。
-
-5\. CAS、OAuth 2.0、OIDC、SSO 和 JWT 的协议实现细节。
-
-6\. 源码级过滤器生命周期和多 Realm 回调阶段。
-
-“可以跳过”表示暂时不影响学习 Shiro 主线，不表示这些知识永远没有价值。遇到对应生产需求时再回来学习。
-
-### 1.7 初学者最小完成标准
-
-如果你能独立完成下面七项，就已经掌握了 Shiro 入门主线：
-
-1\. 用自己的话解释 Subject、Principal、Credentials。
-
-2\. 画出 Subject、SecurityManager、Realm 的关系。
-
-3\. 使用自定义 Realm 完成用户名密码认证。
-
-4\. 使用角色和权限保护接口，并区分 HTTP 401 与 HTTP 403。
-
-5\. 正确处理密码摘要、登录、退出和 Session，并能用 HTTP 请求解释 Session Cookie 如何恢复登录态。
-
-6\. 能比较 HTTP Basic、Session-Cookie 与 Bearer Token 的认证链路、状态位置、退出语义和主要风险。
-
-7\. 写出未登录、无权限和越权访问的负向测试。
+第一轮学习的完成标准是：能用自己的话复述第 1.7 节的链路，能在 Spring Boot 中让匿名请求得到 HTTP 401、无权限请求得到 HTTP 403，并能写出错误密码、越权访问和退出失效的负向测试。第 15 章提供复习路径，第 16 章只用于查词，不需要顺序阅读。
 
 ## 2 安全基础：认证、授权与 RBAC
 
@@ -321,6 +386,8 @@ Object primary = principals.getPrimaryPrincipal();
 
 `getPrimaryPrincipal()` 返回主要标识。其他标识可按类型或 Realm 来源查询。
 
+Shiro 3 的默认 `PrincipalCollection` 实现不可变。认证策略需要组合多个 Realm 结果时，由框架构造新的集合；业务代码不应取得集合后原地添加、删除或替换 Principal。存量扩展若依赖可变实现，迁移测试应覆盖多 Realm 合并、Run As 和 Session 恢复。
+
 例如同一个 Subject 可能包含：
 
 1\. 数据库 Realm 提供的内部用户 ID `10001`。
@@ -357,7 +424,7 @@ PasswordRecord stored = new PasswordRecord(
     account.passwordAlgorithm(),
     account.passwordHash(),
     account.passwordSalt(),
-    account.passwordCost()
+    account.passwordParameters()
 );
 
 return new SimpleAuthenticationInfo(
@@ -548,7 +615,7 @@ Realm 不应自行比较明文密码。它返回可信数据，凭证匹配器�
 
 应用级 `SecurityManager` 通常为单例，Realm 也通常被并发调用。Realm、Matcher 和 CacheManager 中不得用实例字段保存某个请求的临时状态。
 
-完成第 3.1～3.8 节后，初学者可以直接进入第 4 章动手实践。第 3.9～3.19 节属于组件地图、源码阅读和扩展点参考，第一遍只需知道它们存在，不要求记忆。
+完成第 3.1～3.8 节后，用第 4 章理解第 1 章的密码格式与装配链，再进入第 5 章接入 Spring Boot。第 3.9～3.19 节属于组件地图、源码阅读和扩展点参考，第一遍只需知道它们存在，不要求记忆。
 
 ### 3.9 Shiro 完整组件地图（初学阶段先看关系）
 
@@ -656,131 +723,90 @@ Shiro 组件可发布认证成功、认证失败或退出等事件，具体可�
 
 事件负载同样要脱敏。监听器失败应被监控，且不能把密码、Token 或完整 Session 发送到日志和消息系统。
 
-## 4 教程：跑通一个最小认证授权闭环
+## 4 理解格式化密码摘要与版本迁移
 
-### 4.1 当前版本基线与迁移边界
+### 4.1 先识别 Shiro 3 的迁移边界
 
-截至 2026 年 7 月，Apache Shiro 当前稳定版为 3.0.0，运行要求为 Java 17 或更高版本。Shiro 1 已被 Shiro 2 取代，Shiro 2 又于 2026 年 6 月被 Shiro 3 取代。新项目应以 Shiro 3 文档为准；维护旧项目时先识别主版本，再查对应迁移指南，不能直接把 1.x 或 2.x 配置复制到 3.x。
+Apache Shiro 3.0.0 是本文使用的稳定版本，1.x 与 2.x 已结束生命周期。维护旧项目时应先识别 Shiro、Java、Spring、Servlet 容器和扩展模块的版本组合，再根据官方迁移指南逐项回归。
 
-Shiro 3 的 Spring Boot Web Starter 面向当前 Jakarta 命名空间。旧代码若导入 `javax.servlet.*`，迁移到新环境时通常需要改为 `jakarta.servlet.*`，同时检查 Spring Boot、Servlet 容器和第三方扩展是否全部兼容。
+| Shiro 3 变化 | 对项目的影响 | 验证入口 |
+| --- | --- | --- |
+| 最低 Java 版本为 17 | 构建机、运行镜像和开发环境都要升级 | 比较 `java -version` 与 Maven 输出 |
+| 使用 Jakarta EE 9+ 命名空间 | `javax.servlet.*` 等旧导入通常要迁移到 `jakarta.servlet.*` | 编译全部 Web 过滤器和第三方扩展 |
+| 默认 PrincipalCollection 不可变 | 旧代码不能原地修改认证结果中的 Principal 集合 | 回归多 Realm 与身份切换代码 |
+| 路径匹配默认忽略大小写 | 静态资源、路由和过滤规则的大小写策略要一致 | 对保护路径发送大小写变体请求 |
+| 未命中过滤链时默认拒绝访问 | 依赖旧版“未配置即放行”的接口会改变行为 | 为新增且未单独配置的路径编写匿名测试 |
+| HTTP 认证过滤器默认允许 CORS 预检请求 | `OPTIONS` 可以进入后续链路，但实际业务请求仍需认证授权 | 分别测试预检请求与实际请求 |
 
-版本成功判据不是“依赖能下载”，而是应用能启动、Shiro 主过滤器已注册、Realm 已装配、过滤链实际匹配请求、注解确实经过代理，并且负向测试能够拒绝未授权访问。
+CORS（Cross-Origin Resource Sharing，跨源资源共享）预检放行只允许浏览器询问跨源策略，不代表对应的 `GET`、`POST` 或 `DELETE` 已获业务权限。版本变化依据见 [Shiro 3.0.0 发布说明](https://shiro.apache.org/blog/2026/06/apache-shiro-300-released.html)、[Spring Boot 集成指南](https://shiro.apache.org/spring-boot.html)与 [Web 支持文档](https://shiro.apache.org/web.html)。
 
-官方依据：[Apache Shiro 下载页](https://shiro.apache.org/download.html)、[Spring Boot 集成指南](https://shiro.apache.org/spring-boot.html)、[迁移指南入口](https://shiro.apache.org/documentation)。
+### 4.2 第 1 章为什么直接使用密码摘要
 
-### 4.2 前置条件与目标
+Shiro 3 的实现仍保留可直接比较凭证的 `SimpleCredentialsMatcher`，官方示例源码中也能看到明文教学账号；当前配置指南则要求 INI 账号使用 bcrypt、Argon2 等密码派生格式。第 1 章直接采用格式化摘要，是为了让第一个可运行示例与当前安全用法保持一致，避免读者把明文模板复制进仓库、构建产物或部署配置。
 
-前置条件：JDK（Java Development Kit，Java 开发工具包）17+、Maven、一个可运行的 Java 项目。若项目仍使用旧 Shiro 或旧 Spring Boot，应先完成版本兼容性评估，不要在学习示例中混用不同主版本的包名和配置。
+摘要配置仍然只适合本地学习。真实系统的用户、角色和权限通常来自数据库或外部身份系统，第 5、6 章会把同一职责迁移到数据库 Realm 和统一密码服务。
 
-目标：使用 INI（Initialization File，初始化配置文件）定义两个用户，验证登录、角色与权限判断。
+### 4.3 读懂 Hasher 的输出边界
 
-### 4.3 Maven 依赖
+第 1.4 节的 `-p` 参数表示密码模式：终端关闭输入回显、要求再次确认、生成随机盐，并默认使用 Argon2id 和 `shiro2` 输出格式。典型结构如下：
 
-```xml
-<properties>
-    <shiro.version>3.0.0</shiro.version>
-    <slf4j.version>2.0.18</slf4j.version>
-    <commons-beanutils.version>1.11.0</commons-beanutils.version>
-</properties>
-
-<dependencies>
-    <dependency>
-        <groupId>org.apache.shiro</groupId>
-        <artifactId>shiro-core</artifactId>
-        <version>${shiro.version}</version>
-    </dependency>
-
-    <!-- Shiro 使用日志门面；普通 Java 示例还需要选择一个日志实现。 -->
-    <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-simple</artifactId>
-        <version>${slf4j.version}</version>
-        <scope>runtime</scope>
-    </dependency>
-
-    <!-- IniRealm 解析并设置 INI 中的对象属性时需要 BeanUtils。 -->
-    <dependency>
-        <groupId>commons-beanutils</groupId>
-        <artifactId>commons-beanutils</artifactId>
-        <version>${commons-beanutils.version}</version>
-    </dependency>
-</dependencies>
+```text
+$shiro2$argon2id$<算法参数>$<随机盐>$<摘要>
 ```
 
-上面的版本与 Shiro 3.0.0 自身构建所使用的版本一致，目的是让第 4 章的普通 Java + INI 示例可以独立运行。已有统一依赖管理的项目应以自己的 BOM（Bill of Materials，物料清单）和兼容性测试为准；Spring Boot 项目则优先使用第 5.1 节的 Starter，不要把这组独立示例依赖机械复制过去。
+`shiro2` 是 Shiro 2 起使用的模块化密码格式标识，后面的内容由具体算法解释。默认算法和参数可能在兼容版本升级中调整，应用应把完整字符串交给 `PasswordService` 解析，不能按固定下标拆字段后自行重新计算。只有显式选择旧兼容格式时才会出现 `$shiro1$`；新密码不应主动降级到旧格式。
 
-验证命令：
+格式化摘要不等于明文密码，但仍属于敏感认证数据：拿到它的攻击者可以离线猜测密码。复制时应保留完整内容，日志与错误响应中不应输出。官方参数与示例见 [Apache Shiro Command Line Hasher](https://shiro.apache.org/command-line-hasher.html)。
 
-```bash
-./mvnw dependency:tree
-./mvnw clean test
-```
+### 4.4 PasswordMatcher 如何进入认证链
 
-第一条命令确认没有混入多个 Shiro 主版本；第二条命令确认代码和测试使用最终构建类路径，而不只是集成开发环境的临时类路径。
-
-### 4.4 INI 配置
+第 1 章通过下面两行配置创建 `PasswordMatcher`，再把它绑定到隐式 `iniRealm`：
 
 ```ini
-[users]
-alice = change-me, admin
-bob = change-me, reader
-
-[roles]
-admin = order:*
-reader = order:read
+[main]
+passwordMatcher = org.apache.shiro.authc.credential.PasswordMatcher
+iniRealm.credentialsMatcher = $passwordMatcher
 ```
 
-这只用于理解流程。生产环境不得使用明文密码或把真实账号写入仓库。
+`PasswordMatcher` 实现 Shiro 通用的 `CredentialsMatcher` 接口，并把实际密码比较委托给 `org.apache.shiro.authc.credential.PasswordService`。`iniRealm` 是 INI 环境隐式创建的 Realm 名称；名称写错时，新 Matcher 不会绑定到真正参与认证的 Realm。
 
-### 4.5 最小 Java 示例
+Java 入口也属于装配链的一部分。`BasicIniEnvironment` 会处理 `[main]`、`[users]` 和 `[roles]`；`new IniRealm(resourcePath)` 只让 Realm 读取账号和角色定义，不会替应用执行 `[main]` 的对象装配。因此“INI 写对了但一直登录失败”时，要同时检查配置内容和创建 SecurityManager 的入口。
 
-```java
-DefaultSecurityManager securityManager = new DefaultSecurityManager();
-IniRealm realm = new IniRealm("classpath:shiro.ini");
-securityManager.setRealm(realm);
-SecurityUtils.setSecurityManager(securityManager);
+### 4.5 复用程序并观察中间状态
 
-Subject subject = SecurityUtils.getSubject();
-char[] password = "change-me".toCharArray();
-UsernamePasswordToken token =
-    new UsernamePasswordToken("alice", password);
+Java 代码使用 `UsernamePasswordToken("alice", password)` 提交本次原始密码。执行路径如下：
 
-try {
-    subject.login(token);
-    System.out.println("authenticated=" + subject.isAuthenticated());
-    System.out.println("admin=" + subject.hasRole("admin"));
-    System.out.println("canDelete=" + subject.isPermitted("order:delete"));
-} finally {
-    token.clear(); // 尽早清理 Token 中的凭证字符
-    java.util.Arrays.fill(password, '\0');
-    subject.logout();
-}
+```mermaid
+flowchart LR
+    T["Token：本次原始密码"] --> R["IniRealm：读取格式化摘要"]
+    R --> PM["PasswordMatcher"]
+    PM --> PS["PasswordService：解析算法、盐和成本"]
+    PS --> C["重新计算并安全比较"]
+    C -->|一致| OK["认证成功"]
+    C -->|不一致| FAIL["IncorrectCredentialsException"]
 ```
 
-### 4.6 预期结果与验证
+密码摘要不可解密。登录时的动作是根据存储字符串中的参数重新计算，再比较结果；每用户随机盐让相同原始密码产生不同存储值。
 
-预期输出为 `authenticated=true`、`admin=true`、`canDelete=true`。把用户名换成 `bob` 后，`order:delete` 应返回 `false`。把密码改错，应收到认证异常且不能继续访问受保护资源。
+### 4.6 用结果证明摘要与装配生效
 
-常见失败原因：配置文件不在类路径、Realm 未注册、权限字符串拼错、依赖版本冲突、静态 `SecurityUtils` 与测试上下文相互污染。
+1\. 使用生成摘要时输入的原密码登录，预期第 1 章的三个成功结果保持不变。
 
-### 4.7 对最小示例做五个实验
+2\. 修改一个摘要字符，使用原密码登录，预期认证失败。
 
-1\. 使用正确账号密码登录，确认 `isAuthenticated()` 为 `true`。
+3\. 把 Matcher 绑定暂时删除，预期格式化摘要不再按相同规则验证；恢复配置后重新测试。
 
-2\. 使用错误密码登录，确认进入认证异常且不会建立登录态。
+4\. 为相同密码重新生成摘要，确认输出不同，但两条摘要都能分别验证该原密码。
 
-3\. 用 `bob` 检查 `order:read`，预期允许。
+5\. 运行 `./mvnw dependency:tree`，确认命令行 Hasher 没有被加入应用运行时依赖。
 
-4\. 用 `bob` 检查 `order:delete`，预期拒绝。
+“INI 中看不到明文”只证明存储形式已经变化。生产合格还要求密码算法与成本满足组织基线、登录路径具有限流、未知账号与错误密码的外部响应一致、日志不含凭证，并且支持未来的渐进升级。
 
-5\. 调用 `logout()` 后再次检查登录态，预期已经失效。
+### 4.7 从学习配置迁移到项目配置
 
-完成这五个实验后，再进入数据库和 Spring Boot。否则后续出现问题时，很难判断是 Shiro 概念不清还是框架集成错误。
+Spring Boot 数据库项目不应在 INI 中维护真实用户。通常有两条实现路线：一条使用 Shiro 自带 `PasswordMatcher` 与 `org.apache.shiro.authc.credential.PasswordService` 保存格式化摘要；另一条把组织统一的 Argon2id、bcrypt 或其他密码库封装为应用密码服务，再通过自定义 CredentialsMatcher 接入 Shiro。
+
+两条路线的共同约束是注册、改密和登录必须使用同一实现与参数语义。Shiro 3 支持密码服务和可插拔的 Argon2、bcrypt 能力，但算法选择、成本基准、密钥管理、限流和多因素认证仍由应用与组织安全基线负责。第 6.4、6.7 节会给出不与 Shiro 同名 API 混淆的应用接口。
 
 ## 5 Spring Boot 与数据库接入
 
@@ -800,7 +826,7 @@ Web 应用使用 `shiro-spring-boot-web-starter`；非 Web 的 Spring Boot 应�
 
 Spring Boot Starter 会自动启用 Shiro 注解，但 Web 应用仍需提供 Realm 和至少一条 `ShiroFilterChainDefinition`。只有 Bean 被创建不代表请求已经受保护，必须通过未登录请求和无权限请求验证过滤器链。
 
-版本边界：本文示例以 Shiro 3.0.0、Java 17+ 和 Jakarta 命名空间为基线；无法在当前工作区编译独立完整项目，因此代码经过静态一致性 Review，运行时仍需在实际项目中执行 `./mvnw clean test` 验证。
+版本边界：本文示例以 Shiro 3.0.0、Java 17+ 和 Jakarta 命名空间为基线。第 1 章的最小项目已经过 Java 17 实际编译与三条路径验证；本章的 Spring Boot 代码是分层片段，不构成可独立启动的完整项目，接入实际项目后仍需执行 `./mvnw clean test` 和 HTTP 集成测试。
 
 ### 5.2 推荐分层
 
@@ -835,17 +861,34 @@ public final class DatabaseRealm extends AuthorizingRealm {
     }
 
     @Override
+    public boolean supports(AuthenticationToken token) {
+        return token instanceof UsernamePasswordToken;
+    }
+
+    @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) {
         String username = (String) token.getPrincipal();
-        UserAccount account = userService.findEnabledByUsername(username)
-            .orElseThrow(UnknownAccountException::new);
+        UserAccount account = userService.findByUsername(username)
+            .orElse(null);
+        if (account == null) {
+            // 返回 null 后，Shiro 3 会让 Matcher 执行一次模拟凭证计算，
+            // 再由认证器转换为 UnknownAccountException。
+            return null;
+        }
+        if (!account.enabled()) {
+            throw new DisabledAccountException();
+        }
+        if (account.locked()) {
+            throw new LockedAccountException();
+        }
+
         UserPrincipal principal =
             new UserPrincipal(account.id(), account.username());
         PasswordRecord stored = new PasswordRecord(
             account.passwordAlgorithm(),
             account.passwordHash(),
             account.passwordSalt(),
-            account.passwordCost()
+            account.passwordParameters()
         );
 
         return new SimpleAuthenticationInfo(
@@ -871,7 +914,11 @@ public final class DatabaseRealm extends AuthorizingRealm {
 public record UserPrincipal(long userId, String username) {}
 ```
 
-这个示例把稳定用户 ID 和展示用用户名封装为不可变 `UserPrincipal`。登录输入仍是用户名，但授权查询使用用户 ID，避免用户名修改后缓存键、权限关联和审计关联失效。Principal 不应包含密码摘要、Token 或可变数据库实体。
+这个示例只接受 `UsernamePasswordToken`，避免它在同时配置 Bearer Realm 时误处理访问令牌。账号不存在时返回 `null`，让 Shiro 3 通过第 6.7 节 Matcher 提供的模拟凭证执行近似成本计算；禁用和锁定则保留内部异常，便于审计和指标分类。第 5.6 节会把这些失败映射为一致的外部响应，降低账号枚举风险。
+
+稳定用户 ID 和展示用用户名被封装为不可变 `UserPrincipal`。登录输入仍是用户名，但授权查询使用用户 ID，避免用户名修改后缓存键、权限关联和审计关联失效。Principal 不应包含密码摘要、Token 或可变数据库实体。
+
+Shiro 的认证缓存默认关闭。若项目显式开启它，这个示例还需要让 `getAuthenticationCacheKey(token)` 与 `getAuthenticationCacheKey(principals)` 产生同一种稳定键；否则登录时可能按用户名写入，退出时却按 `UserPrincipal` 删除，旧认证资料只能等待缓存自然过期。授权缓存可以继续以稳定用户 ID 和租户作为业务键，两类缓存不要混用失效逻辑。
 
 ### 5.4 注册 URL 过滤链
 
@@ -986,7 +1033,7 @@ CREATE TABLE sys_user (
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     locked BOOLEAN NOT NULL DEFAULT FALSE,
     password_algorithm VARCHAR(32) NOT NULL,
-    password_cost VARCHAR(128) NOT NULL,
+    password_parameters VARCHAR(128) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
@@ -1067,7 +1114,8 @@ public record LoginResponse(long userId, String username) {}
 @Configuration
 public class ShiroConfig {
     @Bean
-    CredentialsMatcher credentialsMatcher(PasswordService passwordService) {
+    CredentialsMatcher credentialsMatcher(
+            ApplicationPasswordService passwordService) {
         return new ApplicationCredentialsMatcher(passwordService);
     }
 
@@ -1104,6 +1152,7 @@ public class ShiroConfig {
 | `authc` | 必须通过表单式认证 | 传统服务端页面；REST 需自定义拒绝响应 |
 | `authcBasic` | HTTP Basic 认证 | 受控内部接口，不适合随意暴露公网 |
 | `authcBearer` | 从 Authorization 头读取 Bearer Token 并发起认证 | OAuth 2.0 Access Token、JWT 或不透明 Token API |
+| `invalidRequest` | 拒绝部分危险或非规范请求路径 | 分号、反斜杠、非 ASCII 路径的兼容与安全检查 |
 | `noSessionCreation` | 禁止当前请求创建新 Session | 无状态 API，通常放在认证过滤器之前 |
 | `user` | 已认证或 Remember Me | 低风险个性化页面 |
 | `roles[x]` | 需要指定角色 | 粗粒度后台入口 |
@@ -1111,7 +1160,9 @@ public class ShiroConfig {
 | `logout` | 执行退出 | 传统 Web 退出路径 |
 | `ssl` | 要求安全传输 | HTTPS 约束，通常还由网关统一保障 |
 
-过滤链匹配通常遵循“先匹配先生效”，因此必须由精确规则到宽泛规则，最后使用 `/**` 兜底。修改配置后要用真实请求验证，不能只凭肉眼判断。
+过滤链匹配通常遵循“先匹配先生效”，因此必须由精确规则到宽泛规则，最后使用 `/**` 兜底。Shiro 3 在没有路径规则命中时默认拒绝，并用 `NoAccessFilter` 承担兜底拒绝；显式 `/**` 仍能让页面跳转、REST 401 或 Bearer 挑战等具体契约保持可读、可测。
+
+Shiro 3 的 `authcBasic` 与 `authcBearer` 默认允许 CORS 预检 `OPTIONS` 请求通过认证过滤器。预检通过不会授权实际业务请求；自定义 `restAuthc` 也不是 `HttpAuthenticationFilter`，跨源项目还需明确 CORS 过滤器顺序和预检响应，避免浏览器在真正发送业务请求前就失败。修改过滤链后应分别验证预检、凭证缺失、凭证有效和权限不足四条路径。
 
 #### 5.10.2 先分清认证方式、凭证传递方式与登录态
 
@@ -1383,7 +1434,7 @@ src/main/java/com/example/security
 ├── auth
 │   ├── AuthController.java
 │   ├── LoginRequest.java
-│   └── PasswordService.java
+│   └── ApplicationPasswordService.java
 ├── permission
 │   ├── PermissionService.java
 │   └── AuthorizationCacheService.java
@@ -1569,21 +1620,21 @@ MD5（Message Digest Algorithm 5，消息摘要算法 5）、SHA-1（Secure Hash
 
 成本太低无法有效拖慢攻击者；成本过高则可能使正常登录变慢，并放大拒绝服务攻击对 CPU（Central Processing Unit，中央处理器）和内存的消耗。
 
-应在接近生产的硬件上进行基准测试，结合登录并发量确定参数。成功标准不是“算法能够运行”，而是正常登录延迟、峰值资源占用和抗破解成本同时满足组织要求。
+应在接近生产的硬件上进行基准测试，结合登录并发量确定参数。成功标准不是“算法能够运行”，而是正常登录延迟、峰值资源占用和抗破解成本同时满足组织要求。算法选择可以从 [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html) 的当前建议开始评估，但参数必须结合组织风险与实际硬件重新测量，不能把示例数值机械写入所有环境。
 
 #### 6.1.6 Shiro 在密码验证中的职责
 
-在本笔记的示例中，Realm 根据 Principal 查询账号，并通过 `AuthenticationInfo` 返回存储的 `PasswordRecord`；`CredentialsMatcher`（凭证匹配器）把 `AuthenticationToken` 中用户提交的密码交给 `PasswordService` 验证。
+在本笔记的数据库示例中，Realm 根据 Principal 查询账号，并通过 `AuthenticationInfo` 返回存储的 `PasswordRecord`；`CredentialsMatcher`（凭证匹配器）把 `AuthenticationToken` 中用户提交的密码交给应用级 `ApplicationPasswordService` 验证。
 
 ```text
 AuthenticationToken：本次提交的密码，不可信
 AuthenticationInfo：数据库中的 PasswordRecord，相对可信
-CredentialsMatcher：调用 PasswordService 比较两边
+CredentialsMatcher：调用 ApplicationPasswordService 比较两边
 ```
 
 Shiro 负责组织认证流程，但不会自动替项目决定密码算法、成本参数、密码策略、登录限流和密钥管理方案。这些仍然属于应用及组织安全基线的职责。
 
-一句话记忆：密码不是为了以后取出来，而是为了以后验证本次输入是否与原密码一致。
+密码摘要存储的目标是验证本次输入是否与原密码一致，不提供取回原密码的能力。
 
 ### 6.2 凭证匹配配置要点
 
@@ -1611,15 +1662,20 @@ flowchart LR
 
 还应结合多因素认证、异常地点或设备检测、验证码策略和凭证泄露监测。验证码只用于增加自动化攻击成本，不能替代密码安全与速率限制。
 
-### 6.4 注册、改密与验证必须共用 PasswordService
+### 6.4 注册、改密与验证共用同一密码服务
 
-密码生成和密码验证应封装在同一个服务中，避免注册流程使用一套参数、登录流程使用另一套参数。
+Shiro 已定义 `org.apache.shiro.authc.credential.PasswordService`，并可通过 `PasswordMatcher` 接入 Realm。项目可以直接采用这套格式化摘要方案，也可以接入组织统一的密码库。为了避免示例接口与 Shiro API 同名造成错误导入，本文把应用级抽象命名为 `ApplicationPasswordService`。
+
+Shiro 3.0.0 的 `DefaultPasswordService` 默认使用 Argon2id 和 `shiro2` 格式。这个默认值提供可用起点，不代表已经满足具体组织的性能与安全基线；依赖升级后仍要重新检查算法、成本和兼容迁移。当前 API 说明见 [DefaultPasswordService 3.0.0 Javadoc](https://javadoc.io/doc/org.apache.shiro/shiro-core/3.0.0/org/apache/shiro/authc/credential/DefaultPasswordService.html)。
+
+密码生成和密码验证应封装在同一个实现中，避免注册流程使用一套参数、登录流程使用另一套参数。
 
 ```java
-public interface PasswordService {
+public interface ApplicationPasswordService {
     PasswordRecord hash(char[] rawPassword);
     boolean matches(char[] rawPassword, PasswordRecord stored);
     boolean needsUpgrade(PasswordRecord stored);
+    PasswordRecord newSimulatedRecord();
 }
 
 public record PasswordRecord(
@@ -1630,7 +1686,7 @@ public record PasswordRecord(
 ) {}
 ```
 
-`hash` 每次必须生成随机盐。`matches` 应采用安全实现并减少可观察时间差。`needsUpgrade` 用于算法或成本参数升级。
+`hash` 每次生成随机盐并保存算法与成本参数；`matches` 根据记录中的版本化参数完成验证；`needsUpgrade` 用于登录成功后把旧摘要渐进迁移到当前安全基线；`newSimulatedRecord` 使用高熵随机秘密生成一条合法记录并立即丢弃原秘密，使未知账号也能走一遍接近真实密码的计算。若直接使用 Shiro 的 PasswordService，则让数据库保存其完整格式化结果，不要同时拆分并修改内部字段。
 
 ### 6.5 改密与找回密码流程
 
@@ -1650,7 +1706,7 @@ Realm 的职责是为认证和授权提供数据，不是用户生命周期管�
 
 ### 6.7 CredentialsMatcher 的职责
 
-`CredentialsMatcher` 比较 Token 中的提交凭证与 AuthenticationInfo 中的存储凭证。最简单的直接相等比较不适合密码，密码应使用支持散列参数的匹配器或组织统一 PasswordService。
+`CredentialsMatcher` 比较 Token 中的提交凭证与 AuthenticationInfo 中的存储凭证。最简单的直接相等比较不适合密码，密码应使用 Shiro 的 `PasswordMatcher`，或接入组织统一的 `ApplicationPasswordService`。
 
 匹配器只负责验证，不负责查询用户、不负责账号锁定策略，也不应记录原始凭证。
 
@@ -1659,9 +1715,10 @@ Realm 的职责是为认证和授权提供数据，不是用户生命周期管�
 ```java
 public final class ApplicationCredentialsMatcher
         implements CredentialsMatcher {
-    private final PasswordService passwordService;
+    private final ApplicationPasswordService passwordService;
 
-    public ApplicationCredentialsMatcher(PasswordService passwordService) {
+    public ApplicationCredentialsMatcher(
+            ApplicationPasswordService passwordService) {
         this.passwordService = passwordService;
     }
 
@@ -1673,12 +1730,25 @@ public final class ApplicationCredentialsMatcher
             (PasswordRecord) info.getCredentials();
         return passwordService.matches(submitted, stored);
     }
+
+    @Override
+    public Optional<AuthenticationInfo> createSimulatedCredentials() {
+        return Optional.of(new SimpleAuthenticationInfo(
+            "__simulated_principal__",
+            passwordService.newSimulatedRecord(),
+            "application-password"
+        ));
+    }
 }
 ```
 
 输入边界：这个实现只适用于凭证为 `char[]` 的 Token 和凭证为 `PasswordRecord` 的 AuthenticationInfo。若项目还支持短信码、证书或 API Key，应使用不同 Token、Realm 和 Matcher，并通过 `Realm.supports(token)` 分流。
 
 成功判据：正确密码返回 `true`，错误密码返回 `false`；未知用户、锁定用户等状态应在 Realm 或账号策略层处理。测试必须覆盖错误类型、空凭证、算法升级参数和并发调用，不能只验证一次正确登录。
+
+`createSimulatedCredentials` 是 Shiro 3 为账号枚举防护提供的扩展点。第 5.3 节在账号不存在时返回 `null`，Realm 会取得并缓存第一条模拟记录，再让同一个 Matcher 执行验证；若 Realm 直接抛出 `UnknownAccountException`，这条模拟路径不会运行。模拟记录的算法和成本应与真实账号接近，原始随机秘密不得保存或返回。
+
+外部响应统一后，还要用分位延迟而非单次耗时比较“不存在账号”和“错误密码”两类失败。模拟计算只能缩小可观察差异，登录限流、监控和锁定策略仍然需要保留。
 
 ### 6.8 HashedCredentialsMatcher 的关键参数
 
@@ -2074,7 +2144,7 @@ Shiro 创建的 Cookie 模板默认启用 `HttpOnly`。`Secure=true` 要求通�
 
 6\. 在多节点环境中轮流访问不同节点，恢复结果和撤销行为必须一致。
 
-一句话记忆：Session 维持当前会话的登录状态，Remember Me 只在以后认出“可能是这位用户”，真正执行敏感操作仍要重新证明身份。官方机制说明可参考 [Apache Shiro Authentication](https://shiro.apache.org/authentication.html) 和 [Apache Shiro Web Remember Me](https://shiro.apache.org/web.html)。
+Session 维持当前会话的登录状态；Remember Me 只在以后恢复“可能是这位用户”的弱身份，执行敏感操作时仍要重新证明身份。官方机制说明可参考 [Apache Shiro Authentication](https://shiro.apache.org/authentication.html) 和 [Apache Shiro Web Remember Me](https://shiro.apache.org/web.html)。
 
 ## 8 前后端分离与跨应用身份方案（进阶再学）
 
@@ -2082,7 +2152,7 @@ Shiro 创建的 Cookie 模板默认启用 `HttpOnly`。`Secure=true` 要求通�
 
 第 8 章涉及令牌、单点登录和委托授权，英文缩写较多。先记住它们的全称和要解决的问题，不要一开始就把所有方案混成“登录功能”。
 
-| 缩写 | 英文全称 | 中文含义 | 一句话理解 |
+| 缩写 | 英文全称 | 中文含义 | 直观含义 |
 | --- | --- | --- | --- |
 | JWT | JSON Web Token | JSON 网络令牌 | 一种紧凑的令牌格式，用于传递经过签名保护的声明 |
 | JWS | JSON Web Signature | JSON Web 签名 | 对内容做数字签名或消息认证，常用于保护 JWT 完整性 |
@@ -2445,21 +2515,32 @@ Future<Report> future = executorService.submit(securedTask);
 
 验证时至少覆盖三个场景：本租户且有权限时允许，其他租户即使资源 ID 存在也拒绝，伪造 Header、查询参数或消息体中的租户 ID 仍不能越界。缓存测试还要证明同一个用户在两个租户下不会复用错误的授权结果。
 
-### 10.3 依赖与序列化安全
+### 10.3 依赖、序列化与安全公告回归
 
-1\. 新项目以当前稳定版 Shiro 3.0.0 为基线；存量 1.x 或 2.x 项目先阅读迁移指南，再升级并回归。
+本文示例固定使用 Shiro 3.0.0。存量系统不能只比较主版本号，还要检查依赖树中各 Shiro 模块的实际版本，并把启用的功能与官方公告逐项对照。下面列出的 2026 年问题均已在 3.0.0 正式版修复，但对应失败场景仍应转化为升级回归测试。
 
-2\. 持续扫描 CVE（Common Vulnerabilities and Exposures，常见漏洞与披露），并在每次发布前查看官方安全报告。
+| 公告 | 受影响功能与风险 | 升级后的定向回归 |
+| --- | --- | --- |
+| CVE-2026-56091 | `shiro-guice` 在 Web Servlet 场景中的认证绕过 | 向 Guice Web 入口发送畸形路径和转发请求，确认保护链无法绕过 |
+| CVE-2026-56130 | Remember Me Cookie 的服务端年龄校验不足 | 过期、篡改、退出和密钥轮换后，旧 Cookie 均无法恢复主体 |
+| CVE-2026-49268 | `DefaultLdapRealm` 构造 DN（Distinguished Name，可分辨名称）时的 LDAP 特殊字符注入 | 对逗号、加号、反斜杠等特殊字符做负向认证测试 |
+| CVE-2026-48589、CVE-2026-44598 | `shiro-jakarta-ee` 登录后重定向与 SavedRequest 处理可能受客户端输入影响 | 伪造 Referer、SavedRequest Cookie 和绝对地址，只允许应用内相对路径 |
+| CVE-2026-43827 | 登录成功后未轮换已有 Session，形成会话固定风险 | 比较登录前后 Session ID，并确认旧 ID 立即失效 |
+| CVE-2026-43828 | Shiro Native Session 与 Remember Me 的敏感 Cookie 默认缺少 `Secure` | 在最终 HTTPS 响应中检查 `Set-Cookie`，不能只看配置文件 |
+| CVE-2026-23903 | 大小写不敏感文件系统上的静态资源规则可能被大小写变体绕过 | 对静态资源和保护 URL 发送大小写变体请求 |
+| CVE-2026-23901 | 不存在账号与错误密码的执行时间差可能辅助账号枚举 | 比较两类失败的延迟分布，并同时验证统一响应、限流和锁定策略 |
 
-3\. 重点关注 Session 固定、Cookie Secure 属性、Remember Me 有效期、开放重定向、路径匹配、LDAP 输入处理和认证绕过问题；这些风险在 2026 年官方报告中都有对应修复版本。
+上表用于说明怎样把公告转成测试，不替代实时漏洞扫描。上线前还应完成以下工作：
 
-4\. 即使新版本改进了默认值，也要在生产配置中显式设置 Cookie 的 `Secure`、`HttpOnly`、`SameSite`、域和路径，并通过浏览器或自动化测试检查最终 `Set-Cookie` 响应。
+1\. 持续扫描 CVE（Common Vulnerabilities and Exposures，常见漏洞与披露），并在每次发布前重新查看官方安全报告。
 
-5\. 避免反序列化不可信 Java 对象；跨版本 Session 数据应采用受控格式并包含版本字段。
+2\. 即使新版本改进了默认值，也显式设置 Cookie 的 `Secure`、`HttpOnly`、`SameSite`、域和路径，并通过浏览器或自动化测试检查最终响应。
 
-6\. 密钥放入密钥管理系统，不写入源码、镜像或普通配置仓库。
+3\. 避免反序列化不可信 Java 对象；跨版本 Session 数据采用受控格式并包含版本字段。
 
-7\. 升级前回归登录、登出、Session ID 轮换、权限、Remember Me、路径匹配、Session 兼容与节点滚动发布。
+4\. 密钥放入密钥管理系统，不写入源码、镜像或普通配置仓库。
+
+5\. 升级前回归登录、登出、Session ID 轮换、权限、Remember Me、路径匹配、Session 兼容与节点滚动发布。
 
 官方入口：[Apache Shiro 安全报告](https://shiro.apache.org/security-reports.html)、[Apache Shiro 安全模型](https://shiro.apache.org/security-model.html)。
 
@@ -2632,7 +2713,7 @@ class OrderSecurityTest {
 }
 ```
 
-`loginAs` 通过真实 HTTP 登录入口获得 Session，没有绕过 Shiro 过滤链。测试数据夹具必须预先创建 `reader` 和 `admin`，二者的测试密码摘要应由与生产相同的 PasswordService 生成。
+`loginAs` 通过真实 HTTP 登录入口获得 Session，没有绕过 Shiro 过滤链。测试数据夹具必须预先创建 `reader` 和 `admin`，二者的测试密码摘要应由与生产相同的 `ApplicationPasswordService` 生成。
 
 匿名请求之所以预期得到 401，是因为第 5.4 和 5.20 节把 `/api/**` 交给了返回 JSON 的 `restAuthc`，而不是会重定向登录页的默认 `authc`。`reader` 删除订单之所以预期得到 403，则要求删除方法确实带有相应的角色或权限注解，并经过 Spring AOP 代理。
 
@@ -2826,9 +2907,9 @@ public byte[] exportOrders() {
 
 ### 15.1 七天入门路线
 
-1\. 第一天：阅读第 1 至第 3 章，手画 Shiro 架构图和认证时序图。
+1\. 第一天：完成第 1 章四个实验，能说清输入、认证结果和授权结果。
 
-2\. 第二天：完成第 4 章最小示例和五个实验。
+2\. 第二天：阅读第 2、3 章并手画认证时序图，再用第 4 章解释第 1 章的格式化密码摘要与装配链。
 
 3\. 第三天：设计五张 RBAC 表，理解数据库 Realm。
 
@@ -2838,7 +2919,7 @@ public byte[] exportOrders() {
 
 6\. 第六天：完成权限矩阵集成测试和三类故障排查演练。
 
-7\. 第七天：按 WWH 复述核心机制，再补充失败场景、生产边界和验证标准，并用上线检查表 Review 自己的示例项目。
+7\. 第七天：按 WWH 复述核心机制，再补充失败场景、生产边界和验证标准，并用上线检查表复核自己的示例项目。
 
 ### 15.2 三轮复习法
 
@@ -2880,7 +2961,9 @@ WWH 不是给每段机械添加三个标题，而是一条完整理解链。复�
 
 不要仅凭博客文章决定依赖版本或安全配置。版本号、已知漏洞和集成方式可能变化，应以当前官方文档和组织安全基线为准。
 
-### 15.5 最终自测
+### 15.5 面试与复习自测
+
+回答下面的问题时，先界定概念，再按执行链说明组件和状态如何变化，最后用错误场景、测试或生产指标证明结论。只背 API 名称无法解释权限为何不生效、会话为何丢失或撤权为何延迟。
 
 1\. 不看文档画出认证和授权流程。
 
