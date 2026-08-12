@@ -11,12 +11,12 @@
 先想象一个很普通的需求：商城要保存一件“机械键盘”，页面需要展示商品编号、名称、价格和标签。在 MongoDB 中，这条记录可以长成下面这样：
 
 ```javascript
-{
+({
   sku: "KB-001",
   name: "机械键盘",
   price: NumberDecimal("499.00"),
   tags: ["wireless", "hot-swap"]
-}
+})
 ```
 
 MongoDB 最基础的三个层级是 Document（文档）、Collection（集合）和 Database（数据库）。上面这一整块数据是一个文档，即一条完整的业务记录；许多商品文档组成 `products` 集合；多个集合属于同一个数据库。它们大致对应关系型数据库里的“行、表、数据库”，但 MongoDB 文档可以直接包含数组和嵌套对象。
@@ -99,7 +99,9 @@ MongoDB 不等于“没有结构”，也不保证“天然比关系型数据库
 
 ### 2.1 前置条件
 
-需要 Docker 和 `mongosh`，或者一个可访问的 MongoDB Atlas 集群。以下示例固定使用 MongoDB 8.0 镜像作为学习基线；这里的 8.0 是刻意固定的教学版本，不表示它是阅读当天的最新版本。本文在 2026-08-04 Review 时，官方 Current Manual 已显示 8.2；生产选版必须查看支持周期、发行说明、目标版本文档以及驱动兼容矩阵，不能使用浮动的 `latest` 标签。
+需要 Docker 和 `mongosh`，或者一个可访问的 MongoDB Atlas 集群。以下示例使用 `mongo:8.0` 作为学习基线：它固定了 8.0 主版本系列，但会随该标签更新到新的 8.0 补丁版，不是字节级可复现的镜像。CI（Continuous Integration，持续集成）和长期保留的实验环境应在安全评审后固定完整补丁版或镜像摘要，并通过明确变更升级。
+
+本文在 2026-08-12 Review 时，官方手册将 MongoDB 8.2 标为最新次要版本，8.2 发行说明已列出包含安全和可靠性修复的 8.2.12 补丁版。生产选版应查看支持周期、安全公告、发行说明、驱动兼容矩阵和升降级边界，不使用浮动的 `latest` 标签。参见 [MongoDB 8.2 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.2/) 与 [MongoDB Versioning](https://www.mongodb.com/docs/v8.2/reference/versioning/)。
 
 ### 2.2 启动本地实例
 
@@ -191,6 +193,7 @@ db.products.insertMany([
     category: "keyboard",
     price: NumberDecimal("499.00"),
     stock: NumberInt(30),
+    isDeleted: false,
     tags: ["wireless", "hot-swap"],
     createdAt: new Date()
   },
@@ -201,6 +204,7 @@ db.products.insertMany([
     category: "mouse",
     price: NumberDecimal("199.00"),
     stock: NumberInt(50),
+    isDeleted: false,
     tags: ["wireless"],
     createdAt: new Date()
   }
@@ -344,21 +348,21 @@ db.orders.aggregate([
 
 ```javascript
 // 这是用于理解输入形状的示意文档，不需要重复插入教程数据库。
-{
+var sampleOrder = {
   _id: ObjectId("66a72e000000000000000001"),
   status: "PAID",
   totalAmount: NumberDecimal("499.00")
-}
+};
 ```
 
 经过 `$project` 后，`status` 和 `totalAmount` 没有被保留，输出类似：
 
 ```javascript
 // objectId 是 $type 返回的 BSON 类型名称。
-{
+var projectedOrder = {
   _id: ObjectId("66a72e000000000000000001"),
   idType: "objectId"
-}
+};
 ```
 
 关键符号可以这样记：
@@ -679,20 +683,25 @@ var deleteResult = db.users.deleteOne({ username: "bob" });
 deleteResult.deletedCount;
 ```
 
-预期 `deletedCount` 为 `1`。删除前要确保过滤条件足够精确并检查结果；审计要求高的业务常使用软删除。下面将测试鼠标标记为已删除：
+预期 `deletedCount` 为 `1`。删除前要确保过滤条件足够精确并检查结果；审计要求高的业务常使用软删除。下面将测试鼠标标记为已删除；`isDeleted` 作为稳定的状态字段，`deletedAt` 记录实际删除时间：
 
 ```javascript
-// 软删除通过条件更新实现，重复执行时 modifiedCount 将为 0。
+// 条件更新使软删除幂等，重复执行时 modifiedCount 为 0。
 var softDeleteResult = db.products.updateOne(
-  { sku: "MS-001", deletedAt: { $exists: false } },
-  { $set: { deletedAt: new Date() } }
+  { sku: "MS-001", isDeleted: false },
+  {
+    $set: {
+      isDeleted: true,
+      deletedAt: new Date()
+    }
+  }
 );
 softDeleteResult.modifiedCount;
 ```
 
-预期 `modifiedCount` 为 `1`。软删除会影响所有查询和唯一约束：业务查询必须排除已删除数据，而第 2.4 节创建的全量唯一索引仍会禁止复用已删除商品的 SKU。若业务明确允许复用，可改成只约束活跃数据的部分唯一索引。
+预期 `modifiedCount` 为 `1`。软删除会影响所有查询和唯一约束：业务查询要带上 `isDeleted: false`，而第 2.4 节创建的全量唯一索引仍会禁止复用已删除商品的 SKU。若业务明确允许复用，可改成只约束活跃数据的部分唯一索引。
 
-下面的索引替换只用于学习环境；生产变更必须先检查重复数据，评估约束切换窗口，并准备回滚方案：
+下面的索引替换只用于学习环境；生产变更应先确认每条历史商品都有布尔类型的 `isDeleted`，回填缺失状态，检查活跃数据中的重复 SKU，再评估约束切换窗口和回滚方案：
 
 ```javascript
 // 仅限学习环境：先删除全量唯一索引，再创建只约束活跃数据的部分索引。
@@ -702,12 +711,12 @@ db.products.createIndex(
   {
     name: "uk_active_products_sku",
     unique: true,
-    partialFilterExpression: { deletedAt: { $exists: false } }
+    partialFilterExpression: { isDeleted: false }
   }
 );
 ```
 
-部分索引只覆盖满足过滤条件的文档，因此希望利用它的查询也应包含 `deletedAt: { $exists: false }`。若业务不允许复用 SKU，则保留原全量唯一索引更简单，不需要执行这次替换。
+部分索引只覆盖满足过滤条件的文档，因此希望利用它的查询也应包含 `isDeleted: false`。`partialFilterExpression` 支持字段等值条件，但官方列出的存在性条件只有 `$exists: true`；不能用 `deletedAt: { $exists: false }` 定义这个部分索引。显式布尔状态还能让新建、已删除和历史异常数据的语义更容易校验。若业务不允许复用 SKU，则保留原全量唯一索引更简单，不需要执行这次替换。参见 [Partial Indexes](https://www.mongodb.com/docs/manual/core/index-partial/)。
 
 后续章节继续使用“SKU 全局唯一”的学习基线。若执行了上面的部分索引实验，先恢复原索引：
 
@@ -765,7 +774,7 @@ flowchart TD
 
 ```javascript
 // 订单项随订单整体读取和提交，因此嵌入同一个文档。
-{
+var embeddedOrder = {
   _id: ObjectId("66a72e000000000000000001"),
   schemaVersion: NumberInt(1),
   requestId: "tutorial-order-001",
@@ -782,7 +791,7 @@ flowchart TD
   ],
   totalAmount: NumberDecimal("499.00"),
   createdAt: ISODate("2026-07-28T08:00:00Z")
-}
+};
 ```
 
 `nameSnapshot` 和 `unitPrice` 有意冗余，因为订单必须保留成交时的事实，不能随商品主数据变化。冗余不是错误，无法解释的一致性维护策略才是错误。
@@ -1409,51 +1418,88 @@ try {
 灵活模式适合演进，但成熟业务应在关键字段上增加校验，阻止类型漂移和非法状态。MongoDB 默认在文档违反验证规则时拒绝写入，也可以在迁移期只记录警告。参见 [Schema Validation](https://www.mongodb.com/docs/manual/core/schema-validation/)。
 
 ```javascript
-// 在集合入口校验关键类型和业务约束，阻止非法文档进入数据库。
-db.createCollection("orders", {
-  validator: {
-    $jsonSchema: {
-      bsonType: "object",
-      required: [
-        "schemaVersion",
-        "requestId",
-        "requestFingerprint",
-        "userId",
-        "status",
-        "items",
-        "totalAmount",
-        "createdAt"
-      ],
-      properties: {
-        schemaVersion: { bsonType: "int", minimum: 1 },
-        requestId: { bsonType: "string", minLength: 1 },
-        requestFingerprint: { bsonType: "string", minLength: 1 },
-        userId: { bsonType: "objectId" },
-        status: { enum: ["CREATED", "PAID", "CANCELLED", "COMPLETED"] },
+// 第 2.4 节已经创建 orders，因此本节用 collMod 为现有集合增加校验。
+var orderValidator = {
+  $jsonSchema: {
+    bsonType: "object",
+    required: [
+      "schemaVersion",
+      "requestId",
+      "requestFingerprint",
+      "userId",
+      "status",
+      "items",
+      "totalAmount",
+      "createdAt"
+    ],
+    properties: {
+      schemaVersion: { bsonType: "int", minimum: 1 },
+      requestId: { bsonType: "string", minLength: 1 },
+      requestFingerprint: { bsonType: "string", minLength: 1 },
+      userId: { bsonType: "objectId" },
+      status: { enum: ["CREATED", "PAID", "CANCELLED", "COMPLETED"] },
+      items: {
+        bsonType: "array",
+        minItems: 1,
         items: {
-          bsonType: "array",
-          minItems: 1,
-          items: {
-            bsonType: "object",
-            required: ["productId", "unitPrice", "quantity"],
-            properties: {
-              productId: { bsonType: "objectId" },
-              unitPrice: { bsonType: "decimal" },
-              quantity: { bsonType: "int", minimum: 1 }
-            }
+          bsonType: "object",
+          required: ["productId", "unitPrice", "quantity"],
+          properties: {
+            productId: { bsonType: "objectId" },
+            unitPrice: { bsonType: "decimal" },
+            quantity: { bsonType: "int", minimum: 1 }
           }
-        },
-        totalAmount: { bsonType: "decimal", minimum: NumberDecimal("0") },
-        createdAt: { bsonType: "date" }
-      }
+        }
+      },
+      totalAmount: { bsonType: "decimal", minimum: NumberDecimal("0") },
+      createdAt: { bsonType: "date" }
     }
-  },
+  }
+};
+
+// 先证明历史文档都符合新规则，再把违规写入切换为拒绝。
+var invalidExistingOrders = db.orders.countDocuments({
+  $nor: [orderValidator]
+});
+
+if (invalidExistingOrders !== 0) {
+  throw new Error(
+    "存在不符合新校验器的历史订单: " + invalidExistingOrders
+  );
+}
+
+var validationResult = db.runCommand({
+  collMod: "orders",
+  validator: orderValidator,
   validationLevel: "strict",
   validationAction: "error"
 });
+validationResult.ok;
 ```
 
-验证方式是故意写入一条 `quantity: 0` 或字符串日期的文档，并确认收到文档验证失败，而不是只查看集合是否创建成功。`createCollection()` 只适合首次创建；为已有集合增加或修改校验器时应使用 `collMod` 命令，并先扫描历史数据。迁移老集合时可先使用 `validationAction: "warn"` 观察违规数据，治理完成后再切换为 `error`。
+`invalidExistingOrders` 的预期值为 `0`，`validationResult.ok` 的预期值为 `1`。再故意写入一条数量为零的完整订单：
+
+```javascript
+// quantity 违反 minimum: 1，预期整次插入被拒绝。
+db.orders.insertOne({
+  schemaVersion: NumberInt(1),
+  requestId: "invalid-validation-order-001",
+  requestFingerprint: "sha256:invalid-validation-payload",
+  userId: ObjectId("66a72d000000000000000001"),
+  status: "CREATED",
+  items: [
+    {
+      productId: ObjectId("66a72c000000000000000001"),
+      unitPrice: NumberDecimal("499.00"),
+      quantity: NumberInt(0)
+    }
+  ],
+  totalAmount: NumberDecimal("0"),
+  createdAt: new Date()
+});
+```
+
+预期收到文档验证失败，且 `db.orders.countDocuments({ requestId: "invalid-validation-order-001" })` 返回 `0`。这同时验证了拒绝信号和最终数据，比只检查 `collMod` 返回值更完整。`createCollection()` 只适合首次创建集合；迁移老集合时可先使用 `validationAction: "warn"` 观察违规数据，治理完成后再切换为 `error`。参见 [Modify Schema Validation](https://www.mongodb.com/docs/manual/core/schema-validation/update-schema-validation/)。
 
 ### 5.5 模式演进与 `schemaVersion`
 
@@ -1685,7 +1731,7 @@ MongoDB 的常规索引可以先用“按键排序的 B-tree（平衡树）结�
 | 唯一索引 | `{ username: 1 }` | 数据唯一约束 | 空值、缺失和部分索引语义需验证 |
 | 部分索引 | 带 `partialFilterExpression` | 只索引活跃子集 | 查询必须满足过滤条件 |
 | TTL 索引 | `{ expireAt: 1 }` | 自动过期 | 删除非实时，有后台延迟 |
-| 文本索引 | `{ name: "text" }` | 基础全文搜索 | 复杂搜索可考虑 Atlas Search |
+| 文本索引 | `{ name: "text" }` | 基础全文搜索 | 复杂搜索可评估 MongoDB Search |
 | 地理空间索引 | `{ location: "2dsphere" }` | 附近搜索 | 坐标顺序和 GeoJSON 格式要正确 |
 | Hashed 索引 | `{ userId: "hashed" }` | 均匀哈希分片 | 不支持高效范围定位 |
 
@@ -1780,12 +1826,13 @@ db.orders.createIndex({
 ```javascript
 // 索引同时覆盖过滤、排序和返回字段，目标是避免回表读取文档。
 db.products.createIndex(
-  { category: 1, price: 1, sku: 1, name: 1 },
+  { isDeleted: 1, category: 1, price: 1, sku: 1, name: 1 },
   { name: "idx_products_category_price_cover" }
 );
 
 db.products.find(
   {
+    isDeleted: false,
     category: "keyboard",
     price: { $gte: NumberDecimal("300") }
   },
@@ -1831,12 +1878,12 @@ db.users.find({
 ```javascript
 // tags 是数组，因此该索引会成为多键索引。
 db.products.createIndex(
-  { tags: 1, sku: 1 },
+  { isDeleted: 1, tags: 1, sku: 1 },
   { name: "idx_products_tags_sku" }
 );
 
 db.products.find(
-  { tags: "wireless" },
+  { isDeleted: false, tags: "wireless" },
   { _id: 0, sku: 1 }
 ).explain("executionStats");
 ```
@@ -2027,7 +2074,7 @@ mongodb-java-learning/
                         └── ProductQuery.java
 ```
 
-`pom.xml` 使用 BOM（Bill of Materials，物料清单）保证驱动各模块版本一致。本文在 2026-08-04 复核时，官方入门文档展示的 BOM 版本为 `5.9.1`；将来复制示例时，应先到 [Java Driver Get Started](https://www.mongodb.com/docs/drivers/java/sync/current/get-started/) 核对当前版本。
+`pom.xml` 使用 BOM（Bill of Materials，物料清单）保证驱动各模块版本一致。本文在 2026-08-12 复核时，官方入门文档展示的 BOM 版本为 `5.9.1`；将来复制示例时，应先到 [Java Driver Get Started](https://www.mongodb.com/docs/drivers/java/sync/current/get-started/) 核对当前版本。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -2127,6 +2174,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 public final class ProductQuery {
@@ -2152,7 +2200,10 @@ public final class ProductQuery {
             MongoCollection<Document> products =
                     database.getCollection("products");
             // BSON 中 sku 是字符串，因此过滤值也使用 String。
-            Document product = products.find(eq("sku", "KB-001")).first();
+            Document product = products.find(and(
+                    eq("sku", "KB-001"),
+                    eq("isDeleted", false)
+            )).first();
 
             if (product == null) {
                 System.out.println("未找到 sku=KB-001，请先完成第 2.4 节");
@@ -2200,7 +2251,11 @@ import static com.mongodb.client.model.Sorts.ascending;
 import static com.mongodb.client.model.Updates.inc;
 
 try (MongoCursor<Document> cursor = products.find(
-                and(eq("category", "keyboard"), gte("stock", 1)))
+                and(
+                        eq("isDeleted", false),
+                        eq("category", "keyboard"),
+                        gte("stock", 1)
+                ))
         .projection(fields(include("sku", "name", "stock"), excludeId()))
         .sort(ascending("sku"))
         .limit(20)
@@ -2213,7 +2268,11 @@ try (MongoCursor<Document> cursor = products.find(
 
 UpdateResult result = products.updateOne(
         // 条件与扣减在服务端原子执行，避免先查后改的竞态。
-        and(eq("sku", "KB-001"), gte("stock", 1)),
+        and(
+                eq("sku", "KB-001"),
+                eq("isDeleted", false),
+                gte("stock", 1)
+        ),
         inc("stock", -1)
 );
 
@@ -2270,6 +2329,7 @@ public final class Product {
     private String name;
     private Decimal128 price;
     private Integer stock;
+    private Boolean isDeleted;
     private Date createdAt;
 
     public Product() {
@@ -2316,6 +2376,14 @@ public final class Product {
         this.stock = stock;
     }
 
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
     public Date getCreatedAt() {
         return createdAt;
     }
@@ -2337,6 +2405,7 @@ import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
@@ -2354,7 +2423,10 @@ MongoDatabase database = client.getDatabase("shop")
 MongoCollection<Product> products =
         database.getCollection("products", Product.class);
 
-Product product = products.find(eq("sku", "KB-001")).first();
+Product product = products.find(and(
+        eq("sku", "KB-001"),
+        eq("isDeleted", false)
+)).first();
 if (product == null) {
     throw new IllegalStateException("商品不存在");
 }
@@ -2468,6 +2540,7 @@ public class ProductEntity {
     private String name;
     private Decimal128 price;
     private Integer stock;
+    private Boolean isDeleted;
 
     protected ProductEntity() {
         // 保留给对象映射框架使用，业务代码无需直接调用。
@@ -2492,6 +2565,10 @@ public class ProductEntity {
     public Integer getStock() {
         return stock;
     }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
 }
 ```
 
@@ -2508,8 +2585,8 @@ import java.util.Optional;
 public interface ProductRepository
         extends MongoRepository<ProductEntity, ObjectId> {
 
-    // Spring Data 根据方法名派生 { sku: <value> } 查询。
-    Optional<ProductEntity> findBySku(String sku);
+    // Spring Data 根据方法名同时约束 SKU 和活跃状态。
+    Optional<ProductEntity> findBySkuAndIsDeletedFalse(String sku);
 }
 ```
 
@@ -2533,7 +2610,7 @@ public class ShopApplication {
     @Bean
     CommandLineRunner verify(ProductRepository repository) {
         // 应用启动后执行一次真实查询，验证映射与连接配置。
-        return args -> repository.findBySku("KB-001")
+        return args -> repository.findBySkuAndIsDeletedFalse("KB-001")
                 .ifPresentOrElse(
                         product -> System.out.println(product.getName()),
                         () -> System.out.println(
@@ -2589,7 +2666,11 @@ try (ClientSession session = client.startSession()) {
     session.withTransaction(() -> {
         UpdateResult stockResult = products.updateOne(
                 session,
-                and(eq("sku", "KB-001"), gte("stock", 1)),
+                and(
+                        eq("sku", "KB-001"),
+                        eq("isDeleted", false),
+                        gte("stock", 1)
+                ),
                 inc("stock", -1)
         );
 
@@ -2712,7 +2793,9 @@ public class OrderService {
             String requestId,
             String requestFingerprint) {
         Query stockAvailable = Query.query(
-                where("sku").is("KB-001").and("stock").gte(1));
+                where("sku").is("KB-001")
+                        .and("isDeleted").is(false)
+                        .and("stock").gte(1));
         UpdateResult stockResult = template.updateFirst(
                 // 条件扣减与后续订单插入绑定到同一事务会话。
                 stockAvailable,
@@ -2827,7 +2910,7 @@ Write Concern 的关键字段不能只记 `w`：
 ```javascript
 // 多数写关注同时要求 Journal；超时仍不能证明服务端没有执行。
 db.products.updateOne(
-  { sku: "KB-001" },
+  { sku: "KB-001", isDeleted: false },
   { $set: { consistencyCheckedAt: new Date() } },
   {
     writeConcern: {
@@ -2878,7 +2961,7 @@ var txDb = session.getDatabase("shop");
 try {
   session.withTransaction(function() {
     const stockResult = txDb.products.updateOne(
-      { sku: "KB-001", stock: { $gte: 1 } },
+      { sku: "KB-001", isDeleted: false, stock: { $gte: 1 } },
       { $inc: { stock: -1 } }
     );
 
@@ -3967,7 +4050,7 @@ RPO（Recovery Point Objective，恢复点目标）回答最多允许丢失多�
 
 `mongodump` 与 `mongorestore` 更接近“MongoDB 到 MongoDB 的逻辑备份恢复”；`mongoexport` 与 `mongoimport` 更接近“MongoDB 与文本文件之间的数据交换”。JSON 或 CSV 导出可能丢失类型表达、索引、验证规则、用户角色等信息，所以不能把“文件能打开”当成“数据库可恢复”。第 12.3 节给出备份与恢复命令及生产边界。
 
-`mongosync` 用于一次性集群迁移，可以在复制数据期间继续跟进源端写入，但只有完成提交且目标端报告可写后才能安全切流。它不会同步用户和角色，也不支持用目标集群长期承担 Disaster Recovery（灾难恢复）或分析副本职责。迁移前必须核对当前版本的拓扑、功能和认证支持矩阵，保证源端 Oplog 窗口覆盖迁移时间，并对数据执行独立验证。参见 [About `mongosync`](https://www.mongodb.com/docs/mongosync/current/about-mongosync/)。
+`mongosync` 用于一次性集群迁移，可以在复制数据期间继续跟进源端写入，但只有完成提交且目标端报告可写后才能安全切流。它不会同步用户和角色，也不支持用目标集群长期承担 Disaster Recovery（灾难恢复）或分析副本职责。工具与 Server 的支持组合会变化；例如当前 MongoDB 8.2 发行说明已明确警告 `mongosync` 不支持 MongoDB 8.3。迁移前要核对当日的拓扑、功能、认证与版本支持矩阵，保证源端 Oplog 窗口覆盖迁移时间，并对数据执行独立验证。参见 [About `mongosync`](https://www.mongodb.com/docs/mongosync/current/about-mongosync/) 与 [MongoDB 8.2 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.2/)。
 
 Relational Migrator 解决的是关系模型到文档模型的迁移，不只是复制字段。工具给出的映射仍需根据访问模式评审；迁移任务还要验证主键映射、外键嵌入、空值、时间与金额类型、重复执行语义和失败后的清理方式。正式使用前必须阅读当前发行说明，因为迁移能力、限制和数据完整性公告可能随版本变化。参见 [Relational Migrator](https://www.mongodb.com/docs/relational-migrator/)。
 
@@ -4262,7 +4345,7 @@ db.products.find(
     $text: {
       $search: "wireless"
     },
-    deletedAt: { $exists: false }
+    isDeleted: false
   },
   {
     _id: 0,
@@ -4281,7 +4364,11 @@ db.products.find(
 
 `weights` 让名称匹配比标签匹配贡献更高分。两个教程商品的标签都包含 `wireless`，但第 4.7 节已软删除鼠标，因此活跃条件下预期只返回键盘。验证时还要使用真实中文分词、同义词、拼写和排序样本；基础文本索引无法自动满足复杂相关性、模糊搜索、多语言分析器和运营调权需求。
 
-Atlas Search 使用独立搜索索引和搜索执行能力；Vector Search（向量搜索）通过向量相似度做语义召回。向量来自 Embedding Model（嵌入模型），模型版本、维度、距离度量、过滤条件和重建流程共同决定结果。向量召回不是生成答案，也不保证事实正确，仍需离线评测 Recall（召回率）、Precision（准确率）和端到端延迟。选型要看部署约束、同步成本、结果质量与团队运维能力，而不是仅看“能否执行一个查询”。
+MongoDB Search 使用独立的 `mongot` 进程维护搜索索引，并执行 `$search`、`$searchMeta` 和 `$vectorSearch` 等聚合阶段。Atlas 代为管理 `mongot`；当前 Community Edition（社区版）和 MongoDB Enterprise 也可以自管理部署搜索与向量搜索，因此这些能力已不是 Atlas 独有。`mongot` 会通过变更流与 `mongod` 同步数据，并在独立存储中维护索引；生产系统要把索引新鲜度、同步延迟、重建时间、`mongot` 高可用与资源隔离纳入容量和故障演练。
+
+本地评估可使用包含 `mongod` 与 `mongot` 的 `mongodb/mongodb-atlas-local` 镜像，但它是单节点开发环境，不能作为生产高可用证据。自管理部署的 Server、`mongot`、操作系统和 Kubernetes 管理组件具有明确兼容矩阵；升级时应核对目标路径，不应只看 `mongod` 版本。参见 [Self-Managed MongoDB Search and Vector Search](https://www.mongodb.com/docs/search/self-managed/current/) 与 [`mongot` Compatibility and Requirements](https://www.mongodb.com/docs/search/self-managed/current/deployment/compatibility-requirements/)。
+
+Vector Search（向量搜索）通过向量相似度做语义召回。向量来自 Embedding Model（嵌入模型），模型版本、维度、距离度量、过滤条件和重建流程共同决定结果。向量召回不是生成答案，也不保证事实正确，仍需离线评测 Recall（召回率）、Precision（准确率）和端到端延迟。选型还要比较部署约束、同步成本、搜索质量与团队运维能力。
 
 ### 13.6 FCV、Stable API 与升级边界
 
@@ -4330,111 +4417,97 @@ try (MongoClient stableClient = MongoClients.create(settings)) {
 
 `strict(true)` 会拒绝不属于所声明 API 的命令，`deprecationErrors(true)` 会把该 API 中已弃用行为暴露为错误，适合在升级测试中提前发现兼容问题。Stable API 不固定查询性能、数据模型或所有服务端管理命令，也不替代驱动与服务端兼容矩阵。参见 [MongoDB Stable API](https://www.mongodb.com/docs/manual/reference/stable-api/)。
 
-## 14 面试递归追问与回答框架
+## 14 面试复习：用递归追问检验判断过程
+
+本章用高频追问检查概念边界，不提供需要背诵的话术。复习时应先说明当前条件和判断依据，再给出选择、代价与验证证据；条件改变后，结论也可能改变。
 
 ### 14.1 MongoDB 与关系型数据库如何选择
 
-第一层回答应从文档模型、访问模式、事务和扩展方式比较，而不是说一个快、一个慢。
+选型应从文档模型、访问模式、事务边界、约束能力和扩展方式展开，“哪个更快”在没有数据分布与查询形状时无法作为选型依据。
 
-第二层追问通常是“MongoDB 没有 Join 怎么办”。回答角度是嵌入、引用、扩展引用、`$lookup` 与预计算的取舍。
-
-第三层追问是“反范式如何保持一致”。回答角度是单写入口、事件驱动更新、版本字段、幂等、补偿任务和一致性审计。
+若继续讨论 Join，需要比较嵌入、引用、扩展引用、`$lookup` 与预计算的读写代价。若继续讨论反范式一致性，则要能指出权威数据源、单写入口、版本字段、事件更新、幂等、补偿任务和审计修复路径。
 
 ### 14.2 MongoDB 如何保证高可用
 
-第一层回答是副本集通过 Primary、Secondary、Oplog、心跳和选举完成冗余与故障转移。
+副本集通过 Primary、Secondary、Oplog、心跳和选举完成在线冗余与故障转移。多数写确认能降低已确认写入回滚的风险，读关注、读路由、网络分区和故障组合仍会影响调用方观察到的结果。
 
-第二层追问是“多数写是否绝对不会丢”。应说明多数确认降低回滚风险，一致性还受读关注、网络和故障场景影响，不能把单个配置描述成绝对保证。
-
-第三层追问是“切换期间应用怎么办”。应说明驱动拓扑发现、服务器选择、重试写、幂等和合理超时。
+当问题进入故障切换时，判断链应继续到驱动拓扑发现、服务器选择、可重试写入、业务幂等和超时预算，并以主动降级实验中的错误率与恢复时间作为证据。
 
 ### 14.3 索引为什么会失效或效果不好
 
 可从复合索引前缀、字段顺序、范围条件、排序、数组多键、低选择性、类型不一致、表达式和查询形状解释。最终使用 `explain("executionStats")` 验证，不用“有索引所以快”作为结论。
 
-继续追问“为什么不把所有字段都建索引”，回答写放大、内存和磁盘成本、构建与维护时间以及查询规划复杂度。
+索引评审还要说明写放大、内存与磁盘成本、构建与维护时间、查询规划复杂度。这些代价解释了为什么不应对所有字段机械建索引。
 
 ### 14.4 单文档原子性与事务如何选择
 
 优先通过数据建模让强一致变化落在一个文档中；只有业务不变量跨多个文档且无法合理合并时，才使用事务。事务需关注会话传递、冲突、超时、重试、未知提交结果和分片代价。
 
-继续追问“库存扣减一定需要事务吗”，回答单商品条件扣减可用原子更新；若还要与订单、账户等多个文档共同提交，再评估事务或 Saga（长事务分解与补偿）模式。
+单商品条件扣减可以用单文档原子更新完成；当库存还要与订单、账户等多个文档共同提交时，再比较多文档事务与 Saga（长事务分解与补偿）模式。验证证据分别是原子更新的影响条数，以及故意制造中途失败后的数据不变量。
 
 ### 14.5 分片键如何选择
 
-回答需覆盖基数、频率分布、单调性、查询定向、写热点和字段稳定性。继续追问范围分片与哈希分片时，要说明范围查询局部性和均匀分布之间的取舍。
+分片键判断需覆盖基数、频率分布、单调性、查询定向、写热点和字段稳定性。范围分片保留范围查询的局部性，哈希分片通常更容易均匀分布写入；选择应由真实键分布、路由结果和压测证据支撑。
 
 ### 14.6 读关注、写关注与读偏好的区别
 
 Write Concern 决定写入确认程度，Read Concern 决定可读取的一致性视图，Read Preference 决定从哪里读取。三者组合影响一致性、可用性和延迟。
 
-继续追问“从节点读是否一定更快”，回答复制延迟、缓存状态、索引和网络路径都可能让它更慢，而且它可能返回旧数据。
+Secondary 读取的延迟由复制进度、缓存状态、索引、网络路径和负载共同决定，既可能更慢，也可能返回旧数据。是否从 Secondary 读应回到数据新鲜度目标和实测结果。
 
 ### 14.7 MongoDB 为什么仍需要模式设计
 
 灵活模式降低演进门槛，不是取消设计。类型漂移会破坏查询、排序、聚合和索引；成熟系统应由领域模型、数据库校验、迁移工具和测试共同治理。
 
-继续追问“常见数据模式如何选择”，应从访问模式和数据分布回答：类型形状不同看多态模式，动态同类字段看属性模式，冷热数据分离看子集模式，减少重复关联看扩展引用模式，有界分组看桶模式，极少数超大文档看异常值模式，固定槽位看预分配模式，允许误差看近似值模式，重复派生计算看计算模式，层级查询看树形模式，需要保留历史修订看文档版本控制模式。还要能说明子集与扩展引用的数据来源不同、计算值与近似值的精确性不同、结构版本与业务修订版本解决的问题不同，并用真实查询和更新路径证明收益。
+常见数据模式要按访问模式和数据分布选择：类型形状不同看多态模式，动态同类字段看属性模式，冷热数据分离看子集模式，减少重复关联看扩展引用模式，有界分组看桶模式，极少数超大文档看异常值模式，固定槽位看预分配模式，允许误差看近似值模式，重复派生计算看计算模式，层级查询看树形模式，需要保留历史修订看文档版本控制模式。判断时还应区分子集与扩展引用的数据来源、计算值与近似值的精确性、结构版本与业务修订版本的职责，并用真实查询和更新路径证明收益。
 
 ### 14.8 备份和副本集有什么区别
 
-副本集提供在线冗余并复制当前变化，误删也会被复制；备份提供历史恢复点。生产必须定义 RPO、RTO，并用定期恢复演练证明备份可用。
+副本集提供在线冗余并复制当前变化，误删也会被复制；备份提供历史恢复点。完整判断要包含 RPO、RTO、保留期、故障域和最近一次隔离恢复演练的实测结果。
 
 ### 14.9 Java 驱动与 Spring Data 如何选择
 
-第一层回答应说明 Spring Data MongoDB 建立在 MongoDB Java 驱动之上：驱动提供连接、拓扑发现、BSON 编解码和底层数据库 API；Spring Data 增加对象映射、Repository、`MongoTemplate`、异常转换和 Spring 事务集成。
+Spring Data MongoDB 建立在 MongoDB Java 驱动之上：驱动提供连接、拓扑发现、BSON 编解码和底层数据库 API；Spring Data 增加对象映射、Repository、`MongoTemplate`、异常转换和 Spring 事务集成。简单实体 CRUD 和稳定的方法名查询可优先使用 Repository；复杂过滤、聚合、原子更新和需要检查写结果时更适合 `MongoTemplate`。两者可以在同一项目中按场景组合。
 
-第二层追问通常是“Repository 与 `MongoTemplate` 怎么选”。简单实体 CRUD 和稳定的方法名查询可优先使用 Repository；复杂过滤、聚合、原子更新和需要检查写结果时更适合 `MongoTemplate`。两者可以在同一项目中按场景组合，不需要二选一。
-
-第三层追问是“为什么不能每次请求创建 `MongoClient`”。回答应覆盖客户端内部的拓扑监控和连接池、频繁创建导致的握手与连接风暴、线程安全和应用生命周期复用。
-
-第四层追问是“`@Transactional` 为什么没有回滚”。回答应沿调用是否经过 Spring 代理、是否配置 `MongoTransactionManager`、是否使用同一 `MongoDatabaseFactory`、会话是否绑定以及部署是否为副本集或分片集群逐层分析。
+`MongoClient` 内部维护拓扑监控和连接池，频繁创建会带来握手成本和连接风暴，因此应按应用生命周期复用。`@Transactional` 未回滚时，沿调用是否经过 Spring 代理、`MongoTransactionManager` 是否存在、是否复用同一 `MongoDatabaseFactory`、会话是否绑定、部署是否支持事务逐层定位。
 
 ### 14.10 `null`、缺失字段与空字符串有什么区别
 
-第一层回答应说明它们是不同 BSON 与业务状态，`{ field: null }` 会同时匹配显式 `null` 和缺失字段。只匹配 Null 使用 `$type: 10`，只匹配缺失使用 `$exists: false`。
-
-继续追问“为什么 Java 查询和数据库结果不一致”，应检查 POJO 缺省值、包装类型、序列化时是否省略 `null`、历史数据类型漂移和校验器，而不是只修改查询条件。
+它们是不同的 BSON 和业务状态，`{ field: null }` 会同时匹配显式 `null` 和缺失字段。只匹配 Null 使用 `$type: 10`，只匹配缺失使用 `$exists: false`。Java 结果不一致时，应检查 POJO 缺省值、包装类型、序列化时是否省略 `null`、历史数据类型漂移和校验器，并用 `$type` 与原始 BSON 样本验证。
 
 ### 14.11 多数写返回后为什么 Secondary 仍可能读不到
 
-回答应区分 Oplog 持久写入、Secondary 应用数据和读取路由。MongoDB 8.0 的多数写确认不表示每个 Secondary 已把操作应用到集合；需要跨操作因果顺序时使用因果一致会话、`majority` 读关注与多数写关注。
-
-继续追问“那是否全部读 Primary”，回答要回到业务新鲜度目标、读偏好、复制延迟、索引和降级策略，不把一致性问题简化为固定节点选择。
+原因要从 Oplog 持久写入、Secondary 应用数据和读取路由三个阶段分析。MongoDB 8.0 的多数写确认不表示每个 Secondary 已把操作应用到集合；需要跨操作因果顺序时使用因果一致会话、`majority` 读关注与多数写关注。是否读 Primary 则由业务新鲜度目标、复制延迟、索引、降级策略和实测延迟共同决定。
 
 ### 14.12 Change Streams 如何避免丢事件和重复消费
 
-回答应覆盖 Resume Token 的保存时机、Oplog 保留窗口、幂等消费、`invalidate`、重建派生状态和消费延迟监控。先处理副作用再保存令牌可能重复，先保存令牌再处理可能丢失，因此通常选择允许重复并让业务幂等。
-
-继续追问“是不是可以替代消息队列”，应说明它没有天然提供所有消息队列的消费组、无限保留、死信和再均衡语义，需按业务需求补齐或选择专用消息系统。
+判断链包括 Resume Token 的保存时机、Oplog 保留窗口、幂等消费、`invalidate`、派生状态重建和消费延迟监控。先处理副作用再保存令牌可能重复，先保存令牌再处理可能丢失，因此常见设计是允许重复并让业务幂等。它没有天然提供所有消息队列的消费组、长期保留、死信和再均衡语义，是否代替消息系统需要逐项比较需求。
 
 ### 14.13 Journal、复制与备份分别解决什么问题
 
 Journal 与 Checkpoint 解决节点异常重启后的本地恢复；副本集解决在线冗余和故障转移；备份保留可恢复的历史点。三者相互补充，任何一个都不能替代另外两个。
 
-继续追问“升级为什么还要看 FCV”，回答二进制版本决定运行代码，FCV 决定是否启用可能产生不兼容持久化数据的功能，Stable API 则约束应用命令接口，三个版本边界不能混为一谈。
+升级追问会引出另一组边界：二进制版本决定运行代码，FCV 决定是否启用可能产生不兼容持久化数据的功能，Stable API 约束应用命令接口。三者都要检查，但它们保护的对象不同。
 
 ### 14.14 MongoDB 常用工具如何选择
 
-第一层回答应按控制对象分类：`mongosh` 和 Compass 用于交互查询与分析，Java Driver 和 Spring Data MongoDB 用于应用运行时，Atlas CLI 用于 Atlas 资源管理，Database Tools 用于备份恢复、数据交换和即时诊断，持续监控则使用 Atlas Monitoring、Ops Manager 或组织统一平台。
+工具应按控制对象分类：`mongosh` 和 Compass 用于交互查询与分析，Java Driver 和 Spring Data MongoDB 用于应用运行时，Atlas CLI 用于 Atlas 资源管理，Database Tools 用于备份恢复、数据交换和即时诊断，持续监控使用 Atlas Monitoring、Ops Manager 或组织统一平台。
 
-第二层追问通常是“为什么不能用 `mongoexport` 备份”。回答应说明 JSON 或 CSV 面向文本交换，不能完整保留 BSON 类型、索引、验证规则和权限等恢复所需信息；逻辑备份使用 `mongodump` 与 `mongorestore`，生产灾难恢复还要根据 RPO、RTO、数据量和部署形态选择云备份或快照，并用恢复演练证明。
+JSON 或 CSV 面向文本交换，不完整保留 BSON 类型、索引、验证规则和权限等恢复信息，所以 `mongoexport` 不是备份方案。逻辑备份可使用 `mongodump` 与 `mongorestore`，生产灾难恢复还要根据 RPO、RTO、数据量和部署形态选择云备份或快照，并用恢复演练验证。低停机在线迁移还需持续跟进源端写入；`mongosync` 面向一次性 MongoDB 集群迁移，并不承担持续灾备职责。
 
-第三层追问是“在线迁移为什么不用备份工具”。回答应区分停机批量恢复与持续跟进源端写入的低停机迁移；`mongosync` 面向一次性 MongoDB 集群迁移，不是持续灾备。所有迁移工具都必须配套兼容性检查、Oplog 窗口评估、源目标校验、切换和回滚方案。
-
-第四层追问是“GUI 客户端如何选”。默认从官方 Compass 学习；需要编辑器内原型可用 MongoDB for VS Code；多数据库团队可评估 DataGrip、Studio 3T 或 Navicat。最终判断依据是目标版本和认证支持、只读控制、凭据存储、审计、批量变更防护、团队现有工作流和许可成本，而不是界面偏好。
+GUI 客户端默认可从官方 Compass 开始；需要编辑器内原型可评估 MongoDB for VS Code，多数据库团队可评估 DataGrip、Studio 3T 或 Navicat。判断依据包括目标版本、认证支持、只读控制、凭据存储、审计、批量变更防护、现有工作流和许可成本。
 
 ### 14.15 查询形状、选择性和计划缓存有什么关系
 
 查询形状把过滤、排序、投影等结构相同的查询归类；选择性描述条件能把候选数据缩小到什么程度；计划缓存让同一计划缓存查询形状复用获胜计划。三者共同解释“同一条代码为什么换一组参数后突然变慢”。
 
-继续追问“`explain()` 是否展示线上缓存计划”，应回答 Explain 会绕过已有计划缓存并且不会写入此次获胜计划。继续追问“加 `hint()` 是否就能修好”，应说明 Hint 是受控干预，不会自动修复数据倾斜、错误模型或失效索引，MongoDB 8.0 的 Query Settings 与已弃用 Index Filters 还具有不同边界。
+`explain()` 会绕过已有计划缓存，也不会写入此次获胜计划，因此它不是“查看线上当前缓存计划”的命令。`hint()` 是受控干预，无法修复数据倾斜、错误模型或失效索引；MongoDB 8.0 的 Query Settings 与已弃用 Index Filters 也具有不同边界。
 
 ### 14.16 `schemaVersion`、文档版本、计算值和近似值如何区分
 
 `schemaVersion` 表示字段结构版本，用于兼容新旧文档；文档版本控制中的 `revision` 表示同一业务对象的历史修订。计算模式保存可由权威源数据重建的派生结果；近似值模式则明确接受误差以减少写入或计算成本。
 
-继续追问“周期计算值陈旧是否等于近似值”，应回答陈旧描述更新时间，近似描述算法或持久化结果允许误差。周期计算结果虽然暂时不新鲜，重新从同一源数据计算仍可得到精确值。
+陈旧描述更新时间，近似描述算法或持久化结果允许误差。周期计算结果虽然暂时不新鲜，重新从同一源数据计算仍可得到精确值，因此不应把“陈旧”与“近似”当成同一性质。
 
 ### 14.17 1000 QPS 需要多少连接，什么时候需要分片
 
@@ -4446,13 +4519,13 @@ Journal 与 Checkpoint 解决节点异常重启后的本地恢复；副本集解
 
 启用 Journal 的异常关闭通常会自动恢复；副本集损坏成员优先从健康成员重新同步，有备份则优先隔离恢复。`mongod --repair` 只适合没有健康副本和可用备份的独立实例磁盘级损坏，并且可能直接丢弃损坏数据。
 
-继续追问“Repair 成功是否可以直接上线”，应回答还要检查丢弃与重建日志，校验集合、索引和业务不变量，建立新备份并查明硬件或流程根因；副本集成员若被 Repair 修改，仍应完整重新同步。
+Repair 返回成功之后，还要检查丢弃与重建日志，校验集合、索引和业务不变量，建立新备份并查明硬件或流程根因。副本集成员若被 Repair 修改，仍应完整重新同步。
 
 ### 14.19 客户端认证与集群成员认证有什么区别
 
 客户端认证验证应用、管理员或工具身份，RBAC 决定它能执行什么操作；内部成员认证验证 `mongod` 与 `mongos` 是否属于合法副本集或分片集群。创建数据库用户不能替代 Keyfile 或 X.509 成员认证。
 
-继续追问“生产为什么不只用 Keyfile”，应说明 Keyfile 是共享密钥形式，轮换、分发和成员身份粒度受限；自管理生产应优先评估基于 TLS 信任链的 X.509，并对证书生命周期、密钥恢复和滚动切换进行演练。
+Keyfile 是共享密钥形式，轮换、分发和成员身份粒度受限。自管理生产应优先评估基于 TLS 信任链的 X.509，并对证书生命周期、密钥恢复和滚动切换进行演练。
 
 ## 15 项目落地模板
 
@@ -4690,6 +4763,18 @@ Journal 与 Checkpoint 解决节点异常重启后的本地恢复；副本集解
 73\. [`sh.splitAt()`](https://www.mongodb.com/docs/manual/reference/method/sh.splitAt/)
 
 74\. [`sh.moveChunk()`](https://www.mongodb.com/docs/manual/reference/method/sh.moveChunk/)
+
+75\. [Partial Indexes](https://www.mongodb.com/docs/manual/core/index-partial/)
+
+76\. [Modify Schema Validation](https://www.mongodb.com/docs/manual/core/schema-validation/update-schema-validation/)
+
+77\. [Self-Managed MongoDB Search and Vector Search](https://www.mongodb.com/docs/search/self-managed/current/)
+
+78\. [`mongot` Compatibility and Requirements](https://www.mongodb.com/docs/search/self-managed/current/deployment/compatibility-requirements/)
+
+79\. [MongoDB 8.2 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.2/)
+
+80\. [MongoDB Versioning](https://www.mongodb.com/docs/v8.2/reference/versioning/)
 
 ### 16.2 复习时的自测标准
 
