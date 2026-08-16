@@ -1,6 +1,6 @@
 # 面向 Java 程序员的 Elasticsearch / ELK 初学者教程
 
-> 版本语境：本文于 2026 年 8 月 12 日重新核对 [Elastic 官方发布总览](https://www.elastic.co/docs/release-notes)、[Elasticsearch 下载页](https://www.elastic.co/downloads/elasticsearch)与 [Java API Client 9.5.0 发布记录](https://www.elastic.co/docs/release-notes/elasticsearch/clients/java/9-5-0)。本文以当前正式发布的 Elastic Stack 9.5.0 和 Elasticsearch Java API Client 9.5.0 为主要参考，同时保留 7.x、8.x 项目中常见的迁移经验。服务端与 Java 客户端的主版本、次版本通常同步，补丁版本可以独立发布；Maven 示例使用 `${elastic.version}`，Docker 示例使用 `${ELASTIC_VERSION}`，请替换为实际集群和依赖仓库中已完成兼容验证的版本。不同部署形态（自建 Elastic Stack、Elastic Cloud Hosted、Elastic Cloud Serverless）的默认值和可用能力并不完全相同，生产落地应再次核对对应版本的官方文档。
+> 版本基线：Docker 示例使用 Elastic Stack 9.5.1，Maven 示例使用 Elasticsearch Java API Client 9.5.0。服务端与 Java 客户端的主版本、次版本通常同步，补丁版本可以独立发布，因此两个版本号不必逐补丁相同。Java 客户端在同一主版本内支持连接相同或更高次版本的服务端，但旧客户端不会自动获得新服务端 API 的强类型定义；反向连接更旧服务端也不应自行视为有兼容保证。复制示例前应查看 [Elastic 官方发布总览](https://www.elastic.co/docs/release-notes)、[Java API Client 9.5.0 发布记录](https://www.elastic.co/docs/release-notes/elasticsearch/clients/java/9-5-0)与[客户端兼容策略](https://www.elastic.co/docs/reference/elasticsearch/clients/java)，再按实际部署完成编译和集成测试。不同部署形态（自建 Elastic Stack、Elastic Cloud Hosted、Elastic Cloud Serverless）的默认值和可用能力并不完全相同。
 
 ## 0 目录
 
@@ -47,7 +47,7 @@
 #### 1.2.2 启动单节点 Elasticsearch
 
 ```bash
-export ELASTIC_VERSION=9.5.0
+export ELASTIC_VERSION=9.5.1
 
 docker run --name es-quickstart --rm -d \
   --memory=2g \
@@ -421,7 +421,7 @@ volumes:
 启动：
 
 ```bash
-export ELASTIC_VERSION=9.5.0
+export ELASTIC_VERSION=9.5.1
 docker compose up -d
 ```
 
@@ -618,15 +618,7 @@ Shard 是索引的物理拆分单位。每个 shard 本质上是一个 Lucene �
 3\. 日志类数据通常使用数据流、ILM、rollover 管理索引生命周期。
 4\. 增加副本不保证查询一定更快：副本会增加可供搜索选择的分片副本，但也会消耗磁盘、文件系统缓存和写入资源，必须用真实负载压测。
 
->当前索引达到一定大小、文档数或使用时间后，自动创建一个新索引，并把后续写入切换过去。
->
->其中：
->
->ILM（Index Lifecycle Management，索引生命周期管理）：负责自动管理索引从创建到删除的整个生命周期。
->
->rollover（滚动切换）：ILM 在热阶段执行的一种具体动作。
-
-
+Rollover（滚动切换）表示当前写入索引达到大小、文档数或使用时间条件后，创建新的写入索引并把后续写入切换过去。ILM（Index Lifecycle Management，索引生命周期管理）负责管理索引从创建到删除的完整生命周期，Rollover 只是它可以在热阶段执行的一种动作。数据流还可以选择 Data Stream Lifecycle（数据流生命周期）；具体选择见第 5.1.2 和 7.2 节。
 
 #### 2.5.1 一次写入和一次搜索如何经过分片
 
@@ -808,8 +800,10 @@ iPhone 在 title 中出现的位置在哪里？
 
 这是生产和面试中很重要的一组概念。
 
->Lucene：单机搜索与索引库，项目名称，Apache Lucene
->Elasticsearch：基于 Lucene 构建的分布式搜索和分析系统
+| 层次 | 定位 |
+| --- | --- |
+| Apache Lucene | 单机搜索与索引库，负责倒排索引、段、合并和底层查询执行 |
+| Elasticsearch | 基于 Lucene 构建的分布式搜索与分析系统，增加集群、分片、复制、路由和 REST API |
 
 #### 2.9.1 Refresh
 
@@ -1013,13 +1007,12 @@ PUT /product-v1
 
 1\. `dynamic: strict`：避免未知字段随便写入导致 mapping 膨胀。
 2\. `title` 使用 `text`：支持全文检索。
-3\. `title.keyword`：支持精确匹配或排序，当 `title` 的长度超过 **256 个字符**时，ES不会建立索引。
+3\. `title.keyword`：支持精确匹配或排序；当 `title` 超过 256 个字符时，`ignore_above` 会跳过这个 `keyword` 子字段的索引值，但 `title` 主字段仍按 `text` 规则建立全文索引。
 4\. `brand/status/tags` 使用 `keyword`：适合过滤和聚合。
 5\. `price` 使用 `scaled_float`：金额类字段避免浮点误差影响。
 6\. `version`：用于处理 MQ（Message Queue，消息队列）乱序、重复消费和旧数据覆盖新数据的问题。
 7\. 日期使用 `date`：支持 range 查询和时间聚合。
-
-8\.`tags` 是多值字段，`keyword` 是数组中每个元素的数据类型
+8\. `tags` 是多值字段，`keyword` 是数组中每个元素的数据类型。
 
 创建成功的判据不是请求“没有报错”，而是响应中的 `acknowledged` 为 `true`，并且实际 Mapping 符合预期。可以立即验证：
 
@@ -1054,7 +1047,7 @@ PUT /product-v1/_doc/1001?refresh=wait_for
 
 预期响应的 `result` 为 `created`；随后执行 `GET /product-v1/_search` 应能看到 `_id=1001`。这里使用 `refresh=wait_for` 是为了让教程验证具有确定性，不代表高吞吐生产写入都应同步等待 refresh。
 
-#### 3.1.4 索引别名：生产上线必须掌握
+#### 3.1.4 索引别名：为重建索引保留稳定入口
 
 别名可以让应用不直接绑定物理索引。
 
@@ -1213,7 +1206,7 @@ GET /product-v1/_search
 2\. nested 数量过多会影响写入和查询性能。
 3\. 能通过文档拆分或冗余字段解决时，不一定要用 nested。
 
->`object` 会把数组中的对象字段扁平化；`nested` 会保留每个数组元素内部的字段对应关系。
+`object` 会把数组中的对象字段扁平化；`nested` 会保留每个数组元素内部的字段对应关系。只有查询确实依赖“同一个数组元素中的字段必须共同匹配”时，才值得承担 `nested` 的额外索引和查询成本。
 
 ### 3.2 查询 DSL：从能查到到查得准、查得快
 
@@ -1572,9 +1565,7 @@ GET /product-read/_search
 
 4\. 如果翻页过程中索引持续 refresh，结果顺序可能变化；需要稳定视图时使用 PIT。
 
-5\.  `"search_after": [12345, 1001] `从排序值为 [12345, 1001] 的那条文档之后继续查询下一页，对应sort字段的真实值
-
-
+5\. `search_after` 数组必须按 `sort` 字段的相同顺序携带真实排序值；`[12345, 1001]` 表示从排序元组为该值的文档之后继续查询，不是页码或文档偏移量。
 
 `search_after + PIT` 的完整流程不能只写成一句口号。第一步创建 PIT：
 
@@ -1780,7 +1771,7 @@ POST /_query?format=json
 
 现代 Java 项目建议使用官方 Elasticsearch Java API Client。旧项目可能还会看到 RestHighLevelClient，但它在新版本中已不是推荐方向。
 
-本章代码是按职责拆开的教学片段，不是一份可直接复制成单个 `.java` 文件的完整工程；例如 `ProductDocument` 的 getter/setter 和外围 Repository 类被省略。可运行项目至少要补齐 Java 17 编译配置、完整模型、依赖版本管理、异常映射和第 4.14 节的真实集成测试。本次 Review 依据当前官方 API 文档与 9.5.0 发布记录核对了 Java 片段；当前目录没有完整 Maven 工程，因此验证边界是静态 API 核对，不包含编译或真实集群集成测试。
+本章代码是按职责拆开的教学片段，不是一份可直接复制成单个 `.java` 文件的完整工程；例如 `ProductDocument` 的 getter/setter 和外围 Repository 类被省略。可运行项目至少要补齐 Java 17 编译配置、完整模型、依赖版本管理、异常映射和第 4.14 节的真实集成测试。Java API Client 的生成类型可能在版本升级时修正，即使 HTTP 协议仍兼容，也要以项目实际依赖重新编译并运行集成测试。
 
 ### 4.1 Maven 依赖
 
@@ -3830,3 +3821,4 @@ curl http://localhost:9200/_cat/thread_pool/write?v
 38\. [Data Stream 的追加写与更新边界](https://www.elastic.co/docs/manage-data/data-store/data-streams/use-data-stream)
 39\. [`track_total_hits` 与命中总数语义](https://www.elastic.co/docs/solutions/search/the-search-api#track-total-hits)
 40\. [`terms` 聚合的近似计数与 `composite` 聚合](https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-terms-aggregation)
+41\. [Elasticsearch Java API Client 9.5.0 发布记录](https://www.elastic.co/docs/release-notes/elasticsearch/clients/java/9-5-0)

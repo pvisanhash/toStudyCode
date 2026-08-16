@@ -101,7 +101,7 @@ MongoDB 不等于“没有结构”，也不保证“天然比关系型数据库
 
 需要 Docker 和 `mongosh`，或者一个可访问的 MongoDB Atlas 集群。以下示例使用 `mongo:8.0` 作为学习基线：它固定了 8.0 主版本系列，但会随该标签更新到新的 8.0 补丁版，不是字节级可复现的镜像。CI（Continuous Integration，持续集成）和长期保留的实验环境应在安全评审后固定完整补丁版或镜像摘要，并通过明确变更升级。
 
-本文在 2026-08-12 Review 时，官方手册将 MongoDB 8.2 标为最新次要版本，8.2 发行说明已列出包含安全和可靠性修复的 8.2.12 补丁版。生产选版应查看支持周期、安全公告、发行说明、驱动兼容矩阵和升降级边界，不使用浮动的 `latest` 标签。参见 [MongoDB 8.2 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.2/) 与 [MongoDB Versioning](https://www.mongodb.com/docs/v8.2/reference/versioning/)。
+MongoDB 官方发布页当前将 8.3 标为最新次要版本；本文仍把 `mongo:8.0` 作为学习基线，是为了把教程固定在较稳定的 8.0 主版本系列，而不是暗示 8.0 是最新版本。从 8.2 开始，MongoDB 同时提供 Major Release（主版本发布）与 Minor Release（次要版本发布）轨道；次要版本更新更频繁，某些迁移工具或托管能力可能暂不支持。生产选版应结合支持周期、安全公告、发行说明、驱动兼容矩阵和升降级边界，并使用目标系列的最新稳定补丁，不使用浮动的 `latest` 标签。参见 [MongoDB 8.3 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.3/) 与 [MongoDB Versioning](https://www.mongodb.com/docs/manual/reference/versioning/)。
 
 ### 2.2 启动本地实例
 
@@ -2074,7 +2074,7 @@ mongodb-java-learning/
                         └── ProductQuery.java
 ```
 
-`pom.xml` 使用 BOM（Bill of Materials，物料清单）保证驱动各模块版本一致。本文在 2026-08-12 复核时，官方入门文档展示的 BOM 版本为 `5.9.1`；将来复制示例时，应先到 [Java Driver Get Started](https://www.mongodb.com/docs/drivers/java/sync/current/get-started/) 核对当前版本。
+`pom.xml` 使用 BOM（Bill of Materials，物料清单）保证驱动各模块版本一致。下面以官方入门文档所列的 `5.9.1` 为示例；复制代码时应先到 [Java Driver Get Started](https://www.mongodb.com/docs/drivers/java/sync/current/get-started/) 核对最新稳定版本、Java 运行时要求和 Server 兼容矩阵，再统一升级 BOM 并重新执行集成测试。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -3352,7 +3352,7 @@ docker exec mongodb-rs2 mongosh \
 mongodb://mongodb-rs1:27117,mongodb-rs2:27118,mongodb-rs3:27119/shop?replicaSet=rs0&retryWrites=true&w=majority
 ```
 
-hosts 文件修改需要管理员权限，且只适合本地实验；不要把这种做法复制到生产。生产应使用稳定 DNS、TLS、内部成员认证和受控网络。Java 验证应在一次持续写入测试中触发 `rs.stepDown()`，记录短暂失败、服务端重新选择耗时和最终成功数，同时通过稳定 `requestId` 检查没有重复业务结果。
+这个方案能够成立还有一个容易遗漏的前提：副本集公布的 `27117`、`27118`、`27119` 与三个容器发布到宿主机的端口完全一致。若容器公布端口与宿主机映射端口不同，只修改 hosts 文件仍会让驱动连错端口；此时应调整网络拓扑，或把 Java 测试放进同一 Docker 网络，而不是继续堆叠地址替换。hosts 文件修改需要管理员权限，且只适合本地实验；不要把这种做法复制到生产。生产应使用稳定 DNS、TLS、内部成员认证和受控网络。Java 验证应在一次持续写入测试中触发 `rs.stepDown()`，记录短暂失败、服务端重新选择耗时和最终成功数，同时通过稳定 `requestId` 检查没有重复业务结果。
 
 #### 10.7.6 清理学习环境
 
@@ -4050,7 +4050,7 @@ RPO（Recovery Point Objective，恢复点目标）回答最多允许丢失多�
 
 `mongodump` 与 `mongorestore` 更接近“MongoDB 到 MongoDB 的逻辑备份恢复”；`mongoexport` 与 `mongoimport` 更接近“MongoDB 与文本文件之间的数据交换”。JSON 或 CSV 导出可能丢失类型表达、索引、验证规则、用户角色等信息，所以不能把“文件能打开”当成“数据库可恢复”。第 12.3 节给出备份与恢复命令及生产边界。
 
-`mongosync` 用于一次性集群迁移，可以在复制数据期间继续跟进源端写入，但只有完成提交且目标端报告可写后才能安全切流。它不会同步用户和角色，也不支持用目标集群长期承担 Disaster Recovery（灾难恢复）或分析副本职责。工具与 Server 的支持组合会变化；例如当前 MongoDB 8.2 发行说明已明确警告 `mongosync` 不支持 MongoDB 8.3。迁移前要核对当日的拓扑、功能、认证与版本支持矩阵，保证源端 Oplog 窗口覆盖迁移时间，并对数据执行独立验证。参见 [About `mongosync`](https://www.mongodb.com/docs/mongosync/current/about-mongosync/) 与 [MongoDB 8.2 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.2/)。
+`mongosync` 用于一次性集群迁移，可以在复制数据期间继续跟进源端写入，但只有完成提交且目标端报告可写后才能安全切流。它不会同步用户和角色，也不支持用目标集群长期承担 Disaster Recovery（灾难恢复）或分析副本职责。工具与 Server 的支持组合会变化，MongoDB 的版本策略也明确提醒某些次要版本可能不支持 `mongosync`。迁移前要核对源端和目标端的精确版本、拓扑、功能与认证支持矩阵，保证源端 Oplog 窗口覆盖迁移时间，并对数据执行独立验证。参见 [About `mongosync`](https://www.mongodb.com/docs/mongosync/current/about-mongosync/) 与 [MongoDB Versioning](https://www.mongodb.com/docs/manual/reference/versioning/)。
 
 Relational Migrator 解决的是关系模型到文档模型的迁移，不只是复制字段。工具给出的映射仍需根据访问模式评审；迁移任务还要验证主键映射、外键嵌入、空值、时间与金额类型、重复执行语义和失败后的清理方式。正式使用前必须阅读当前发行说明，因为迁移能力、限制和数据完整性公告可能随版本变化。参见 [Relational Migrator](https://www.mongodb.com/docs/relational-migrator/)。
 
@@ -4772,9 +4772,9 @@ Keyfile 是共享密钥形式，轮换、分发和成员身份粒度受限。自
 
 78\. [`mongot` Compatibility and Requirements](https://www.mongodb.com/docs/search/self-managed/current/deployment/compatibility-requirements/)
 
-79\. [MongoDB 8.2 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.2/)
+79\. [MongoDB 8.3 Release Notes](https://www.mongodb.com/docs/manual/release-notes/8.3/)
 
-80\. [MongoDB Versioning](https://www.mongodb.com/docs/v8.2/reference/versioning/)
+80\. [MongoDB Versioning](https://www.mongodb.com/docs/manual/reference/versioning/)
 
 ### 16.2 复习时的自测标准
 
