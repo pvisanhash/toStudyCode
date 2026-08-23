@@ -317,14 +317,14 @@ Spring AI 用 `Model<Request, Response>` 描述统一的请求—响应关系，
 | `EmbeddingModel` | 文本或 `Document` | 浮点向量 | 语义检索、聚类、RAG |
 | `ImageModel` | `ImagePrompt` | `ImageResponse` | 文生图 |
 | `TranscriptionModel` | 音频资源与选项 | 转写文本与元数据 | Speech-to-Text，语音转文本 |
-| Speech Model | 文本与语音选项 | 音频 | Text-to-Speech，文本转语音 |
+| `Speech Model` | 文本与语音选项 | 音频 | Text-to-Speech，文本转语音 |
 | `ModerationModel` | 待检测内容 | 分类结果 | 内容安全辅助判断 |
 
 模型类型及支持提供商会随版本变化，应从[官方 Spring AI API 总览](https://docs.spring.io/spring-ai/reference/api/)进入相应实现文档核对。
 
 ### 3.2 `ChatModel` 与 `ChatClient` 的选择
 
-`ChatModel` 是接近提供商调用的低层接口，输入 `Prompt`，输出 `ChatResponse`。它适合基础设施组件、自定义编排器以及确实需要查看完整模型响应的场景。
+`ChatModel` 是接近提供商 调用的低层接口，输入 `Prompt`，输出 `ChatResponse`。它适合基础设施组件、自定义编排器以及确实需要查看完整模型响应的场景。
 
 `ChatClient` 构建在 `ChatModel` 之上，提供类似 `RestClient` 的 fluent API（链式 API），并组合 Advisor、Memory、RAG、结构化输出、工具调用和可观测性。普通聊天、知识库问答和工具型助手通常以 `ChatClient` 为应用入口。Spring AI 2.0 中，直接调用 `ChatModel` 不会自动执行模型返回的工具请求；`ChatClient` 会通过自动注册的 `ToolCallingAdvisor` 驱动工具循环。
 
@@ -536,11 +536,13 @@ String description = chatClient.prompt()
         .content();
 ```
 
-`MimeType` 必须与实际内容一致，文件大小和格式要满足目标模型限制。图片中也可能包含恶意文字指令，因此图像 OCR（Optical Character Recognition，光学字符识别）内容与普通用户文本具有相同的不可信等级。
+`MimeType` （Multipurpose Internet Mail Extensions，多用途互联网邮件扩展）必须与实际内容一致，文件大小和格式要满足目标模型限制。图片中也可能包含恶意文字指令，因此图像 OCR（Optical Character Recognition，光学字符识别）内容与普通用户文本具有相同的不可信等级。
 
-聊天模型的多模态输入通常仍返回文本。生成图片应使用 `ImageModel`，语音转写使用 `TranscriptionModel`，文本转语音使用 Speech Model。统一抽象只覆盖共同能力；分辨率、音色、时间戳粒度和推理内容等专用功能需要提供商 Options。多模态基础接口见[官方 Multimodality API](https://docs.spring.io/spring-ai/reference/api/multimodality.html)。
+聊天模型的多模态输入通常仍返回文本。生成图片应使用 `ImageModel`，语音转写使用 `TranscriptionModel`，文本转语音使用 `Speech Model`。统一抽象只覆盖共同能力；分辨率、音色、时间戳粒度和推理内容等专用功能需要提供商 Options。多模态基础接口见[官方 Multimodality API](https://docs.spring.io/spring-ai/reference/api/multimodality.html)。
 
 ## 5 用 Advisor 与 Chat Memory 组合横切能力
+
+> Advisor ≈ 顾问组件，AI 调用增强器 / 拦截器，环绕通知
 
 ### 5.1 Advisor 链解决什么问题
 
@@ -775,6 +777,8 @@ spring:
 
 生产系统通常先实现 Chain（顺序链）、Routing（路由）、Parallelization（并行）、Orchestrator-Workers（编排者—工作者）或 Evaluator-Optimizer（评估—优化）等显式工作流。只有固定路径无法满足需求时，才扩大模型自主权。Agent 至少要有应用层强制执行的最大步数、总超时、Token 和金额预算、工具白名单、人工确认点以及可恢复的状态记录；把这些限制只写进 System Message 无法形成确定性边界。
 
+> Spring AI 支持构建这些显式工作流，也有官方实现示例；但它主要提供基础组件和编程模型，工作流路径通常仍由开发者用 Java 代码控制，并不是完整的持久化工作流引擎。
+
 ## 7 建立可追溯的 RAG 知识库
 
 ### 7.1 RAG 解决的限制
@@ -853,6 +857,8 @@ List<Document> hits = vectorStore.similaritySearch(
 成功判据包括结果非空、前几条确实包含退款时限、元数据只属于当前租户和生效版本。`topK=6` 与 `0.72` 是需要评测的初始值，不是通用最佳参数。
 
 ### 7.4 ETL：读取、清洗、切分与写入
+
+> ETL（Extract、Transform、Load，抽取、转换、加载）
 
 ETL 框架的三个角色是 `DocumentReader`、`DocumentTransformer` 和 `DocumentWriter`。典型流水线把 PDF 或 JSON 读成 Document，经 `TokenTextSplitter` 切片，再写入实现了 DocumentWriter 的 VectorStore。官方接口与内置读取器见[ETL Pipeline](https://docs.spring.io/spring-ai/reference/api/etl-pipeline.html)。
 
