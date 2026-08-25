@@ -26,7 +26,7 @@ CVV：安全码
 ```java
 Country / Region：United States
 First Name：ax
-Last Name：haixxxxx
+Last Name：haish***
 Street Address：853 Northwest Kansas Avenue
 ZIP Code：97702
 City：Bend
