@@ -1582,13 +1582,13 @@ JDK 25 的 JFR 变化包括：
 
 ### 8.1 五个 LTS 的核心定位
 
-| LTS | 对开发者最重要的增量 | 运行时与迁移关键词 | 新项目判断 |
-| --- | --- | --- | --- |
-| JDK 8 | Lambda、Stream、Optional、`java.time`、CompletableFuture | Metaspace、旧 classpath 时代 | 主要用于维护遗留系统，不宜作为全新长期基线 |
-| JDK 11 | 模块系统、`var`、集合工厂、HTTP Client、JFR | G1 默认、统一日志、Java EE/CORBA 模块移除 | 仍有大量存量系统，但语言能力已明显落后 |
-| JDK 17 | 记录类、文本块、`switch` 表达式、密封类、`instanceof` 模式 | 强封装、低暂停 GC 产品化 | 稳定成熟，适合受框架认证约束的系统 |
-| JDK 21 | 记录/`switch` 模式、顺序集合、虚拟线程、分代 ZGC | 高并发 I/O、动态 Agent 警告 | 仍是成熟的现代生产基线 |
-| JDK 25 | 模块导入、紧凑源文件、灵活构造器、Scoped Values，以及 22—24 累计 API | 虚拟线程解除常见固定、ZGC 只保留分代、Security Manager 禁用、AOT | 当前最新 LTS，新项目应优先评估 |
+| LTS    | 对开发者最重要的增量                                           | 运行时与迁移关键词                                    | 新项目判断                 |
+| ------ | ---------------------------------------------------- | -------------------------------------------- | --------------------- |
+| JDK 8  | Lambda、Stream、Optional、`java.time`、CompletableFuture | Metaspace、旧 classpath 时代                     | 主要用于维护遗留系统，不宜作为全新长期基线 |
+| JDK 11 | 模块系统、`var`、集合工厂、HTTP Client、JFR                      | G1 默认、统一日志、Java EE/CORBA 模块移除                | 仍有大量存量系统，但语言能力已明显落后   |
+| JDK 17 | 记录类、文本块、`switch` 表达式、密封类、`instanceof` 模式             | 强封装、低暂停 GC 产品化                               | 稳定成熟，适合受框架认证约束的系统     |
+| JDK 21 | 记录/`switch` 模式、顺序集合、虚拟线程、分代 ZGC                      | 高并发 I/O、动态 Agent 警告                          | 仍是成熟的现代生产基线           |
+| JDK 25 | 模块导入、紧凑源文件、灵活构造器、Scoped Values，以及 22—24 累计 API       | 虚拟线程解除常见固定、ZGC 只保留分代、Security Manager 禁用、AOT | 当前最新 LTS，新项目应优先评估     |
 
 “优先评估 JDK 25”不等于所有项目都必须立即采用。框架认证、本地库、监控 Agent、云平台镜像和组织支持合同可能决定暂时留在 JDK 21 或 17。真正的生产基线是一个已持续更新的具体发行版构建，而不只是功能版本号。
 
