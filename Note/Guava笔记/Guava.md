@@ -13,7 +13,7 @@ Guava 最有价值的地方不是“少写几行代码”，而是提供：
 - 统一的参数校验、字符串解析和资源抽象；
 - 本地缓存、限流、布隆过滤器等工程化组件。
 
-需要注意，Java 8～21 持续增强了标准库。`	`Optional`、Stream、`CompletableFuture`、`List.of`、`Files` 等能力已经覆盖部分 Guava 场景。因此，开发时应优先判断：Guava 是否能显著提升表达力，还是仅仅重复 JDK（Java Development Kit，Java 开发工具包）已有能力。
+需要注意，Java 8～21 持续增强了标准库。`Optional`、Stream、`CompletableFuture`、`List.of`、`Files` 等能力已经覆盖部分 Guava 场景。因此，开发时应优先判断：Guava 是否能显著提升表达力，还是仅仅重复 JDK（Java Development Kit，Java 开发工具包）已有能力。
 
 ## 2. 引入依赖
 
@@ -101,7 +101,7 @@ String suffix = Strings.padEnd("A", 3, '-');    // "A--"
 String line = Strings.repeat("-", 20);
 ```
 
-`isNullOrEmpty("   ")` 返回 `false`。判断空白字符串可以使用 Java 11 的 `String.isBlank()`，或先判空再调用。
+`isNullOrEmpty("   ")` 返回 `false`。判断空白字符串可以使用 Java 11 的 `String.isBlank()。
 
 ### 4.3 Splitter 与 Joiner：可靠拆分和拼接
 
@@ -109,33 +109,64 @@ String line = Strings.repeat("-", 20);
 
 ```java
 List<String> tags = Splitter.on(',')
-        .trimResults()
+        .trimResults() // 给结果trim
         .omitEmptyStrings()
         .splitToList("java, guava, ,spring");
 // [java, guava, spring]
 
 Map<String, String> config = Splitter.on(';')
         .trimResults()
-        .withKeyValueSeparator('=')
+        .withKeyValueSeparator('=') // 这就是下文说的MapSplitter，把字符串解析为 Map
         .split("host=localhost; port=8080");
 
 String result = Joiner.on(',')
         .skipNulls()
         .join("java", null, "guava");
 // java,guava
+
+String result = Joiner.on(",")
+        .useForNull("未知")
+        .join(Arrays.asList("A", null, "C"));
+// A,未知,C
 ```
 
 注意：
 
 - `skipNulls()` 与 `useForNull()` 不能同时使用；
 - `MapSplitter` 遇到重复键或格式不正确会抛异常，适合严格配置解析；
-- 复杂 CSV（Comma-Separated Values，逗号分隔值）包含引号、换行和转义规则，不要用 `Splitter`，应使用专门的 CSV 库。
+- 复杂 CSV（Comma-Separated Values，逗号分隔值）包含引号、换行和转义规则，不要用 `Splitter`，应使用专门的 CSV 库。Java 中可以使用 Apache Commons CSV或OpenCSV。
+
+
+
+解释：
+
+例如下面是一条合法的 CSV 记录：
+
+```
+Alice,"Taipei, Taiwan","他说：""你好"""
+```
+
+正确结果应该是三个字段：
+
+```
+1. Alice
+2. Taipei, Taiwan
+3. 他说："你好"
+```
+
+但如果直接使用：
+
+```
+Splitter.on(',').split(line);
+```
+
+它只看到逗号，会把引号内的 `Taipei, Taiwan` 也拆开，得到错误结果。
 
 ### 4.4 CharMatcher：字符匹配与清洗
 
 ```java
 String digits = CharMatcher.digit().retainFrom("订单 A-1024"); // 1024
-String compact = CharMatcher.whitespace()
+String compact = CharMatcher.whitespace() // trim会删除字符串首尾所有匹配的空白字符，包括空格、\n、\t 等
         .trimAndCollapseFrom("  hello   guava \n", ' ');       // hello guava
 String safe = CharMatcher.javaLetterOrDigit()
         .or(CharMatcher.anyOf("-_"))
@@ -215,19 +246,56 @@ usersByRole.remove("ADMIN", "Bob");
 主要实现：
 
 - `ArrayListMultimap`：值允许重复，保留插入顺序特征；
-- `HashMultimap`：值不重复，不保证稳定顺序；
+- `HashMultimap`：值不重复，不保证稳定顺序；就是`Map<K, Set<V>>`
 - `LinkedHashMultimap`：值不重复，并维护可预测迭代顺序；
-- `TreeMultimap`：键和值按自然顺序或比较器排序；
+- `TreeMultimap`：键和值按自然顺序或比较器排序；就是`SortedMap<K, SortedSet<V>>`
 - `ImmutableListMultimap` / `ImmutableSetMultimap`：不可变版本。
 
 注意 `multimap.size()` 返回键值对总数，不是不同键的数量；不同键数量应使用 `multimap.keySet().size()`。
 
-### 5.3 Multiset：可重复元素计数集合
-
-`Multiset` 类似“元素到出现次数”的映射，又保留集合语义。
+例如：
 
 ```java
-Multiset<String> wordCounts = HashMultiset.create();
+Multimap<String, String> multimap = ArrayListMultimap.create();
+
+multimap.put("水果", "苹果");
+multimap.put("水果", "香蕉");
+multimap.put("颜色", "红色");
+```
+
+逻辑结构是：
+
+```java
+水果 -> 苹果
+水果 -> 香蕉
+颜色 -> 红色
+```
+
+这里有：
+
+- 3 个键值对：`水果→苹果`、`水果→香蕉`、`颜色→红色`
+- 2 个不同的键：`水果`、`颜色`
+
+因此：
+
+```java
+multimap.size();          // 3：键值对总数
+multimap.keySet().size(); // 2：不同键的数量
+```
+
+总结：
+
+```text
+size()          = 一共有多少条“键 → 值”关系
+keySet().size() = 一共有多少种不同的键
+```
+
+### 5.3 Multiset：可重复元素计数集合
+
+`Multiset` 类似“元素到出现次数”的映射，又保留集合语义。相当于`Map<E, Integer>`
+
+```java
+Multiset<String> wordCounts = HashMultiset.create(); // 相当于HashMap<E, Integer>
 wordCounts.add("java");
 wordCounts.add("java");
 wordCounts.add("guava", 3);
@@ -237,6 +305,8 @@ int javaCount = wordCounts.count("java"); // 2
 for (Multiset.Entry<String> entry : wordCounts.entrySet()) {
     System.out.println(entry.getElement() + ": " + entry.getCount());
 }
+// java: 2
+// guava: 3
 ```
 
 适用于词频、库存数量、投票统计和重复事件计数。并发计数可考虑 `ConcurrentHashMultiset`；超高并发指标统计还应评估 `LongAdder` 或专业指标系统。
@@ -251,13 +321,15 @@ prices.put("APPLE", "TAIPEI", new BigDecimal("35.00"));
 prices.put("APPLE", "TOKYO", new BigDecimal("42.00"));
 
 BigDecimal price = prices.get("APPLE", "TAIPEI");
-Map<String, BigDecimal> taipeiPrices = prices.column("TAIPEI");
-Map<String, BigDecimal> applePrices = prices.row("APPLE");
+Map<String, BigDecimal> taipeiPrices = prices.column("TAIPEI"); // APPLE=35.00
+Map<String, BigDecimal> applePrices = prices.row("APPLE");// AIPEI=35.00, TOKYO=42.00
 ```
 
 适用于权限矩阵、地区价格、二维配置。若数据规模大、稀疏度高或需要持久化查询，应使用数据库或专门存储，不要把 `Table` 当数据库。
 
 ### 5.5 BiMap：双向唯一映射
+
+`BiMap<K, V>` 是 键和值都唯一、支持双向查询的 Map
 
 ```java
 BiMap<String, Integer> statusCodes = HashBiMap.create();
@@ -270,6 +342,8 @@ String status = statusCodes.inverse().get(404); // NOT_FOUND
 值也必须唯一。重复值会抛出 `IllegalArgumentException`；`forcePut` 会移除旧映射，使用时必须明确这正是业务语义。
 
 ### 5.6 集合视图与变换
+
+视图可以理解为原集合上的动态窗口，随原数据变化。
 
 ```java
 Set<Integer> left = Set.of(1, 2, 3);
@@ -290,10 +364,21 @@ List<List<Integer>> pages = Lists.partition(List.of(1, 2, 3, 4, 5), 2);
 - `Lists.partition` 的子列表受原列表结构影响；
 - 需要稳定快照时，应使用 `ImmutableList.copyOf` 或 `ImmutableSet.copyOf`。
 
+总结：
+
+```text
+Sets.union                → 两个集合的并集视图
+Sets.intersection         → 两个集合的交集视图
+Sets.difference           → 只在左集合中的元素视图
+Lists.partition           → 原列表的分组视图
+ImmutableSet/List.copyOf  → 创建稳定的不可变快照
+```
+
 ### 5.7 Maps.uniqueIndex 与索引构建
 
 ```java
 ImmutableMap<Long, User> userById = Maps.uniqueIndex(users, User::getId);
+// 计算出的键 -> 原对象
 ```
 
 如果多个元素产生相同键，`uniqueIndex` 会抛出异常。若重复键是合法的，应使用 `Multimaps.index`：
@@ -330,13 +415,15 @@ RangeSet<Integer> blockedPorts = TreeRangeSet.create();
 blockedPorts.add(Range.closed(1, 1023));
 blockedPorts.add(Range.closed(8080, 8090));
 
-boolean blocked = blockedPorts.contains(8088);
+boolean blocked = blockedPorts.contains(8088); // true
 blockedPorts.remove(Range.closed(8085, 8087));
 ```
 
 相连区间会被自动合并，非常适合黑白名单、时间段、号码段和规则覆盖范围。
 
 ### 6.3 RangeMap：区间映射到值
+
+一个范围对应一个值
 
 ```java
 RangeMap<Integer, String> levels = TreeRangeMap.create();
@@ -357,8 +444,7 @@ String level = levels.get(88); // 优秀
 LoadingCache<Long, User> userCache = CacheBuilder.newBuilder()
         .maximumSize(10_000)
         .expireAfterWrite(Duration.ofMinutes(10))
-  			// 开启缓存统计，可以查看命中次数、未命中次数、加载耗时等
-        .recordStats()
+        .recordStats() // 开启命中率、加载次数、加载耗时等统计
         .build(new CacheLoader<>() {
             @Override
             public User load(Long userId) {
@@ -367,6 +453,7 @@ LoadingCache<Long, User> userCache = CacheBuilder.newBuilder()
             }
         });
 
+// 优先从缓存里获取，没有会自动加载
 User user = userCache.getUnchecked(1001L);
 ```
 
@@ -376,10 +463,19 @@ User user = userCache.getUnchecked(1001L);
 Cache<String, TokenInfo> tokenCache = CacheBuilder.newBuilder()
         .maximumSize(5_000)
         .expireAfterAccess(Duration.ofMinutes(30))
-        .build();
+        .build(); // 创建普通缓存，手动加载
 
-TokenInfo info = tokenCache.getIfPresent(token);
-tokenCache.put(token, info);
+// 根据token查tokenInfo
+TokenInfo info = tokenCache.getIfPresent(token); // 仅查询，不会自动加载
+if (info == null) {
+    // 缓存未命中，例如查询数据库或验证 Token
+    info = tokenService.verify(token);
+
+    if (info != null) {
+        tokenCache.put(token, info);
+    }
+}
+
 tokenCache.invalidate(token);
 ```
 
@@ -400,10 +496,10 @@ tokenCache.invalidate(token);
 User user = userCache.get(userId, () -> loadUser(userId));
 ```
 
-对于同一个键的并发 `get(key, loader)`，缓存会尽量避免重复加载。但开发者仍需考虑：
+对于同一个键的并发 `get(key, loader)`，**缓存会尽量避免重复加载**。但开发者仍需考虑：
 
 - 加载函数可能失败，应设计异常传播和重试策略；
-- Guava Cache 不缓存 `null`，空结果可用特殊对象或短期负缓存表达；
+- Guava Cache 不缓存 `null`，空结果可用特殊对象(空对象、Optional)或短期负缓存表达；“负缓存”并不是缓存负数，而是缓存“该数据不存在”
 - 缓存值应尽量不可变，避免调用者改写共享对象；
 - 本地缓存只在当前 JVM（Java Virtual Machine，Java 虚拟机）有效，多实例间不一致；
 - 进程重启数据即丢失，不能作为权威存储；
@@ -411,19 +507,148 @@ User user = userCache.get(userId, () -> loadUser(userId));
 
 现代项目若需要更强的异步刷新、性能或淘汰策略，通常还会评估 Caffeine。Guava Cache 适合已有 Guava 依赖、缓存要求中等且 API 简单的场景。
 
+
+
+短期负缓存解释
+
+“单独建立一个短期负缓存”是指：
+
+- 正常缓存：保存“查询到的数据”，例如缓存 10 分钟。
+- 负缓存：保存“这个 ID 已确认不存在”，例如只缓存 30 秒。
+
+之所以分开，是因为 Guava Cache 的过期时间通常对所有条目统一配置，而正常数据与“不存在”的结果往往需要不同的有效期。
+
+```java
+// 正常缓存：保存真实用户，缓存 10 分钟
+Cache<Long, User> userCache = CacheBuilder.newBuilder()
+        .maximumSize(10_000)
+        .expireAfterWrite(Duration.ofMinutes(10))
+        .build();
+
+// 负缓存：保存“该用户不存在”，只缓存 30 秒
+Cache<Long, Boolean> userNotFoundCache = CacheBuilder.newBuilder()
+        .maximumSize(5_000)
+        .expireAfterWrite(Duration.ofSeconds(30))
+        .build();
+```
+
+查询逻辑：
+
+```java
+public User findUser(Long userId) {
+    // 1. 先查正常缓存
+    User cachedUser = userCache.getIfPresent(userId);
+    if (cachedUser != null) {
+        return cachedUser;
+    }
+
+    // 2. 再查负缓存
+    Boolean notFound = userNotFoundCache.getIfPresent(userId);
+    if (Boolean.TRUE.equals(notFound)) {
+        throw new UserNotFoundException(userId);
+    }
+
+    // 3. 两个缓存都未命中，查询数据库
+    Optional<User> result = userRepository.findById(userId);
+
+    if (result.isPresent()) {
+        User user = result.get();
+
+        // 查询到用户，放入正常缓存
+        userCache.put(userId, user);
+
+        return user;
+    }
+
+    // 4. 未查询到用户，记录“不存在”
+    userNotFoundCache.put(userId, Boolean.TRUE);
+
+    throw new UserNotFoundException(userId);
+}
+```
+
+假设攻击者持续查询一个不存在的 `9999`：
+
+```properties
+第一次请求
+正常缓存：未命中
+负缓存：未命中
+数据库：用户不存在
+负缓存写入 9999，有效期 30 秒
+
+接下来 30 秒内的请求
+正常缓存：未命中
+负缓存：命中
+直接返回“不存在”，不再查询数据库
+
+30 秒后
+负缓存过期
+下一次请求重新查询数据库
+```
+
+当新用户被创建时，最好同步维护两个缓存：
+
+```java
+public User createUser(Long userId, User user) {
+    User saved = userRepository.save(user);
+
+    // 清除先前的“不存在”结论
+    userNotFoundCache.invalidate(userId);
+
+    // 写入正常缓存
+    userCache.put(userId, saved);
+
+    return saved;
+}
+```
+
+删除用户时反过来处理：
+
+```java
+public void deleteUser(Long userId) {
+    userRepository.deleteById(userId);
+
+    // 删除正常缓存中的旧数据
+    userCache.invalidate(userId);
+
+    // 短期记录“用户不存在”
+    userNotFoundCache.put(userId, Boolean.TRUE);
+}
+```
+
+核心含义可以概括为：
+
+```properties
+userCache:
+1001 → User对象           有效期10分钟
+
+userNotFoundCache:
+9999 → true               有效期30秒
+```
+
+这里的“负”表示缓存的是**否定结果（不存在）**，不是指缓存负数。它主要用于减少针对不存在数据的重复数据库查询，也就是缓解缓存穿透。
+
+
+
 ## 8. 并发工具：`com.google.common.util.concurrent`
 
 ### 8.1 RateLimiter：单机限流
+
+>Guava `RateLimiter` 理解为一种**令牌桶思想的变体**，但它不是教科书式的令牌桶实现。Guava 官方实现称为 `SmoothRateLimiter`（平滑速率限制器），核心是“存量许可 + 下一次可用时间调度”。[Guava 官方源码](https://github.com/google/guava/blob/master/guava/src/com/google/common/util/concurrent/SmoothRateLimiter.java)
 
 ```java
 RateLimiter limiter = RateLimiter.create(100.0); // 平均每秒 100 个许可
 
 public Result callRemoteService(Request request) {
+    // 等50毫秒获取1个许可
     if (!limiter.tryAcquire(Duration.ofMillis(50))) {
         throw new TooManyRequestsException();
     }
     return remoteClient.call(request);
 }
+// tryAcquire():立即判断
+// tryAcquire(timeout):有限等待
+// acquire:一直等待
 ```
 
 `RateLimiter` 基于许可速率平滑流量，适合单 JVM 的客户端保护、批处理节流和简单 QPS（Queries Per Second，每秒查询数）控制。
@@ -433,11 +658,13 @@ public Result callRemoteService(Request request) {
 ### 8.2 ListenableFuture
 
 ```java
+//MoreExecutros创建支持监听的线程池
 ListeningExecutorService executor = MoreExecutors.listeningDecorator(
         Executors.newFixedThreadPool(8));
 
 ListenableFuture<User> future = executor.submit(() -> loadUser(userId));
 
+// 注册成功或失败回调
 Futures.addCallback(future, new FutureCallback<>() {
     @Override
     public void onSuccess(User user) {
@@ -448,14 +675,33 @@ Futures.addCallback(future, new FutureCallback<>() {
     public void onFailure(Throwable error) {
         log.error("加载用户失败", error);
     }
-}, callbackExecutor);
+}, callbackExecutor); //  callbackExecutor决定 onSuccess() 和 onFailure() 在哪个线程池中执行
+
+/**
+
+executor
+└─ 执行 loadUser(userId)
+
+callbackExecutor
+└─ 执行 onSuccess() 或 onFailure()
+
+*/
 ```
 
 新项目通常优先使用 Java 8+ 的 `CompletableFuture`、虚拟线程或响应式框架。已有大量 Guava 异步链路时，`ListenableFuture` 仍有维护价值。
 
 不要随意使用 `MoreExecutors.directExecutor()` 执行未知或耗时回调：它可能直接占用完成任务的线程，放大延迟，甚至造成栈递归或死锁风险。
 
-### 8.3 Service：后台服务生命周期
+```properties
+directExecutor：
+谁触发完成，谁顺便执行回调
+
+callbackExecutor：
+谁触发完成，只负责提交回调
+回调交给指定线程池执行
+```
+
+### 8.3 Service：后台服务生命周期（了解）
 
 `Service`、`AbstractIdleService`、`AbstractExecutionThreadService` 用于管理后台组件的启动、运行和停止。
 
@@ -485,6 +731,7 @@ public final class QueueConsumer extends AbstractExecutionThreadService {
 
 ```java
 CharSource source = Files.asCharSource(path.toFile(), StandardCharsets.UTF_8);
+// 两次 read() 会分别打开新的输入流，读取完成后再关闭。
 String content = source.read();
 ImmutableList<String> lines = source.readLines();
 
@@ -493,11 +740,13 @@ HashCode sha256 = bytes.hash(Hashing.sha256());
 ```
 
 ```java
+// 把输出文件包装为 CharSink 容器
 CharSink sink = Files.asCharSink(
         output.toFile(),
         StandardCharsets.UTF_8,
         FileWriteMode.APPEND
 );
+// 依次写入两行，并在各行后加入系统默认的换行符。因为采用追加模式，多次调用会不断在文件末尾增加内容
 sink.writeLines(List.of("line1", "line2"));
 ```
 
@@ -506,8 +755,11 @@ sink.writeLines(List.of("line1", "line2"));
 ### 9.2 ByteStreams 与 CharStreams
 
 ```java
+// 复制字节流，持续从 inputStream 读取字节并写入 outputStream，直到输入流结束
 long copied = ByteStreams.copy(inputStream, outputStream);
+// 将字节流整体读入内存
 byte[] data = ByteStreams.toByteArray(inputStream);
+// 将字符流整体读成字符串
 String text = CharStreams.toString(reader);
 ```
 
@@ -529,19 +781,25 @@ Java 8 已提供 `java.util.Base64`。如果只需要 Base64，优先考虑 JDK�
 ### 10.1 Hashing：哈希计算
 
 ```java
+// 使用 UTF-8 将字符串编码为字节，然后计算 SHA-256 哈希值
 HashCode hash = Hashing.sha256()
         .hashString(payload, StandardCharsets.UTF_8);
+
+// 将 32 字节的哈希结果转换为 64 位小写十六进制字符串
 String hex = hash.toString();
 ```
 
 组合字段时应使用 `Hasher` 明确编码，避免简单字符串拼接产生歧义：
 
 ```java
-HashCode key = Hashing.sha256().newHasher()
-        .putLong(userId)
-        .putString(resource, StandardCharsets.UTF_8)
-        .putInt(version)
-        .hash();
+// 创建 SHA-256 哈希计算器，按固定顺序写入用户 ID、资源名称和版本号，
+// 最后生成可用作复合键或内容指纹的哈希值
+HashCode key = Hashing.sha256()
+        .newHasher()
+        .putLong(userId)                                // 写入 long 类型的用户 ID
+        .putString(resource, StandardCharsets.UTF_8)   // 以 UTF-8 编码写入资源字符串
+        .putInt(version)                                // 写入 int 类型的版本号
+        .hash();                                        // 完成计算并返回哈希值
 ```
 
 不要使用普通哈希保存密码。密码存储需要 Argon2、scrypt、bcrypt 或 PBKDF2（Password-Based Key Derivation Function 2，基于密码的密钥派生函数 2）等专用算法和随机盐。
@@ -549,6 +807,7 @@ HashCode key = Hashing.sha256().newHasher()
 ### 10.2 一致性哈希
 
 ```java
+// 将数据映射到 [0, nodeCount) 的节点编号；
 int bucket = Hashing.consistentHash(hash.asLong(), nodeCount);
 ```
 
@@ -564,17 +823,24 @@ int bucket = Hashing.consistentHash(hash.asLong(), nodeCount);
 - 适合在访问数据库前过滤大量确定不存在的键。
 
 ```java
+// 创建用于 long 类型用户 ID 的布隆过滤器：
+// 预计最多存放 1,000,000 个元素，目标误判率为 1%
 BloomFilter<Long> userIds = BloomFilter.create(
         Funnels.longFunnel(),
         1_000_000,
         0.01
 );
 
+// 将用户 ID 1001 加入布隆过滤器
 userIds.put(1001L);
 
+// 布隆过滤器判断“可能存在”时，再查询数据库；
+// 可能存在误判，因此数据库中不一定真的存在该用户
 if (userIds.mightContain(requestUserId)) {
     return userRepository.findById(requestUserId);
 }
+
+// 判断“不存在”时，该用户一定没有被加入过滤器，可跳过数据库查询
 return Optional.empty();
 ```
 
@@ -587,7 +853,7 @@ return Optional.empty();
 ```java
 Integer port = Ints.tryParse("8080"); // 失败返回 null，不抛 NumberFormatException
 
-int saturated = Ints.saturatedCast(Long.MAX_VALUE); // Integer.MAX_VALUE
+int saturated = Ints.saturatedCast(Long.MAX_VALUE); // Integer.MAX_VALUE ，saturated饱合的
 
 List<Integer> view = Ints.asList(1, 2, 3); // 基本类型数组的 List 视图
 
@@ -633,15 +899,24 @@ Guava 提供三类图结构：
 - `Network<N, E>`：边本身也是对象，支持平行边。
 
 ```java
+// 创建一个有向带权图：节点使用城市名称，边的值使用 Integer；
+// 不允许节点连接到自身
 MutableValueGraph<String, Integer> routes = ValueGraphBuilder
         .directed()
         .allowsSelfLoops(false)
         .build();
 
+// 添加 Taipei → Tokyo 的有向边，并将边的值设置为 2100
 routes.putEdgeValue("Taipei", "Tokyo", 2100);
+
+// 添加 Tokyo → Seoul 的有向边，并将边的值设置为 1150
 routes.putEdgeValue("Tokyo", "Seoul", 1150);
 
+// 获取 Taipei 可直接到达的所有后继城市，本例结果为 ["Tokyo"]
 Set<String> nextCities = routes.successors("Taipei");
+
+// 获取 Taipei → Tokyo 这条边的值；
+// 边存在时返回 Optional.of(2100)，不存在时返回 Optional.empty()
 Optional<Integer> distance = routes.edgeValue("Taipei", "Tokyo");
 ```
 
@@ -668,22 +943,165 @@ abstract class Repository<T> {
 
 它常用于序列化、依赖注入和框架开发。普通业务代码大量依赖反射会削弱类型安全和可读性，应谨慎控制边界。
 
+Java 的泛型主要在编译期发挥作用。编译后，很多泛型参数会因为“类型擦除”而无法直接从运行时对象中获得。
+
+例如：
+
+```java
+List<String> strings = new ArrayList<>();
+List<Integer> integers = new ArrayList<>();
+
+System.out.println(strings.getClass() == integers.getClass()); // true
+```
+
+运行时看到的通常都只是 `ArrayList`，无法通过 `strings.getClass()` 判断它原本是 `List<String>`。
+
+不过，Java 的类文件仍会保存父类、字段和方法签名中的部分泛型信息。`TypeToken` 正是利用了这一点。
+
+```java
+TypeToken<List<String>> type = new TypeToken<>() {};
+Type javaType = type.getType();
+```
+
+这里的关键是末尾的 `{}`：它创建了一个匿名子类。这个匿名子类的泛型父类签名包含 `List<String>`，因此 `TypeToken` 可以通过反射读取它：
+
+```java
+匿名子类
+└── TypeToken<List<String>>
+    └── List<String>
+```
+
+`javaType` 通常是一个 `ParameterizedType`（参数化类型），其中既包含原始类型 `List`，也包含类型参数 `String`。
+
+可以将两者对比理解：
+
+```java
+Class<?> clazz = List.class;
+// 只能表示 List
+
+Type type = new TypeToken<List<String>>() {}.getType();
+// 可以表示 List<String>
+```
+
+在泛型父类中，情况会稍微复杂：
+
+```java
+abstract class Repository<T> {
+    private final TypeToken<T> entityType =
+            new TypeToken<T>(getClass()) {};
+}
+```
+
+假设存在具体实现：
+
+```java
+final class UserRepository extends Repository<User> {
+}
+```
+
+单独观察 `Repository<T>` 时，运行时只能看到类型变量 `T`，并不知道它具体代表什么。`getClass()` 会返回真实的子类 `UserRepository.class`，于是 `TypeToken` 可以沿着继承关系进行解析：
+
+```properties
+UserRepository
+└── Repository<User>
+    └── T = User
+```
+
+这样，`entityType` 就可以被解析为 `User`，而不是尚未确定的 `T`。
+
+这种方式有一个重要限制：具体类型必须能从继承关系或泛型签名中找到。如果调用方本身也没有提供具体类型，仍然无法完成解析：
+
+```java
+class GenericRepository<T> extends Repository<T> {
+    // T 仍然没有绑定到具体类型
+}
+```
+
+`TypeToken` 常用于以下场景：
+
+- 序列化与反序列化，例如区分 `List<User>` 和 `List<Order>`
+- 依赖注入，例如区分 `Service<User>` 和 `Service<Order>`
+- 通用仓储、对象映射和类型注册表
+- 检查复杂泛型类型之间的兼容性
+- 表示嵌套类型，例如 `Map<String, List<User>>`
+
+例如，反序列化时仅传入 `List.class`，无法确定列表元素的类型；完整的 `Type` 则可以表示元素类型：
+
+```java
+Type type = new TypeToken<List<User>>() {}.getType();
+```
+
+需要注意，`TypeToken` 并没有取消类型擦除。它只是把泛型信息保存在匿名子类的继承签名中，然后通过反射读取和解析这些信息。
+
+使用时应注意：
+
+- 它不能恢复从未记录在类文件中的泛型信息。
+- 它依赖反射，会增加代码理解和调试成本。
+- 匿名子类写法比较特殊，容易被不熟悉其机制的开发者误解。
+- 运行时类型检查不能取代编译期类型检查。
+- 复杂继承结构、动态代理或错误的实例化方式可能导致解析结果不符合预期。
+
+因此，比较合理的原则是：在序列化、依赖注入、基础设施和框架边界使用 `TypeToken`；普通业务代码仍应优先使用明确的类、接口和编译期泛型检查。
+
 ### 14.2 ClassPath
 
 `ClassPath` 可扫描类加载器可见的类和资源，但在模块系统、特殊类加载器、原生镜像、应用服务器与打包后的 fat JAR 中可能受到限制。生产级扫描通常应选用经过目标运行环境验证的框架能力。
 
-## 15. EventBus：进程内事件总线
+```java
+ClassLoader classLoader =
+        Thread.currentThread().getContextClassLoader();
+
+ClassPath classPath = ClassPath.from(classLoader);
+```
+
+扫描某个包中的顶层类：
 
 ```java
+ImmutableSet<ClassPath.ClassInfo> classes =
+        classPath.getTopLevelClasses("com.example.service");
+```
+
+递归扫描某个包及其子包：
+
+```java
+ImmutableSet<ClassPath.ClassInfo> classes =
+        classPath.getTopLevelClassesRecursive("com.example");
+```
+
+获取类路径中的资源：
+
+```java
+ImmutableSet<ClassPath.ResourceInfo> resources =
+        classPath.getResources();
+```
+
+## 15. EventBus：进程内事件总线
+
+Guava 的 `EventBus` 是一种进程内的发布—订阅机制。发布者只负责发送事件，订阅者通过 `@Subscribe` 声明自己接收哪种类型的事件。
+
+```java
+// 订单事件订阅者
 public final class OrderSubscriber {
+
+    // 标记该方法为事件订阅方法
+    // 当 EventBus 收到 OrderCreatedEvent 时，会调用此方法
     @Subscribe
     public void onOrderCreated(OrderCreatedEvent event) {
+
+        // 记录订单创建事件的审计信息
         auditService.record(event);
     }
 }
 
+// 创建一个进程内的同步事件总线
 EventBus eventBus = new EventBus();
+
+// 注册订阅者
+// EventBus 会查找该对象中使用 @Subscribe 标记的方法
 eventBus.register(new OrderSubscriber());
+
+// 发布订单创建事件
+// EventBus 会同步调用所有接收 OrderCreatedEvent 的订阅方法
 eventBus.post(new OrderCreatedEvent(orderId));
 ```
 
@@ -700,6 +1118,8 @@ eventBus.post(new OrderCreatedEvent(orderId));
 
 ## 16. Ordering、ComparisonChain 等比较工具
 
+`ComparisonChain` 是 Guava 提供的多字段比较工具，适合实现 `Comparable` 接口中的 `compareTo()` 方法。
+
 ### 16.1 ComparisonChain
 
 ```java
@@ -708,18 +1128,29 @@ public int compareTo(User other) {
     return ComparisonChain.start()
             .compare(this.department, other.department)
             .compare(this.age, other.age)
+      			//最后比较姓名，Ordering自然排序，null作为最后
             .compare(this.name, other.name, Ordering.natural().nullsLast())
             .result();
 }
+// 返回最终比较结果：
+// 小于 0 表示当前对象排在 other 前面
+// 等于 0 表示参与比较的字段相等
+// 大于 0 表示当前对象排在 other 后面
 ```
 
-现代 Java 通常更推荐组合 `Comparator`：
+现代 Java 通常更推荐JDK自带的组合 `Comparator`：
 
 ```java
 Comparator<User> comparator = Comparator
         .comparing(User::getDepartment)
         .thenComparingInt(User::getAge)
         .thenComparing(User::getName, Comparator.nullsLast(naturalOrder()));
+
+// 比较两个用户
+int result = comparator.compare(firstUser, secondUser);
+
+// 按照比较规则排序
+users.sort(comparator);
 ```
 
 `Ordering` 在维护旧代码或需要 Guava 特有操作时仍有用，新代码应先评估 JDK `Comparator`。
