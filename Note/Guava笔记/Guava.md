@@ -13,7 +13,7 @@ Guava 最有价值的地方不是“少写几行代码”，而是提供：
 - 统一的参数校验、字符串解析和资源抽象；
 - 本地缓存、限流、布隆过滤器等工程化组件。
 
-需要注意，Java 8～21 持续增强了标准库。`Optional`、Stream、`CompletableFuture`、`List.of`、`Files` 等能力已经覆盖部分 Guava 场景。因此，开发时应优先判断：Guava 是否能显著提升表达力，还是仅仅重复 JDK（Java Development Kit，Java 开发工具包）已有能力。
+需要注意，Java 8～21 持续增强了标准库。`	`Optional`、Stream、`CompletableFuture`、`List.of`、`Files` 等能力已经覆盖部分 Guava 场景。因此，开发时应优先判断：Guava 是否能显著提升表达力，还是仅仅重复 JDK（Java Development Kit，Java 开发工具包）已有能力。
 
 ## 2. 引入依赖
 
@@ -357,6 +357,7 @@ String level = levels.get(88); // 优秀
 LoadingCache<Long, User> userCache = CacheBuilder.newBuilder()
         .maximumSize(10_000)
         .expireAfterWrite(Duration.ofMinutes(10))
+  			// 开启缓存统计，可以查看命中次数、未命中次数、加载耗时等
         .recordStats()
         .build(new CacheLoader<>() {
             @Override
@@ -378,7 +379,7 @@ Cache<String, TokenInfo> tokenCache = CacheBuilder.newBuilder()
         .build();
 
 TokenInfo info = tokenCache.getIfPresent(token);
-tokenCache.put(token, tokenInfo);
+tokenCache.put(token, info);
 tokenCache.invalidate(token);
 ```
 
