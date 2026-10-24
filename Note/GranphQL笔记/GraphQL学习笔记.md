@@ -54,6 +54,40 @@ query GetBookPage {
 
 这个页面体现了 GraphQL 常解决的两类问题：过度获取（over-fetching）是接口返回了页面不用的字段；获取不足（under-fetching）是页面必须调用多个接口才能拼齐数据。一次 GraphQL HTTP（Hypertext Transfer Protocol，超文本传输协议）请求不等于一次数据库查询，服务端仍可能产生 N+1 等性能问题，第 7 章会给出可观察的优化方法。
 
+
+
+N+1问题：
+
+**N+1 问题，是指原本可以批量获取的数据，被拆成了“1 次查询 + N 次额外查询”。** 数据越多，查询次数也越多，容易拖慢服务。
+
+例如，前端通过一次 GraphQL 请求，获取 **10 篇文章及各自的作者**：
+
+```json
+{
+  posts {
+    title
+    author {
+      name
+    }
+  }
+}
+```
+
+如果服务端这样处理：
+
+1. 查询文章列表：执行 **1 次**数据库查询，获得 10 篇文章。
+2. 逐篇查询作者：每篇执行 **1 次**，共 **10 次**。
+
+最终就是 **1 + 10 = 11 次数据库查询**。这里的 N 就是文章数量；如果有 100 篇文章，就可能产生 101 次查询。
+
+所以，**前端只发了一次 HTTP 请求，并不代表服务端只查询了一次数据库**。GraphQL 决定你要哪些数据，具体如何获取数据，取决于服务端实现。
+
+常见优化方法是**批量加载**：先查出文章，再一次性查询这些文章涉及的所有作者，把查询次数从 `1 + N` 降到 `1 + 1 = 2`。也可以使用数据库联表查询，或通过 DataLoader 这类工具合并加载请求、复用已获取的数据。
+
+
+
+
+
 ### 1.2 最小闭环：启动服务并读到一本书
 
 下面先运行一个只支持 `book(id:)` 的服务。完成后再回看 GraphQL 的术语，读者会先知道每个概念对应哪段代码和哪项结果。
@@ -72,6 +106,7 @@ query GetBookPage {
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
+      	<!-- 不通过本地相对路径查找父 POM，而是从 Maven 仓库解析父项目 -->
         <relativePath/>
     </parent>
 
@@ -80,6 +115,7 @@ query GetBookPage {
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
+      	<!-- 继承spring-boot-starter-parent，父 POM 会使用这个属性配置 Java 编译版本 -->
         <java.version>17</java.version>
     </properties>
 
@@ -178,6 +214,8 @@ mvn spring-boot:run
 看到应用监听 8080 端口后，在另一个终端发送请求：
 
 ```bash
+# 注意ReadBook是客户端自定义的操作名称
+# /graphql是常用约定地址，可以进行配置
 curl --request POST \
   --header 'content-type: application/json' \
   --header 'accept: application/graphql-response+json' \
@@ -240,6 +278,116 @@ flowchart LR
     D --> G["缓存"]
     B -->|"返回 data、errors、extensions"| A
 ```
+
+
+
+Resolver/DataFethcer详解：
+
+**Resolver 和 DataFetcher 的核心职责相同：为 GraphQL 中的某个字段提供值。** Resolver 是通用叫法，DataFetcher 则是 **GraphQL Java 中实现字段解析的接口**。[GraphQL Java 官方文档](https://graphql-java.com/documentation/data-fetching/)也明确说明了这两个名称的对应关系。
+
+可以这样理解：
+
+> Schema（模式）定义“可以查询什么”，Resolver / DataFetcher 定义“这个字段的值怎么得到”。
+
+**1. Resolver：字段的解析逻辑**
+
+假设有下面的 Schema：
+
+```graphql
+type Query {
+  book(id: ID!): Book
+}
+
+type Book {
+  title: String
+  author: Author
+}
+
+type Author {
+  name: String
+}
+```
+
+客户端查询：
+
+```json
+{
+  book(id: "1") {
+    title
+    author {
+      name
+    }
+  }
+}
+```
+
+执行时，GraphQL 会逐层解析字段：
+
+```text
+Query.book    → 根据 id 获取 Book 对象
+Book.title    → 从 Book 对象读取书名
+Book.author   → 根据 Book 中的 authorId 获取 Author 对象
+Author.name   → 从 Author 对象读取姓名
+```
+
+**父字段返回的对象，会成为子字段解析时的输入。** 例如，`Query.book` 返回的 Book 对象，会传给 `Book.title` 和 `Book.author` 的 Resolver。[GraphQL 执行文档](https://www.graphql.org/learn/execution/)
+
+因此，Resolver 不一定访问数据库，也可以读取对象属性、调用其他服务，或者计算一个值。
+
+**2. DataFetcher：GraphQL Java 中的具体实现**
+
+GraphQL Java 用 `DataFetcher<T>` 接口表达上述逻辑，核心方法是：
+
+```java
+T get(DataFetchingEnvironment environment) throws Exception;
+```
+
+例如，为 `Query.book` 和 `Book.author` 提供数据：
+
+```java
+DataFetcher<Book> bookFetcher = environment -> {
+    String id = environment.getArgument("id");
+    return bookService.findById(id);
+};
+
+DataFetcher<Author> authorFetcher = environment -> {
+    Book book = environment.getSource();
+    return authorService.findById(book.getAuthorId());
+};
+```
+
+再把它们绑定到对应字段：
+
+```java
+RuntimeWiring wiring = RuntimeWiring.newRuntimeWiring()
+    .type("Query", type -> type
+        .dataFetcher("book", bookFetcher))
+    .type("Book", type -> type
+        .dataFetcher("author", authorFetcher))
+    .build();
+```
+
+其中，`DataFetchingEnvironment` 封装了解析所需的信息：
+
+| 信息                      | Java 中的常见获取方式 |
+| ------------------------- | --------------------- |
+| 当前字段的参数，例如 `id` | `getArgument("id")`   |
+| 父字段返回的对象          | `getSource()`         |
+| 请求上下文，例如当前用户  | `getGraphQlContext()` |
+| 客户端选择了哪些子字段    | `getSelectionSet()`   |
+
+这些都是 DataFetcher 取值时可使用的输入。[GraphQL Java 数据获取文档](https://graphql-java.com/documentation/data-fetching/)
+
+**3. 为什么有些字段不用写 DataFetcher？**
+
+因为 GraphQL Java 提供默认的 `PropertyDataFetcher`。
+
+例如，解析 `Book.title` 时，如果 Book 对象已有 `getTitle()` 方法，默认 DataFetcher 就可以读取它；如果父对象是 `Map`，也可以读取对应的键。因此，上面的例子通常只需手写 `book` 和 `author` 的获取逻辑。[默认字段映射机制](https://graphql-java.com/documentation/data-mapping/)
+
+最后注意两点：
+
+- **Resolver 和 DataFetcher 通常不是前后两层。** 在 GraphQL Java 中，一个 DataFetcher 本身就承担字段 Resolver 的职责；应用可以自行在它下面划分 Service、Repository 等层。
+- **`TypeResolver` 是另一个概念。** DataFetcher 决定“字段返回什么值”；TypeResolver 用于接口、联合类型，决定“这个运行时对象对应哪种具体 GraphQL 类型”。[GraphQL Java Schema 文档](https://graphql-java.com/documentation/master/schema/)
 
 ### 1.4 GraphQL、REST 与 RPC 的边界
 
@@ -394,7 +542,7 @@ GraphQL Schema 中常见的六种命名类型如下：
 | Enum | 有限的合法值集合 | `BookStatus` |
 | Input Object | 组织复杂输入 | `CreateBookInput` |
 | Interface | 多种对象共同遵守的字段合同 | `Node` |
-| Union | 返回多种对象之一，不定义共同字段 | `Book \| Author` |
+| Union | 返回多种对象之一，不定义共同字段 | `Book | Author` |
 
 内置 Scalar（标量）有：
 
@@ -532,7 +680,7 @@ query {
 }
 ```
 
-过程是 `title` 先失败，因为 `title` 非空而不能停在自身，于是错误向上到可空的 `book` 并停止；兄弟根字段 `books` 仍可保留。错误文案会因实现而不同，客户端更应关注 `path`、错误分类和业务错误码。
+过程是 `t itle` 先失败，因为 `title` 非空而不能停在自身，于是错误向上到可空的 `book` 并停止；兄弟根字段 `books` 仍可保留。错误文案会因实现而不同，客户端更应关注 `path`、错误分类和业务错误码。
 
 设计建议是：只有当服务端真的能长期保证存在时才加 `!`。把字段从可空改为非空对响应更严格，但可能使旧数据暴露执行错误；把输入参数从可选改为必填则会直接破坏旧客户端。
 
@@ -594,6 +742,61 @@ OneOf Input Object 中的成员字段必须声明为可空，并且不能配置�
 
 它适合查找条件、支付方式、联系方式等互斥输入。若两个字段允许同时出现，或者多个字段需要组合成一个复合条件，就应继续使用普通 Input Object 并在业务层校验组合规则。维护旧版 GraphQL Java 项目时，要先确认运行库和客户端代码生成器是否支持 `@oneOf` 与内省字段 `__Type.isOneOf`，不能只修改 SDL 后假设所有工具都会正确识别。
 
+
+
+内省字段：
+
+`__Type.isOneOf` 是 GraphQL 的一个**类型内省字段**，用于查询：**某个输入对象类型是否被标记为 `@oneOf`。**
+
+“内省（Introspection）”就是通过 GraphQL 查询服务自身的类型定义。
+
+例如，你定义了：
+
+```graphql
+input BookUniqueCondition @oneOf {
+  id: ID
+  isbn: String
+}
+```
+
+可以这样查询它的信息：
+
+```graphql
+query {
+  __type(name: "BookUniqueCondition") {
+    name
+    kind
+    isOneOf
+  }
+}
+```
+
+返回：
+
+```json
+{
+  "data": {
+    "__type": {
+      "name": "BookUniqueCondition",
+      "kind": "INPUT_OBJECT",
+      "isOneOf": true
+    }
+  }
+}
+```
+
+`isOneOf` 的含义是：
+
+| 查询的类型                   | `isOneOf` |
+| ---------------------------- | --------- |
+| 带 `@oneOf` 的输入对象       | `true`    |
+| 不带 `@oneOf` 的普通输入对象 | `false`   |
+| 输出对象、标量等其他类型     | `null`    |
+
+**它描述的是类型的规则，不是在检查某次传入的数据是否合法。**例如，开发工具可以读取这个字段，得知填写表单时只能选择 `id` 或 `isbn` 中的一项。
+
+
+
 ### 2.8 Interface、Union 与 `__typename`
 
 ```graphql
@@ -621,22 +824,30 @@ type Query {
 查询抽象类型时，通过内联片段选择具体字段：
 
 ```graphql
+# 声明名为 Search 的查询操作，由客户端自定义
+# $keyword 是变量，String! 表示必须提供，且不能为 null
 query Search($keyword: String!) {
+  # 调用 search 字段，将变量值传给 keyword 参数
   search(keyword: $keyword) {
+    # 获取当前结果的实际类型名称，例如 "Book" 或 "Author"
     __typename
+
+    # 内联片段：当前结果为 Book 时，获取以下字段
     ... on Book {
-      id
-      title
+      id     # 书籍 ID
+      title  # 书名
     }
+
+    # 内联片段：当前结果为 Author 时，获取以下字段
     ... on Author {
-      id
-      name
+      id    # 作者 ID
+      name  # 作者姓名
     }
   }
 }
 ```
 
-`__typename` 是对象上的元字段。客户端常用“类型名 + ID”作为规范化缓存键。
+`__typename` 是对象上的元字段。客户端常用“类型名 + ID”作为规范化缓存键，客户端拿到数据后，可以用“对象类型 + 对象编号”唯一标识它，把同一个对象的数据统一存放。
 
 Interface 与 Union 都能返回多种对象，但设计意图不同：
 
@@ -702,6 +913,182 @@ query Search($keyword: String!) {
 
 若实际返回类叫 `BookView`，而 Schema 类型叫 `Book`，默认名称匹配可能失败。此时不要随意修改 Schema 迁就内部类名，应通过 `ClassNameTypeResolver` 的类名提取或显式映射配置对应关系。验证时同时断言 `__typename` 和类型专属字段；只断言列表长度，无法证明类型解析正确。
 
+
+
+这句话主要针对 **Union（联合类型）和 Interface（接口）返回值的实际类型判断**。
+
+**1. 为什么需要判断类型？**
+
+例如 Schema 定义：
+
+```graphql
+union SearchResult = Book | Author
+
+type Book {
+  id: ID!
+  title: String!
+}
+
+type Author {
+  id: ID!
+  name: String!
+}
+
+type Query {
+  search(keyword: String!): [SearchResult!]!
+}
+```
+
+`search` 返回的每一项，都需要确定究竟是 `Book` 还是 `Author`。
+
+但你的 Java 类可能叫：
+
+```java
+public record BookView(String id, String title) {}
+
+public record AuthorView(String id, String name) {}
+```
+
+于是框架需要解决：
+
+```text
+Java 返回 BookView 对象
+         ↓
+它对应 Schema 中的 Book，还是 Author？
+```
+
+Spring 默认使用 `ClassNameTypeResolver` 按 Java 类的简单名称匹配 GraphQL 类型；必要时还会查找父类和接口。因此，`BookView` 默认会尝试匹配名为 `BookView` 的 GraphQL 类型，而 Schema 中只有 `Book`，就可能匹配失败。[Spring 文档](https://docs.spring.io/spring-graphql/docs/1.4.x/api/org/springframework/graphql/execution/ClassNameTypeResolver.html)
+
+
+
+**`...` 是 GraphQL 语法中的一个固定符号，三个点要原样写，不是表示省略了代码。**
+
+在你的查询中：
+
+```graphql
+... on Book {
+  id
+  title
+}
+```
+
+整个结构叫**内联片段（Inline Fragment）**：
+
+- `...`：引入片段。
+- `on Book`：指定类型条件，当前对象属于 `Book` 类型时应用。
+- `{ id title }`：条件满足时要读取的字段。
+
+所以：
+
+```graphql
+search(keyword: $keyword) {
+  __typename
+
+  ... on Book {
+    id
+    title
+  }
+
+  ... on Author {
+    id
+    name
+  }
+}
+```
+
+表示：每条搜索结果都读取 `__typename`；如果是书，就读取 `id`、`title`；如果是作者，就读取 `id`、`name`。
+
+`...` 还可以用来引用**具名片段**，复用字段选择：
+
+```graphql
+query {
+  book(id: "1") {
+    ...BookFields
+  }
+}
+
+fragment BookFields on Book {
+  id
+  title
+}
+```
+
+两种形式的区别：
+
+| 写法                  | 含义                       |
+| --------------------- | -------------------------- |
+| `... on Book { ... }` | 直接在当前位置定义内联片段 |
+| `...BookFields`       | 引用另行定义的具名片段     |
+
+**2. 通过显式映射解决**
+
+明确告诉框架：
+
+```text
+BookView.class   → GraphQL 的 Book
+AuthorView.class → GraphQL 的 Author
+```
+
+配置代码：
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.graphql.execution.ClassNameTypeResolver;
+import org.springframework.graphql.execution.RuntimeWiringConfigurer;
+
+@Configuration
+public class GraphQlConfig {
+
+    @Bean
+    public RuntimeWiringConfigurer searchTypeConfigurer() {
+        ClassNameTypeResolver resolver = new ClassNameTypeResolver();
+
+        // Java 类 → Schema 中的类型名称
+        resolver.addMapping(BookView.class, "Book");
+        resolver.addMapping(AuthorView.class, "Author");
+
+        // 为 SearchResult 联合类型注册这个解析器
+        return builder -> builder.type(
+                "SearchResult",
+                typeBuilder -> typeBuilder.typeResolver(resolver)
+        );
+    }
+}
+```
+
+配置后：
+
+```text
+BookView 对象
+    ↓ 映射
+GraphQL Book
+    ↓
+匹配 ... on Book，并返回 __typename: "Book"
+```
+
+客户端看到的类型名仍然是 `Book`。
+
+**3. “类名提取”是另一种配置方式**
+
+如果所有 Java 类都有统一的 `View` 后缀，可以用规则批量处理，替代逐个 `addMapping`：
+
+```java
+resolver.setClassNameExtractor(clazz -> {
+    String name = clazz.getSimpleName();
+
+    // BookView → Book；AuthorView → Author
+    return name.endsWith("View")
+            ? name.substring(0, name.length() - 4)
+            : name;
+});
+```
+
+- **显式映射**：适合类名没有统一规律，关系清晰直接。
+- **类名提取**：适合整个项目遵循统一命名规则。
+
+
+
 ## 3 查询语言：客户端如何准确表达需求
 
 ### 3.1 Query 的最小结构
@@ -736,6 +1123,122 @@ query ReadBooks {
 ```
 
 此时 HTTP 请求体必须用 `operationName` 指明执行哪一个，例如 `"operationName":"ReadBook"`；若文档只有一个操作，可以省略。服务端不会因为文档中出现两个 Query 就自动把二者都执行。匿名操作只能出现在文档的唯一操作中，因此生产客户端统一命名能同时减少选择歧义，并为日志、指标和受信任文档提供稳定标识。
+
+
+
+这段话主要在说：**一个 GraphQL 文档可以放多个操作，但一次请求只选择其中一个执行。**
+
+可以把“文档”理解为一段完整的 GraphQL 查询文本。
+
+**1. 文档里定义了两个可选操作**
+
+```graphql
+# 第一个操作，名字是 ReadBook
+query ReadBook {
+  book(id: "1") {
+    title
+  }
+}
+
+# 第二个操作，名字是 ReadBooks
+query ReadBooks {
+  books {
+    title
+  }
+}
+```
+
+这里有两个操作：
+
+| 操作名称    | 执行内容              |
+| ----------- | --------------------- |
+| `ReadBook`  | 查询编号为 `"1"` 的书 |
+| `ReadBooks` | 查询书籍列表          |
+
+它们相当于两个可选入口，**服务端需要知道本次选择哪个入口。**
+
+**2. `operationName` 用来选择操作**
+
+发送 HTTP（Hypertext Transfer Protocol，超文本传输协议）请求时，请求体可以是：
+
+```json
+{
+  "query": "query ReadBook { book(id: \"1\") { title } } query ReadBooks { books { title } }",
+  "operationName": "ReadBook"
+}
+```
+
+注意两个字段的区别：
+
+- `query`：完整的 GraphQL 文档，里面可以有多个操作。
+- `operationName`：本次要执行的操作名称，必须与文档中的名字匹配。
+
+上面的请求只执行 `ReadBook`。如果改成：
+
+```text
+"operationName": "ReadBooks"
+```
+
+就只执行 `ReadBooks`。
+
+**有多个操作却不提供 `operationName`，服务端会报错，不会默认选择第一个，也不会全部执行。**
+
+**3. 只有一个操作时，不需要选择**
+
+例如文档只有：
+
+```graphql
+query ReadBook {
+  book(id: "1") {
+    title
+  }
+}
+```
+
+即使没有 `operationName`，服务端也知道只能执行 `ReadBook`。
+
+这时也允许省略操作名称，写成匿名操作：
+
+```graphql
+{
+  book(id: "1") {
+    title
+  }
+}
+```
+
+但匿名操作必须是文档里唯一的操作，不能再混入其他操作。
+
+**4. 想一次查两种数据，可以放在同一个操作里**
+
+```graphql
+query ReadBookAndBooks {
+  book(id: "1") {
+    title
+  }
+
+  books {
+    title
+  }
+}
+```
+
+这里是**一个操作、两个顶层字段**，选中这个操作后，就会查询两部分数据。
+
+**5. 为什么建议统一命名？**
+
+因为日志里看到：
+
+```text
+ReadBook：耗时 25ms
+ReadBooks：耗时 120ms
+```
+
+比一堆“匿名查询”更容易定位问题、统计性能。
+
+不过，操作名称是客户端填写的标签，**不能单靠名字判断请求可信，也不能保证两个同名操作的查询内容相同**；受信任文档通常还需要按文档内容或其哈希值进行识别和校验。
+
+
 
 ### 3.2 参数与变量
 
@@ -918,7 +1421,70 @@ mutation CreateBook($input: CreateBookInput!) {
 }
 ```
 
+请求示例：
+
+```bash
+# 即使执行 Mutation，请求体的字段也叫 query，不叫 mutation
+curl 'http://localhost:8080/graphql' \
+  -H 'Content-Type: application/json' \
+  --data-raw '{
+    "operationName": "CreateBook",
+    "query": "mutation CreateBook($input: CreateBookInput!) { createBook(input: $input) { id title status } }",
+    "variables": {
+      "input": {
+        "title": "GraphQL 入门",
+        "summary": "从查询到生产实践",
+        "price": 59.9,
+        "authorId": "a1"
+      }
+    }
+  }'
+```
+
 顶层 Mutation 字段按顺序串行执行，这是为了让有副作用的操作顺序可预测；每个顶层字段内部的子字段仍按普通字段规则执行。Query 应保持只读语义，不能因为“技术上能写数据库”就偷偷产生副作用。
+
+
+
+注意：
+
+**GraphQL 的 HTTP JSON 请求体主要使用这三个字段**：
+
+| 字段            | 作用                                                         | 是否必填                   |
+| --------------- | ------------------------------------------------------------ | -------------------------- |
+| `query`         | GraphQL 文档，可以包含 `query`、`mutation` 或 `subscription` 操作 | 常规请求必填               |
+| `variables`     | 操作中使用的变量值                                           | 没有需要提供的变量时可省略 |
+| `operationName` | 指定执行文档中的哪个操作                                     | 文档有多个操作时必填       |
+
+例如：
+
+```json
+{
+  "query": "query ReadBook($id: ID!) { book(id: $id) { title } }",
+  "variables": {
+    "id": "1"
+  },
+  "operationName": "ReadBook"
+}
+```
+
+**即使执行 Mutation，请求体的字段也叫 `query`，不叫 `mutation`。**
+
+此外还有一个可选的标准字段 **`extensions`**，用于携带协议扩展信息，例如某些持久化查询方案使用的查询哈希。所以这三个是最常用的字段，并非全部字段。
+
+```bash
+{
+  "operationName": "ReadBook",
+  "variables": {
+    "id": "1"
+  },
+  "extensions": {
+    "persistedQuery": {
+      "version": 1,
+      "sha256Hash": "<完整查询文本的 SHA-256 哈希值>"
+    }
+  }
+}
+```
 
 ### 3.8 批量修改要定义清楚原子性
 
@@ -1341,6 +1907,53 @@ spring:
 
 GraphiQL 默认页面位于 `http://localhost:8080/graphiql`，GraphQL HTTP 端点默认是 `POST /graphql`。GraphiQL 只建议在开发环境启用，生产是否开放要结合安全策略。
 
+
+
+这个配置用于**开启 GraphiQL，一个在浏览器中调试 GraphQL 的页面**。
+
+服务启动后，假设端口为 `8080`，且没有额外配置路径前缀，就可以访问：
+
+http://localhost:8080/graphiql
+
+默认页面路径是 `/graphiql`，通常默认关闭，这项配置将它开启。[Spring Boot 文档](https://docs.spring.io/spring-boot/docs/3.2.x/reference/html/web.html#web.graphql.graphiql)
+
+在页面里，你可以：
+
+- 编写并执行 Query、Mutation。
+- 填写 `variables` 变量。
+- 查看返回数据和错误。
+- 浏览 Schema 中的类型和字段，获得查询补全。
+
+例如，在查询编辑区输入：
+
+```graphql
+query ReadBook($id: ID!) {
+  book(id: $id) {
+    id
+    title
+  }
+}
+```
+
+在变量区输入：
+
+```json
+{
+  "id": "1"
+}
+```
+
+点击执行，页面就会向 GraphQL 接口发送请求并展示结果，类似你前面用 curl 调用接口。
+
+两个路径要区分：
+
+| 默认路径    | 用途                            |
+| ----------- | ------------------------------- |
+| `/graphql`  | 程序实际发送 GraphQL 请求的接口 |
+| `/graphiql` | 供人在浏览器里操作的调试页面    |
+
+**关闭 GraphiQL 页面，不影响 `/graphql` 接口正常提供服务。**
+
 ### 4.8 启动与验证
 
 ```bash
@@ -1486,6 +2099,15 @@ public Author author(
 }
 ```
 
+`environment` 也能提供前两个参数对应的信息：
+
+```java
+Book book = environment.getSource();
+GraphQLContext context = environment.getGraphQlContext();
+```
+
+相关概念：
+
 | GraphQL 执行概念 | Spring 方法参数 | 常见用途 |
 | --- | --- | --- |
 | Parent / Source | 未加注解的 `Book book` | `Book.author` 读取 `book.authorId()` |
@@ -1494,6 +2116,211 @@ public Author author(
 | Execution Info | `DataFetchingEnvironment` | 选择集、字段路径等高级信息 |
 | Security Principal | `Principal`、`@AuthenticationPrincipal` | 获取 Spring Security 身份 |
 | DataLoader | `DataLoader<K,V>` | 请求内批量加载关联数据 |
+
+这张表描述的是：**GraphQL 解析一个字段时，能拿到哪些信息，以及 Spring 如何把这些信息传进 Java 方法。**
+
+先看一个查询，后面都围绕它解释：
+
+```graphql
+query {
+  book(id: "B1") {
+    title
+    author {
+      name
+    }
+  }
+}
+```
+
+解析时，先查出 `book`，再解析这本书的 `title`、`author`，最后解析作者的 `name`。
+
+**1. Parent / Source：当前字段属于哪个对象？**
+
+Parent 是“父对象”，Source 是“源对象”，在这里指同一个东西：**上一级字段返回的、承载当前字段的对象**。
+
+```java
+@SchemaMapping(typeName = "Book", field = "author")
+public Author author(Book book) {
+    return authorService.findRequired(book.authorId());
+}
+```
+
+解析 `Book.author` 时，`book` 就是上一步 `Query.book` 查出来的那本书。
+
+父对象随解析层级变化：
+
+| 正在解析的字段 | Parent / Source |
+| -------------- | --------------- |
+| `Book.title`   | 当前的 `Book`   |
+| `Book.author`  | 当前的 `Book`   |
+| `Author.name`  | 当前的 `Author` |
+
+因此，未加注解的 `Book book` 在这里表示框架传入的父对象。[Spring Source 说明](https://docs.spring.io/spring-graphql/reference/controllers.html#controllers-source)
+
+**2. Arguments：客户端给当前字段传了什么参数？**
+
+Arguments 是“字段参数”，来自查询中字段后面的括号：
+
+```text
+book(id: "B1")
+```
+
+对应：
+
+```java
+@QueryMapping
+public Book book(@Argument("id") String id) {
+    return bookService.findRequired(id); // id 是 "B1"
+}
+```
+
+**参数属于具体字段，不会自动传给所有下级字段。**
+
+例如：
+
+```graphql
+book(id: "B1") {
+  author {
+    name
+  }
+}
+```
+
+`id` 是 `book` 的参数。`author` 方法不能通过 `@Argument("id")` 直接读取这个上级参数；它通常通过父对象 `book` 获取所需信息。[Spring 参数绑定说明](https://docs.spring.io/spring-graphql/reference/controllers.html#controllers-argument)
+
+**3. Context：这次执行共享哪些背景信息？**
+
+Context 是“上下文”，适合保存一次 GraphQL 执行过程中多个字段都需要的信息，例如租户标识、追踪标识。
+
+两种常见读取方式：
+
+```java
+// 取得整个上下文
+public Author author(Book book, GraphQLContext context) {
+    String tenantId = context.get("tenantId");
+    return authorService.findInTenant(tenantId, book.authorId());
+}
+// 只取得其中一个值
+public Author author(
+        Book book,
+        @ContextValue("tenantId") String tenantId) {
+
+    return authorService.findInTenant(tenantId, book.authorId());
+}
+```
+
+这两个例子是假设应用已经提前写入了 `tenantId`。客户端发送的请求头等信息，需要通过拦截器等机制放入上下文。
+
+它的范围和父对象不同：**父对象随字段层级变化，主上下文在同一次执行中共享。**[Spring 上下文说明](https://docs.spring.io/spring-graphql/reference/controllers.html#controllers)
+
+**4. Execution Info：当前字段执行到了哪里？**
+
+Execution Info 是“执行信息”，例如字段路径、字段类型、客户端选择了哪些子字段。
+
+`DataFetchingEnvironment` 可以提供这些信息：
+
+```java
+@SchemaMapping(typeName = "Book", field = "author")
+public Author author(Book book, DataFetchingEnvironment env) {
+    var path = env.getExecutionStepInfo().getPath();
+    var selectionSet = env.getSelectionSet();
+
+    return authorService.findRequired(book.authorId());
+}
+```
+
+在示例查询中：
+
+- 解析 `Book.author` 时，路径是 `/book/author`。
+- 它的选择集包含 `name`，因为客户端请求了 `author { name }`。
+
+这里需要修正表格中的一个理解：**`DataFetchingEnvironment` 的范围比 Execution Info 更广。**它还可以取得：
+
+```text
+env.getSource();         // 父对象
+env.getArguments();      // 当前字段参数
+env.getGraphQlContext();// 主上下文
+```
+
+所以，它是当前字段解析环境的完整入口；`Book book`、`@Argument` 等参数提供了更直接的访问方式。[GraphQL Java 执行环境说明](https://www.graphql-java.com/documentation/data-fetching/)
+
+**5. Security Principal：当前是谁在访问？**
+
+Principal 可以理解为“安全身份主体”，由 Spring Security 的安全上下文提供。
+
+```java
+@QueryMapping
+public List<Book> myBooks(Principal principal) {
+    return bookService.findByUsername(principal.getName());
+}
+```
+
+`Principal` 适合读取身份名称等通用信息。
+
+如果系统使用自定义用户对象，可以通过 `@AuthenticationPrincipal` 获取：
+
+```java
+@QueryMapping
+public List<Book> myBooks(
+        @AuthenticationPrincipal AppUser user) {
+
+    return bookService.findByUserId(user.id());
+}
+```
+
+这里的 `AppUser` 是示例类型，需要与你的认证配置中 `Authentication.getPrincipal()` 返回的对象匹配。
+
+它与 `@ContextValue` 的区别是：**前者读取安全身份，后者读取 GraphQL 上下文中指定的属性。**身份是否可用，取决于当前请求的认证状态。[Spring 支持的身份参数](https://docs.spring.io/spring-graphql/reference/controllers.html#controllers-schema-mapping)
+
+**6. DataLoader：如何合并多次关联查询？**
+
+`DataLoader<K, V>` 是“数据加载器”：
+
+- `K`（Key）：查询键，例如作者编号。
+- `V`（Value）：返回值，例如 `Author`。
+
+假设一次查出 100 本书，并要求每本书的作者：
+
+```graphql
+query {
+  books {
+    title
+    author {
+      name
+    }
+  }
+}
+```
+
+逐本查询作者，可能产生：
+
+```
+1 次查询书籍 + 100 次查询作者
+```
+
+这就是 **N+1 查询问题**。
+
+使用 DataLoader：
+
+```java
+@SchemaMapping(typeName = "Book", field = "author")
+public CompletableFuture<Author> author(
+        Book book,
+        DataLoader<Long, Author> loader) {
+
+    return loader.load(book.authorId());
+}
+```
+
+这里假设作者编号是 `Long`。`load()` 返回一个表示未来结果的 `CompletableFuture`，让框架可以先收集多个作者编号，再交给批量加载函数处理。
+
+**你需要预先注册批量加载函数，并在其中实现批量查询。**DataLoader 负责调度和缓存，不会自动把逐条数据库查询改写成批量查询。
+
+通常它的缓存限定在一次请求内，同一作者编号可复用加载结果；如果执行阶段和批量大小允许，100 次作者查询便可合并为一次。[GraphQL Java 批量加载说明](https://www.graphql-java.com/documentation/batching/)
+
+实际编写方法时，按需求选择参数：取关联数据用父对象，取客户端输入用 `@Argument`，取共享属性用上下文，取身份用安全参数；需要执行细节或批量加载时，再加入对应参数。
+
+
 
 不要把某个用户身份写入单例 Controller 字段，否则并发请求会串号。Spring Bean 可以是单例，数据库连接池也可复用；当前用户、事务和请求级上下文必须保留正确作用域。
 
@@ -1671,7 +2498,7 @@ GraphQL 核心规范主要描述类型、验证和执行；GraphQL over HTTP 工
 }
 ```
 
-生产客户端发送 JSON 请求时使用 `Content-Type: application/json`。GraphQL over HTTP 工作草案要求客户端在 `Accept` 中包含 `application/graphql-response+json`；不确定服务端是否支持新媒体类型时，可以发送 `application/graphql-response+json, application/json;q=0.9` 兼容旧服务。
+生产客户端发送 JSON 请求时使用 `Content-Type: application/json`。GraphQL over HTTP 工作草案要求客户端在 `Accept` 中包含 `application/graphql-response+json`；不确定服务端是否支持新媒体类型时，可以发送 `application/graphql-response+json, application/json;q=0.9`（q是权重值，没写默认为1，这段话意思是我优先接受 `application/graphql-response+json`；如果你只支持普通的 `application/json`，我也能处理） 兼容旧服务。
 
 媒体类型会影响 Spring for GraphQL 2.0.x 的状态码行为：请求新媒体类型时，文档解析或验证失败会使用 4xx；请求旧的 `application/json` 时，这些 GraphQL 请求错误仍沿用 200。请求通过验证并进入执行后，Spring 当前以 200 返回 GraphQL 响应，执行错误放在 `errors` 中。客户端因此要同时解析 HTTP 状态、响应 `Content-Type` 和 GraphQL 响应体，不能把“GraphQL 的错误都返回 200”写成通用规则。GraphQL over HTTP 仍是演进中的工作草案，其他实现或后续版本可能采用不同的部分成功状态码。
 
@@ -1886,6 +2713,96 @@ import java.util.Map;
 
 使用框架准备好的 `GraphqlErrorBuilder`，可以保留当前字段的 path 和 location。对非注解 Controller 的自定义 `DataFetcher`，可实现 `DataFetcherExceptionResolver`。无论哪种方式，都应在服务端按请求 ID 记录原始异常，并只向客户端返回稳定、脱敏的信息。
 
+
+
+这段话讲的是：**GraphQL 字段执行出错时，怎样向客户端返回有用的错误信息，同时让服务端能够排查问题。**
+
+**1. `GraphqlErrorBuilder` 保留错误发生的位置**
+
+GraphQL 的错误除了 `message`，还可以包含：
+
+| 属性        | 含义                                   | 示例                         |
+| ----------- | -------------------------------------- | ---------------------------- |
+| `path`      | 出错字段在响应数据中的路径             | `["book", "author", "name"]` |
+| `locations` | 出错字段在客户端查询文本中的行号、列号 | `[{"line": 4, "column": 5}]` |
+
+注意：这里的 `locations` **不是 Java 代码的行号**。
+
+假设客户端查询：
+
+```graphql
+query {
+  book(id: "1") {
+    title
+    author {
+      name
+    }
+  }
+}
+```
+
+如果获取 `author` 时发生异常，`path` 可以帮助客户端知道：**失败的是 `book.author` 这个字段**。
+
+在使用 `@GraphQlExceptionHandler` 时，Spring 可以提供一个已经绑定当前字段执行环境的构建器：
+
+```java
+@GraphQlExceptionHandler
+public GraphQLError handle(
+        BookNotFoundException ex,
+        GraphqlErrorBuilder<?> builder) {
+
+    return builder
+            .errorType(ErrorType.NOT_FOUND)
+            .message("图书不存在")
+            .build();
+}
+```
+
+这里直接使用参数中的 `builder`，生成的错误会带上当前字段的路径和查询位置。[Spring 官方文档](https://docs.spring.io/spring-graphql/reference/controllers.html)
+
+**2. 自定义 `DataFetcher`，可以通过异常解析器处理错误**
+
+`DataFetcher` 可以理解为：**负责为某个 GraphQL 字段获取数据的函数**。
+
+通常你写：
+
+```java
+@QueryMapping
+public Book bookById(@Argument Long id) {
+    return bookService.findById(id);
+}
+```
+
+Spring 会把这个方法注册成 `DataFetcher`。你也可以直接编写并注册 `DataFetcher`，不经过注解控制器。
+
+对于这种自定义数据获取逻辑，可以实现 `DataFetcherExceptionResolver`，把 Java 异常转换成 GraphQL 错误。常用的便捷写法是：
+
+```java
+@Bean
+DataFetcherExceptionResolver bookExceptionResolver() {
+    return DataFetcherExceptionResolver.forSingleError((ex, env) -> {
+        if (ex instanceof BookNotFoundException) {
+            return GraphqlErrorBuilder.newError(env)
+                    .errorType(ErrorType.NOT_FOUND)
+                    .message("图书不存在")
+                    .build();
+        }
+
+        return null; // 当前解析器不处理，交给后续解析器
+    });
+}
+```
+
+这里的关键是：
+
+```text
+GraphqlErrorBuilder.newError(env)
+```
+
+传入 `env`（`DataFetchingEnvironment`，数据获取环境），才能自动填入当前字段的路径和位置。Spring Boot 会自动发现这类解析器 Bean。[Spring 异常处理文档](https://docs.spring.io/spring-graphql/reference/request-execution.html)
+
+
+
 ## 7 数据访问、N+1 与分页
 
 ### 7.1 N+1 如何产生
@@ -2015,11 +2932,379 @@ public class BookAuthorController {
 
 5\. 同一请求内 Mutation 更新数据后，应 `clear` 或 `prime` 相关 key，避免读到旧值。
 
-### 7.3 接入 Spring Data JPA 时的边界
 
-真实项目通常由应用服务在事务内查询 Repository，再返回稳定的领域对象或 DTO（Data Transfer Object，数据传输对象）：
+
+第5小点的补充解释：
+
+这句话的关键是：**数据库更新成功后，DataLoader 并不知道数据变了；同一个请求里再次加载相同 key，可能仍然拿到之前缓存的结果。**
+
+下面以 `DataLoader<String, Author>` 为例，假设使用默认的请求级缓存。
+
+**1．为什么更新后还可能读到旧数据？**
+
+假设数据库里最初是：
+
+```text
+a1 → Author("a1", "旧名字")
+```
+
+同一个请求中，先读取作者：
+
+```text
+loader.load("a1");
+```
+
+批量查询完成后，可以把缓存理解为：
+
+```text
+"a1" → Author("a1", "旧名字")
+```
+
+实际上，Java DataLoader 的本地缓存保存的是 `CompletableFuture<Author>`，也就是代表加载结果的异步对象，因此它还能复用尚未完成的加载。[Java DataLoader 源码](https://github.com/graphql-java/java-dataloader/blob/master/src/main/java/org/dataloader/DataLoader.java)
+
+随后执行数据库更新：
 
 ```java
+Author updatedAuthor =
+    authorService.rename("a1", "新名字");
+```
+
+此时两个地方的数据可能不同：
+
+```text
+数据库：       a1 → 新名字
+DataLoader：  a1 → 旧名字
+```
+
+再次执行：
+
+```java
+loader.load("a1");
+```
+
+就可能直接命中旧缓存，不再查数据库。
+
+**2．`clear(id)`：忘掉旧结果，下次重新查询**
+
+```java
+loader.clear("a1");
+```
+
+它的意思是：
+
+> 删除这个 key 的缓存记录。
+
+执行之后：
+
+```text
+数据库：       a1 → 新名字
+DataLoader：  不再缓存 a1
+```
+
+下一次：
+
+```java
+loader.load("a1");
+```
+
+会重新进入加载流程，等批次执行时查询数据库。**`clear` 本身不会查询数据库，也不会修改数据库。**
+
+因此，更新后只清缓存也是合理做法：
+
+```java
+authorService.rename("a1", "新名字");
+loader.clear("a1");
+```
+
+适合你没有完整的新对象，或者希望后续读取以数据库结果为准的情况。
+
+**3．`prime(id, value)`：在没有缓存时，预先填入结果**
+
+```java
+loader.prime("a1", updatedAuthor);
+```
+
+可以理解为：
+
+> 如果这个 key 还没有缓存，就直接使用我提供的对象作为加载结果。
+
+它更接近 `putIfAbsent`，而不是普通 Map 的 `put`：
+
+```java
+// 仅用于解释语义，不是实际实现
+cache.putIfAbsent(id, completedFuture(updatedAuthor));
+```
+
+所以，如果已经缓存了旧作者：
+
+```text
+执行前：
+a1 → 旧名字
+
+执行：
+prime("a1", 新作者)
+
+执行后：
+a1 → 仍然是旧名字
+```
+
+**`prime` 的用途是预填充缓存，不是覆盖已有缓存。** 这是接口的明确约定。[`prime` 方法定义](https://github.com/graphql-java/java-dataloader/blob/master/src/main/java/org/dataloader/DataLoader.java)
+
+**4．为什么要组合成 `clear(id).prime(id, updatedAuthor)`？**
+
+因为两步各做一件事：
+
+```java
+loader.clear("a1")                  // 删除可能存在的旧结果
+      .prime("a1", updatedAuthor);  // 填入已经拿到的新结果
+```
+
+执行过程：
+
+```text
+原缓存：       a1 → 旧作者
+clear 后：     无 a1
+prime 后：     a1 → 新作者
+后续 load：    直接得到新作者
+```
+
+这样既避免旧数据，又省掉了一次重新查询。
+
+| 操作                            | 后续 `load(id)` 的行为 |
+| ------------------------------- | ---------------------- |
+| 什么都不做                      | 可能复用旧缓存         |
+| 只 `clear(id)`                  | 重新加载               |
+| 只 `prime(id, newValue)`        | 已有缓存时保留原缓存   |
+| `clear(id).prime(id, newValue)` | 使用预填入的新结果     |
+
+**5．放到 Spring for GraphQL 中怎么写？**
+
+沿用前面按 `String → Author` 注册的 DataLoader，可以在 Mutation 方法里更新缓存：
+
+```java
+@MutationMapping
+public Author renameAuthor(
+        @Argument String id,
+        @Argument String name,
+        DataLoader<String, Author> loader) {
+
+    // 假设这是带事务的服务方法，返回成功时事务已提交
+    Author updatedAuthor = authorService.rename(id, name);
+
+    // 更新当前请求使用的这个 DataLoader
+    loader.clear(id).prime(id, updatedAuthor);
+
+    return updatedAuthor;
+}
+```
+
+这里 `return updatedAuthor` 本身就返回新对象。**更新 DataLoader 是为了让当前请求后续其他字段再通过该 loader 读取同一作者时，也能得到新对象。**
+
+如果更新失败，代码不应该继续执行到 `prime`。如果事务在更外层才提交，也要把缓存更新时机与实际事务结果协调好。
+
+**6．还有三个容易混淆的地方**
+
+第一，**只影响这个 DataLoader 的后续加载**。已经拿到的旧对象、已经返回的旧 `CompletableFuture`，不会因为 `clear().prime()` 自动变成新结果。`clear` 也不是取消正在执行的查询。
+
+第二，**必须操作正确的 key 和正确的加载器**。这里的 key 是作者 ID，所以使用 `clear("a1")`。前面的 `@BatchMapping` 示例以 `Book` 为 key，不能直接套用作者 ID 来清理；如果另一个加载器按作者姓名缓存，也需要处理对应的失效。
+
+第三，**普通请求级缓存不会带到下一个请求**。如果某次 Mutation 之前没有加载过作者，或者后续也不会再加载，那么不一定需要做这一步。它主要解决的是“同一请求内，先读、再写、又读”的一致性问题。
+
+实际选择可以很直接：**手上只有更新成功的消息，就 `clear`；手上已有完整、可信的新对象，就 `clear().prime()`。**
+
+
+
+关于CompletableFuture的解释：
+
+这里返回 `CompletableFuture<Author>`，是因为 **`loader.load()` 被调用时，作者通常还没有查询出来，只是提交了一个加载请求。**
+
+DataLoader 要先收集其他书的作者 ID，再一起查询。如果要求这个方法立刻返回 `Author`，就无法自然地等待后续请求参与批处理。
+
+我们按执行过程来看。
+
+**1．普通方法：调用时就去查询**
+
+```java
+public Author author(Book book) {
+    return authorRepository.findById(book.authorId())
+            .orElse(null);
+}
+```
+
+执行过程是：
+
+```text
+解析第一本书的 author
+    → 查询数据库
+    → 得到 Author
+    → 返回
+
+解析第二本书的 author
+    → 查询数据库
+    → 得到 Author
+    → 返回
+```
+
+方法返回时，必须已经拿到了 `Author`。这样容易变成每本书查一次。
+
+**2．DataLoader：先登记需求，稍后交付结果**
+
+```java
+public CompletableFuture<Author> author(
+        Book book,
+        DataLoader<String, Author> loader) {
+    return loader.load(book.authorId());
+}
+```
+
+这里的 `load("a1")` 可以理解为：
+
+> 我需要作者 a1。先给我一个代表这次加载结果的对象，等批量查询完成，再把作者放进去。
+
+这个“代表将来结果的对象”，就是 `CompletableFuture<Author>`。
+
+可以把两种类型这样区分：
+
+```java
+Author
+// 作者对象，已经拿到了
+
+CompletableFuture<Author>
+// 代表一次加载的结果：可能还没完成，也可能已经完成
+```
+
+`CompletableFuture` 是 Java 的类名，意思近似“可被完成的未来结果”。它可以正常完成并提供 `Author`，也可以异常完成。
+
+**3．三本书加载作者时，实际发生了什么？**
+
+假设：
+
+```text
+Book b1 → a1
+Book b2 → a2
+Book b3 → a3
+```
+
+GraphQL 分别调用字段方法：
+
+```text
+author(b1, loader);  // load("a1")，返回 future1
+author(b2, loader);  // load("a2")，返回 future2
+author(b3, loader);  // load("a3")，返回 future3
+```
+
+此时可以理解为：
+
+```text
+待查询队列：[a1, a2, a3]
+
+future1：等待 a1 的结果
+future2：等待 a2 的结果
+future3：等待 a3 的结果
+```
+
+到了批次执行阶段，框架触发 DataLoader 批量加载：
+
+```java
+authorRepository.findAllById(Set.of("a1", "a2", "a3"));
+```
+
+得到结果后，DataLoader 按 key 分发：
+
+```text
+a1 的 Author → 完成 future1
+a2 的 Author → 完成 future2
+a3 的 Author → 完成 future3
+```
+
+GraphQL 再把这些结果填入对应书的 `author` 字段。
+
+**因此，字段方法先返回 Future，GraphQL 稍后使用 Future 中完成的结果。**
+
+**4．谁在等这个 Future？**
+
+是 GraphQL 执行引擎。
+
+你只需要：
+
+```java
+return loader.load(book.authorId());
+```
+
+GraphQL 能识别 `CompletableFuture`，会在构造响应时等待它完成。客户端收到的仍是普通数据：
+
+```json
+{
+  "data": {
+    "books": [
+      {
+        "author": {
+          "name": "作者甲"
+        }
+      }
+    ]
+  }
+}
+```
+
+客户端看不到 `CompletableFuture`。它只是 Java 服务端协调加载过程的工具。
+
+**5．为什么不能自己把 Author 取出来再返回？**
+
+你可能会想到：
+
+```java
+public Author author(
+        Book book,
+        DataLoader<String, Author> loader) {
+    return loader.load(book.authorId()).join();
+}
+```
+
+这里 `join()` 的意思是：阻塞当前线程，直到 Future 完成。
+
+但此时 DataLoader 可能还在等框架触发批次：
+
+```text
+字段方法调用 join()
+    → 等待批量查询完成
+
+批量查询
+    → 尚未被框架触发
+```
+
+这会阻塞执行流程，在某些执行配置下甚至可能一直等下去。因此，**应把 Future 直接交给 GraphQL，让框架协调后续执行。**
+
+还有一点：返回 `CompletableFuture` **不代表一定新开了一个线程**。在这里，它首先解决的是“先返回一个结果占位，等批量加载完成再交付数据”。数据库操作是否阻塞、运行在哪个线程，是另一个问题。
+
+再看原代码就很直观了：
+
+```java
+@SchemaMapping(typeName = "Book", field = "author")
+public CompletableFuture<Author> author(
+        Book book,
+        DataLoader<String, Author> loader) {
+
+    // 登记这本书需要哪个作者，
+    // 把代表加载结果的 Future 交给 GraphQL。
+    return loader.load(book.authorId());
+}
+```
+
+
+
+### 7.3 接入 Spring Data JPA 时的边界
+
+接入 JPA（Jakarta Persistence，Java 持久化规范）后，需要明确三个职责：Repository（仓储）负责数据库访问，应用服务负责业务用例与事务边界，Resolver（字段解析器）负责把 GraphQL 字段连接到应用服务。DataLoader 则负责合并执行过程中分散产生的加载请求。
+
+#### 7.3.1 在应用服务中完成查询与数据转换
+
+真实项目通常在应用服务中查询 Repository，再返回不依赖懒加载的 DTO（Data Transfer Object，数据传输对象）。下面是固定图书详情用例的分层示意；需要项目已有的实体、仓储和业务异常，并非对第 4 章内存示例的直接替换。
+
+```java
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 public class BookApplicationService {
 
@@ -2038,21 +3323,106 @@ public class BookApplicationService {
 }
 ```
 
-不要简单地把 JPA Entity 直接作为长期 GraphQL 合同，原因包括：
+这段代码依次完成：查询书籍、转换 DTO、找不到时抛出业务异常。`findRequired` 表达“这本书必须存在”；GraphQL 层再按第 6 章的方式把异常转换为客户端可理解的错误。
 
-1\. Entity 结构服务于持久化，GraphQL 类型服务于 API 消费者，两者演进节奏不同。
+假设详情固定需要作者姓名，DTO 可以定义为：
 
-2\. 直接遍历懒加载关联可能在每个字段触发 SQL，形成隐蔽 N+1。
+```java
+public record BookDetail(
+        String id,
+        String title,
+        String authorName) {
 
-3\. Resolver 执行时事务可能已经结束，访问 LAZY 关联会出现 `LazyInitializationException`。
+    public static BookDetail from(BookEntity book) {
+        return new BookDetail(
+                book.getId(),
+                book.getTitle(),
+                book.getAuthor().getName());
+    }
+}
+```
 
-4\. 双向关联可能形成深层图，增加序列化、查询成本和权限泄漏风险。
+这里假设作者必须存在。`BookDetail::from` 在事务方法内部执行，需要的关联数据应在此阶段读取完毕。返回后，GraphQL 读取的是普通字符串，不需要再通过实体代理查询数据库。
 
-5\. Entity 上的内部字段不应因为默认属性读取而意外公开。
+所谓“稳定的返回对象”，是指它不依赖尚未初始化的持久化代理，并不意味着数据永远不变。DTO 里如果仍保存 Entity、懒加载集合或代理对象，就没有真正消除这种依赖。
 
-解决思路不是一律改成 EAGER（立即加载）。EAGER 可能让所有场景都付出 JOIN 或额外查询成本。应根据用例选择 DTO Projection、`@EntityGraph`、明确 JOIN 查询、`@BatchMapping` 或 DataLoader，并通过 SQL 日志和指标验证。
+`@Transactional` 在 Spring 事务代理生效时创建或加入事务；若加入已有事务，实际事务边界与配置由外层决定。`readOnly = true` 表达只读意图并允许底层优化，不是绝对禁止写入的安全开关。参见 [Spring Data JPA 事务文档](https://docs.spring.io/spring-data/jpa/reference/jpa/transactions.html)。
 
-不要依赖 Open Session in View（OSIV，视图层保持持久化会话）掩盖边界问题。即使 OSIV 让字段暂时能加载，也可能把数据库访问拖到事务边界之外，造成连接占用和不可预测查询。
+#### 7.3.2 DTO 转换必须配合明确的查询计划
+
+`findDetailById` 中的 `Detail` 只是方法名称的一部分，不会自动加载作者。Repository 必须明确表达本用例需要的数据，例如：
+
+```java
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
+
+public interface BookJpaRepository
+        extends JpaRepository<BookEntity, String> {
+
+    @EntityGraph(attributePaths = "author")
+    @Query("select b from BookEntity b where b.id = :id")
+    Optional<BookEntity> findDetailById(@Param("id") String id);
+}
+```
+
+`@EntityGraph` 指定本次查询需要加载 `author`；具体生成的 SQL（Structured Query Language，结构化查询语言）仍需查看日志确认。也可以使用明确的 `join fetch` 查询，或直接查询所需字段构造 DTO Projection（DTO 投影）。
+
+**DTO 不会自动解决 N+1。** 如果查询 100 本书后，循环执行 `BookDetail.from`，而每次访问作者都触发查询，仍然会产生 N+1，只是查询发生在业务层。必须把“如何取齐数据”和“如何转换返回对象”一起设计。
+
+#### 7.3.3 为什么谨慎把 Entity 直接交给 GraphQL
+
+Entity（持久化实体）的结构服务于数据库映射，GraphQL Schema 服务于 API（Application Programming Interface，应用程序编程接口）消费者。直接复用实体并非绝对不可行，但需要承担以下耦合与执行风险：
+
+1. **模型演进耦合。** 实体字段、关联和数据库映射调整，可能影响字段解析；独立 DTO 可以提供更明确的对外数据边界。
+2. **字段读取可能触发查询。** `LAZY`（延迟加载）关联未初始化时，读取 getter 可能执行额外 SQL，形成隐蔽 N+1。
+3. **读取时会话可能已结束。** 没有外层事务或延长的持久化上下文时，业务方法返回后再访问未初始化的关联，可能抛出 `LazyInitializationException`（懒加载初始化异常）。
+4. **关联图可能扩大访问范围。** 双向关联一旦被 Schema 暴露，客户端可以请求更深的关联，需要控制查询深度、成本及字段权限。
+
+注意：在显式定义 Schema 的 GraphQL 中，Entity 增加一个内部字段，不会自动把它公开为 GraphQL 字段；双向关联也不会自动无限序列化。风险在于 Schema 暴露了对应字段之后，默认属性读取可能访问这些数据或触发查询。Schema 设计和授权仍需单独控制。
+
+也不要为避免懒加载异常而把所有关联改成 `EAGER`（立即加载）。它可能让不需要关联数据的请求也承担加载成本，而且不保证所有数据都通过一条 JOIN 查询获取。
+
+#### 7.3.4 与 DataLoader 配合：关联按需加载，各自管理事务
+
+固定详情用例可以提前取齐作者；如果 GraphQL 客户端不一定请求作者，则可以先返回只包含作者标识符的 DTO：
+
+```java
+public record BookView(
+        String id,
+        String title,
+        String authorId) {
+}
+```
+
+此时执行流程为：
+
+```text
+查询 books 字段
+    → BookApplicationService 在事务内查询书籍
+    → 返回普通 BookView，包含 authorId
+
+客户端还请求了 Book.author
+    → DataLoader 收集多个 authorId
+    → AuthorApplicationService 在事务内批量查询作者
+    → 返回作者 DTO，由 GraphQL 填入对应字段
+```
+
+因此，业务层提供批量查询能力，DataLoader 负责把零散的字段加载请求汇集起来。两个查询用例各自管理事务，不需要把最初查书的事务一直延长到整个 GraphQL 请求结束，也不保证两次查询天然属于同一数据库快照。
+
+如果采用 `BookView` 作为 `Book` 的源对象，需要把第 7.2 节字段方法的参数同步改为 `BookView`。JPA 实体也不应直接跨线程用于异步字段加载；批处理通过 ID 调用应用服务更清晰。
+
+#### 7.3.5 OSIV 不能替代事务与查询设计
+
+OSIV（Open Session in View，视图层保持持久化会话；JPA 中也称 Open EntityManager in View）允许业务事务结束后，后续字段读取继续使用开放的持久化上下文进行懒加载。它延长的是会话的可用时间，不是让整个请求自动处于同一个业务事务中。参见 [Spring OSIV 文档](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/orm/jpa/support/OpenEntityManagerInViewFilter.html)。
+
+这可能让懒加载异常暂时消失，但查询仍可能散落在字段解析阶段，难以预测次数、延迟和连接使用情况。会话保持开放也不等于始终占用同一条数据库连接，实际情况取决于连接获取与释放策略。
+
+应明确每个用例的事务和加载范围：固定需要的数据提前查询并转换，可选关联通过批量服务按需加载，再用 SQL 日志、查询次数和延迟指标验证。具体方案的选择见第 7.4 节。
+
 
 ### 7.4 DataLoader 不是唯一答案
 
@@ -2263,6 +3633,148 @@ query {
 ```
 
 这不是 GraphQL 服务端自动完成的，也不代表客户端永远不发第二个请求。具体缓存键、合并与失效行为由客户端库配置决定；若对象没有稳定 ID，缓存只能退化为嵌套结果或使用自定义键。
+
+
+
+这段话的核心是：**缓存可以放在不同层，而客户端“规范化缓存”的特点，是把响应里的对象拆出来，按实体身份共享。**
+
+**1. 三种缓存分别缓存什么？**
+
+| 缓存位置                                                     | 缓存内容                   | 主要目的                   |
+| ------------------------------------------------------------ | -------------------------- | -------------------------- |
+| HTTP（Hypertext Transfer Protocol，超文本传输协议）/ CDN（Content Delivery Network，内容分发网络） | 一次请求的完整响应         | 相同请求直接返回缓存响应   |
+| 客户端规范化缓存                                             | 响应里的各个实体及其字段   | 不同页面共享、复用同一对象 |
+| 服务端数据缓存                                               | 数据库查询或下游服务的结果 | 减少数据库、下游服务的访问 |
+
+例如，两条 GraphQL 查询分别获取书的标题和状态：
+
+- HTTP/CDN 通常把它们视为两个不同请求，分别缓存响应。
+- 客户端规范化缓存可以识别：两个响应里的书，其实是**同一本书**。
+- 服务端数据缓存则可能让这两条查询复用同一份书籍数据，具体取决于实现。
+
+**2. “规范化”就是按身份拆分、存储对象**
+
+页面 A 查询后，服务器返回：
+
+```json
+{
+  "data": {
+    "book": {
+      "__typename": "Book",
+      "id": "1",
+      "title": "GraphQL 入门"
+    }
+  }
+}
+```
+
+客户端根据 `__typename + id` 得到缓存键 `Book:1`，把实体存起来：
+
+```json
+{
+  "Book:1": {
+    "__typename": "Book",
+    "id": "1",
+    "title": "GraphQL 入门"
+  }
+}
+```
+
+这里：
+
+- `__typename` 表示 GraphQL 对象类型，防止 `Book` 的 `"1"` 和 `User` 的 `"1"` 混淆。
+- `id` 用来区分同一类型中的不同对象。
+
+页面 B 查询后，服务器返回：
+
+```json
+{
+  "data": {
+    "books": [
+      {
+        "__typename": "Book",
+        "id": "1",
+        "status": "AVAILABLE"
+      }
+    ]
+  }
+}
+```
+
+客户端再次算出 `Book:1`，发现实体已经存在，就把新字段写进去：
+
+```json
+{
+  "Book:1": {
+    "__typename": "Book",
+    "id": "1",
+    "title": "GraphQL 入门",
+    "status": "AVAILABLE"
+  }
+}
+```
+
+**没有返回的 `title` 通常会保留，新返回的 `status` 被补充进去。** 如果响应包含已有字段的新值，客户端通常会更新该字段；具体行为可以配置。
+
+**3. 不同页面怎样共享它？**
+
+缓存不仅保存实体，还会保存查询结果与实体之间的引用。可以把它理解为：
+
+```text
+页面 A 的 book(id: "1") ──→ Book:1
+页面 B 的 books[0]      ──→ Book:1
+```
+
+两个页面读取的是同一个缓存实体。
+
+以后某个操作把 `Book:1.status` 更新为 `"BORROWED"`，订阅这个字段的页面就可能自动重新渲染，不需要分别维护两份书籍对象。
+
+不过，**列表里有哪些书、顺序如何，仍然需要单独保存**。实体共享不意味着客户端能自动推断所有列表关系。
+
+**4. 为什么页面 B 可能仍然发请求？**
+
+因为页面 A 只拿到了 `title`，缓存里还没有 `status`。
+
+页面 B 要读 `status`，客户端不能凭空知道它，所以通常仍需要请求服务器。另外，即使字段齐全，客户端也可能根据读取策略向服务器获取最新数据。
+
+因此：
+
+> 规范化缓存解决的是“同一实体如何共享和更新”，是否发请求还取决于字段是否齐全、读取策略和失效规则。
+
+缓存中已经有 `Book:1`，也不代表客户端知道 `books` 查询应该返回哪些书。
+
+**5. 没有稳定 ID 会怎样？**
+
+假设两个响应都只有：
+
+```json
+{
+  "__typename": "Book",
+  "title": "GraphQL 入门"
+}
+```
+
+客户端无法可靠判断：这是同一本书，还是两本同名的书？
+
+这时通常只能把对象保存在各自查询结果下面，或者配置一个稳定的自定义键，例如书籍的唯一编号。这样才能安全地跨页面共享实体。
+
+**6. DataLoader 为什么又不一样？**
+
+DataLoader 常用于一次服务端请求内部。例如，多个解析器都要读取 `bookId = "1"`：
+
+```text
+一次 GraphQL 请求
+  解析器 A → load("1")
+  解析器 B → load("1")
+             ↓
+        复用同一个加载结果
+```
+
+它还可以把多个不同 ID 的读取合成一次批量查询。通常请求结束后，这个 DataLoader 实例及其记忆化结果就被丢弃，下一个请求重新开始。
+
+所以它主要解决**单次请求内的重复读取和批量加载**；跨请求缓存则需要另外设计有效期、更新和失效机制。
+
+
 
 ### 8.2 Java 客户端最小请求
 
@@ -2559,14 +4071,23 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+// GraphQL 查询限制配置，防止过深或过于复杂的查询消耗过多服务端资源
 @Configuration
 public class GraphQlLimitConfiguration {
 
+    // 注册到 Spring 容器，由 Spring for GraphQL 集成到查询执行流程
+  	// Instrumentation是插桩，在查询执行的不同阶段加入检查、监控或统计逻辑
     @Bean
     Instrumentation queryLimitInstrumentation() {
+        // 将多个查询检查器串联，使深度限制和复杂度限制同时生效
         return new ChainedInstrumentation(List.of(
+                // 最大查询深度为 8，限制字段嵌套层数
                 new MaxQueryDepthInstrumentation(8),
-                new MaxQueryComplexityInstrumentation(200)));
+
+                // 最大查询复杂度为 200
+                // 默认按字段累计计算复杂度，并非限制返回记录数
+                new MaxQueryComplexityInstrumentation(200)
+        ));
     }
 }
 ```
@@ -2671,7 +4192,8 @@ type Mutation {
     contentType: String!
     size: Int!
   ): UploadTicket!
-
+	
+	// 关联book与book封面
   confirmBookCoverUpload(
     bookId: ID!
     objectKey: String!
